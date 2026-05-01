@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 rootProject.name = "FlashRead"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
@@ -8,6 +10,7 @@ pluginManagement {
                 includeGroupAndSubgroups("androidx")
                 includeGroupAndSubgroups("com.android")
                 includeGroupAndSubgroups("com.google")
+                includeGroupAndSubgroups("org.jetbrains.androidx")
             }
         }
         mavenCentral()
@@ -22,6 +25,7 @@ dependencyResolutionManagement {
                 includeGroupAndSubgroups("androidx")
                 includeGroupAndSubgroups("com.android")
                 includeGroupAndSubgroups("com.google")
+                includeGroupAndSubgroups("org.jetbrains.androidx")
             }
         }
         mavenCentral()
@@ -29,3 +33,4 @@ dependencyResolutionManagement {
 }
 
 include(":composeApp")
+include(":androidApp")
