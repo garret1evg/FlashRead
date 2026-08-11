@@ -3,8 +3,10 @@ package com.tool.flashread
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,8 +27,11 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -49,6 +54,7 @@ import com.tool.flashread.core.model.ReadingPosition
 import com.tool.flashread.data.repository.ReadingSessionRepository
 import com.tool.flashread.navigation.AppRoute
 import com.tool.flashread.navigation.AppScreen
+import com.tool.flashread.platform.BookStorage
 import com.tool.flashread.platform.ImportedBook
 import com.tool.flashread.platform.rememberBookImportLauncher
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -61,7 +67,11 @@ import kotlinx.coroutines.launch
 fun App() {
     MaterialTheme {
         val readingSessionRepository = remember { ReadingSessionRepository() }
-        val books = remember { mutableStateListOf<Book>() }
+        val books = remember {
+            mutableStateListOf<Book>().apply {
+                addAll(BookStorage.loadBooks())
+            }
+        }
         var selectedBookId by rememberSaveable { mutableStateOf<String?>(null) }
         val currentBook by remember(selectedBookId, books) {
             derivedStateOf { books.firstOrNull { it.id == selectedBookId } }
@@ -80,6 +90,21 @@ fun App() {
                 books.add(book)
             } else {
                 books[index] = book
+            }
+            BookStorage.saveBooks(books.toList())
+        }
+
+        fun deleteBook(bookId: String) {
+            val index = books.indexOfFirst { it.id == bookId }
+            if (index == -1) return
+            val deletedTitle = books[index].title
+            books.removeAt(index)
+            BookStorage.saveBooks(books.toList())
+            if (selectedBookId == bookId) {
+                selectedBookId = null
+            }
+            scope.launch {
+                snackbarHostState.showSnackbar("Deleted $deletedTitle")
             }
         }
 
@@ -139,6 +164,7 @@ fun App() {
                             books = books,
                             readingSessionRepository = readingSessionRepository,
                             onImportBook = launchBookImport,
+                            onDeleteBook = ::deleteBook,
                             onOpenReader = { bookId ->
                                 selectedBookId = bookId
                                 pushIfNeeded(backStack, AppRoute.Reader)
@@ -191,11 +217,13 @@ private fun pushIfNeeded(
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun LibraryScreen(
     modifier: Modifier = Modifier,
     books: List<Book>,
     readingSessionRepository: ReadingSessionRepository,
     onImportBook: () -> Unit,
+    onDeleteBook: (String) -> Unit,
     onOpenReader: (String) -> Unit,
     onOpenSpeedRead: () -> Unit,
 ) {
@@ -239,18 +267,48 @@ private fun LibraryScreen(
                 val paragraphs = remember(book.content) { splitIntoParagraphs(book.content) }
                 val position = readingSessionRepository.getPosition(book.id).paragraphIndex
                 val progress = if (paragraphs.isEmpty()) 0 else ((position * 100) / paragraphs.size).coerceIn(0, 100)
+                val dismissState = rememberSwipeToDismissBoxState(
+                    confirmValueChange = { value ->
+                        if (value == SwipeToDismissBoxValue.EndToStart) {
+                            onDeleteBook(book.id)
+                            true
+                        } else {
+                            false
+                        }
+                    },
+                )
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onOpenReader(book.id) }
-                        .padding(vertical = 10.dp),
+                SwipeToDismissBox(
+                    state = dismissState,
+                    enableDismissFromStartToEnd = false,
+                    backgroundContent = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.errorContainer)
+                                .padding(horizontal = 20.dp),
+                            contentAlignment = Alignment.CenterEnd,
+                        ) {
+                            Text(
+                                text = "Delete",
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                            )
+                        }
+                    },
                 ) {
-                    Text(text = book.title, style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        text = "Progress: $progress%",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surface)
+                            .clickable { onOpenReader(book.id) }
+                            .padding(vertical = 10.dp),
+                    ) {
+                        Text(text = book.title, style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = "Progress: $progress%",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                 }
                 HorizontalDivider()
             }
