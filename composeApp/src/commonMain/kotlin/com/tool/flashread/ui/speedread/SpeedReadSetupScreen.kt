@@ -39,9 +39,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,12 +52,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.MaterialSourceType
-import com.tool.flashread.core.reading.estimatedRemainingMinutes
 import com.tool.flashread.core.speedread.SpeedReadDefaults
 import com.tool.flashread.core.speedread.SpeedReadSettings
-import com.tool.flashread.data.repository.SpeedReadSettingsRepository
 import com.tool.flashread.ui.library.MaterialTitleFormatter
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadShapes
@@ -69,39 +67,16 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpeedReadSetupScreen(
-    book: Book?,
-    settingsRepository: SpeedReadSettingsRepository,
+    book: Book,
     onContinue: () -> Unit,
-    remainingWords: Int,
     modifier: Modifier = Modifier,
+    viewModel: SpeedReadSetupViewModel = viewModel(key = book.id) {
+        SpeedReadSetupViewModel(book)
+    },
 ) {
-    if (book == null) {
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(horizontal = FlashReadDimens.screenHorizontalPadding),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = "Сначала выберите материал в библиотеке.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-        }
-        return
-    }
-
-    var settings by remember { mutableStateOf(settingsRepository.load()) }
-
-    fun updateSettings(updated: SpeedReadSettings) {
-        val normalized = updated.normalized()
-        settings = normalized
-        settingsRepository.save(normalized)
-    }
-
-    val remainingMinutes = remember(remainingWords, settings.wpm) {
-        estimatedRemainingMinutes(remainingWords, settings.wpm)
-    }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val settings = uiState.settings
+    val remainingMinutes = uiState.remainingMinutes
 
     Column(
         modifier = modifier
@@ -150,7 +125,7 @@ fun SpeedReadSetupScreen(
             Slider(
                 value = settings.wpm.toFloat(),
                 onValueChange = { value ->
-                    updateSettings(settings.copy(wpm = SpeedReadDefaults.snapWpm(value.roundToInt())))
+                    viewModel.updateSettings(settings.copy(wpm = SpeedReadDefaults.snapWpm(value.roundToInt())))
                 },
                 valueRange = SpeedReadDefaults.MIN_WPM.toFloat()..SpeedReadDefaults.MAX_WPM.toFloat(),
                 steps = SpeedReadDefaults.WPM_SLIDER_STEPS,
@@ -184,7 +159,7 @@ fun SpeedReadSetupScreen(
                 SpeedReadDefaults.WPM_PRESETS.forEach { preset ->
                     FilterChip(
                         selected = settings.wpm == preset,
-                        onClick = { updateSettings(settings.copy(wpm = preset)) },
+                        onClick = { viewModel.updateSettings(settings.copy(wpm = preset)) },
                         label = { Text("$preset") },
                         modifier = Modifier
                             .heightIn(min = FlashReadDimens.minTouchTarget)
@@ -204,7 +179,7 @@ fun SpeedReadSetupScreen(
                 SpeedReadDefaults.CHUNK_SIZES.forEachIndexed { index, size ->
                     SegmentedButton(
                         selected = settings.chunkSize == size,
-                        onClick = { updateSettings(settings.copy(chunkSize = size)) },
+                        onClick = { viewModel.updateSettings(settings.copy(chunkSize = size)) },
                         shape = SegmentedButtonDefaults.itemShape(
                             index = index,
                             count = SpeedReadDefaults.CHUNK_SIZES.size,
@@ -225,13 +200,13 @@ fun SpeedReadSetupScreen(
                 title = "Spritz",
                 subtitle = "Подсвечивать оптимальную точку распознавания в слове",
                 checked = settings.spritzEnabled,
-                onCheckedChange = { updateSettings(settings.copy(spritzEnabled = it)) },
+                onCheckedChange = { viewModel.updateSettings(settings.copy(spritzEnabled = it)) },
             )
             SettingsSwitchRow(
                 title = "Повтор",
                 subtitle = "Непрерывно повторять текст с начала после окончания",
                 checked = settings.loopEnabled,
-                onCheckedChange = { updateSettings(settings.copy(loopEnabled = it)) },
+                onCheckedChange = { viewModel.updateSettings(settings.copy(loopEnabled = it)) },
             )
             Spacer(Modifier.height(FlashReadDimens.space16))
         }
@@ -239,10 +214,10 @@ fun SpeedReadSetupScreen(
         HorizontalDivider(color = MaterialTheme.colorScheme.outline)
         Button(
             onClick = {
-                settingsRepository.save(settings)
+                viewModel.persistSettings()
                 onContinue()
             },
-            enabled = book.content.isNotBlank(),
+            enabled = uiState.canStart,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
@@ -449,18 +424,18 @@ private fun chunkSizeContentDescription(chunkSize: Int): String {
 @Preview(name = "Setup 390", widthDp = 390, heightDp = 844, showBackground = true)
 @Composable
 private fun SpeedReadSetupScreenPreview() {
+    val book = Book(
+        id = "preview",
+        title = "Sample book about subvocalization and speed reading.txt",
+        content = "subvocalization (pronouncing words in your head) is one of the things " +
+            "that can keep your reading speed down. Speed reading trains you to take in " +
+            "words visually without sounding them out.",
+    )
     FlashReadTheme {
         SpeedReadSetupScreen(
-            book = Book(
-                id = "preview",
-                title = "Sample book about subvocalization and speed reading.txt",
-                content = "subvocalization (pronouncing words in your head) is one of the things " +
-                    "that can keep your reading speed down. Speed reading trains you to take in " +
-                    "words visually without sounding them out.",
-            ),
-            settingsRepository = SpeedReadSettingsRepository(),
-            remainingWords = 2400,
+            book = book,
             onContinue = {},
+            viewModel = remember { SpeedReadSetupViewModel(book) },
         )
     }
 }

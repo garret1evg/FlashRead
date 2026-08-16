@@ -40,14 +40,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -55,16 +50,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.tool.flashread.core.model.Book
-import com.tool.flashread.core.model.MaterialSourceType
-import com.tool.flashread.core.model.ReadingPosition
-import com.tool.flashread.core.reading.bookProgressPercent
-import com.tool.flashread.core.reading.remainingWordCount
-import com.tool.flashread.core.reading.withReadingStats
-import com.tool.flashread.data.repository.ReadingSessionRepository
-import com.tool.flashread.data.repository.SpeedReadSettingsRepository
 import com.tool.flashread.navigation.AppRoute
 import com.tool.flashread.navigation.AppScreen
 import com.tool.flashread.navigation.isTopLevel
@@ -72,8 +64,6 @@ import com.tool.flashread.navigation.navigateToTopLevel
 import com.tool.flashread.navigation.popBack
 import com.tool.flashread.navigation.pushIfNeeded
 import com.tool.flashread.navigation.title
-import com.tool.flashread.platform.BookStorage
-import com.tool.flashread.platform.ImportedBook
 import com.tool.flashread.platform.rememberBookImportLauncher
 import com.tool.flashread.ui.library.LibraryScreen
 import com.tool.flashread.ui.library.MaterialTitleFormatter
@@ -83,108 +73,26 @@ import com.tool.flashread.ui.speedread.SpeedReadSetupScreen
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadShapes
 import com.tool.flashread.ui.theme.FlashReadTheme
-import kotlinx.coroutines.launch
 
 @Composable
 @Preview
 @OptIn(ExperimentalMaterial3Api::class)
 fun App() {
     FlashReadTheme {
-        val readingSessionRepository = remember { ReadingSessionRepository() }
-        val speedReadSettingsRepository = remember { SpeedReadSettingsRepository() }
-        val books = remember {
-            mutableStateListOf<Book>().apply {
-                addAll(BookStorage.loadBooks())
-            }
-        }
-        var selectedBookId by rememberSaveable { mutableStateOf<String?>(null) }
-        val currentBook by remember(selectedBookId, books) {
-            derivedStateOf { books.firstOrNull { it.id == selectedBookId } }
-        }
+        val appViewModel: AppViewModel = viewModel { AppViewModel() }
+        val uiState by appViewModel.uiState.collectAsStateWithLifecycle()
+        val currentBook = uiState.currentBook
         val snackbarHostState = remember { SnackbarHostState() }
-        val scope = rememberCoroutineScope()
 
-        fun persistBooks() {
-            BookStorage.saveBooks(books.toList())
-        }
-
-        fun upsertBook(importedBook: ImportedBook) {
-            val book = Book(
-                id = importedBook.id,
-                title = importedBook.title,
-                content = importedBook.content,
-                sourceType = MaterialSourceType.Book,
-            ).withReadingStats()
-            val index = books.indexOfFirst { it.id == importedBook.id }
-            if (index == -1) {
-                books.add(book)
-            } else {
-                books[index] = book
-            }
-            persistBooks()
-        }
-
-        fun addYouTubeVideo(title: String, url: String) {
-            val trimmedUrl = url.trim()
-            if (trimmedUrl.isBlank()) return
-            val resolvedTitle = title.trim().ifBlank { trimmedUrl }
-            val book = Book(
-                id = "youtube:$trimmedUrl",
-                title = resolvedTitle,
-                content = trimmedUrl,
-                sourceType = MaterialSourceType.YouTube,
-            ).withReadingStats()
-            val index = books.indexOfFirst { it.id == book.id }
-            if (index == -1) {
-                books.add(book)
-            } else {
-                books[index] = book
-            }
-            persistBooks()
-            selectedBookId = book.id
-            scope.launch {
-                snackbarHostState.showSnackbar("Added ${MaterialTitleFormatter.displayTitle(resolvedTitle)}")
-            }
-        }
-
-        fun renameBook(bookId: String, newTitle: String) {
-            val index = books.indexOfFirst { it.id == bookId }
-            if (index == -1) return
-            val trimmed = newTitle.trim()
-            if (trimmed.isBlank()) return
-            books[index] = books[index].copy(title = trimmed)
-            persistBooks()
-        }
-
-        fun deleteBook(bookId: String) {
-            val index = books.indexOfFirst { it.id == bookId }
-            if (index == -1) return
-            val deletedTitle = books[index].title
-            books.removeAt(index)
-            persistBooks()
-            if (selectedBookId == bookId) {
-                selectedBookId = null
-            }
-            scope.launch {
-                snackbarHostState.showSnackbar("Deleted ${MaterialTitleFormatter.displayTitle(deletedTitle)}")
+        LaunchedEffect(appViewModel) {
+            appViewModel.messages.collect { message ->
+                snackbarHostState.showSnackbar(message)
             }
         }
 
         val launchBookImport = rememberBookImportLauncher(
-            onImported = { importedBook ->
-                upsertBook(importedBook)
-                selectedBookId = importedBook.id
-                scope.launch {
-                    snackbarHostState.showSnackbar(
-                        "Imported ${MaterialTitleFormatter.displayTitle(importedBook.title)}",
-                    )
-                }
-            },
-            onError = { message ->
-                scope.launch {
-                    snackbarHostState.showSnackbar(message)
-                }
-            },
+            onImported = appViewModel::upsertImportedBook,
+            onError = appViewModel::onImportError,
         )
 
         val backStack = remember { mutableStateListOf<AppRoute>(AppRoute.Home) }
@@ -194,19 +102,12 @@ fun App() {
         val showTopBar = currentRoute is AppRoute.SpeedRead
 
         fun openReader(bookId: String) {
-            selectedBookId = bookId
+            appViewModel.selectBook(bookId)
             backStack.pushIfNeeded(AppRoute.Reader)
         }
 
         fun redirectToLibraryIfNoBook() {
             backStack.navigateToTopLevel(AppRoute.Library)
-        }
-
-        fun progressFor(book: Book): Int {
-            return bookProgressPercent(
-                paragraphIndex = readingSessionRepository.getPosition(book.id).paragraphIndex,
-                paragraphCount = book.paragraphCount,
-            )
         }
 
         Scaffold(
@@ -292,6 +193,10 @@ fun App() {
                     ),
                 backStack = backStack,
                 onBack = { backStack.popBack() },
+                entryDecorators = listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    rememberViewModelStoreNavEntryDecorator(),
+                ),
                 transitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
                 popTransitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
                 predictivePopTransitionSpec = { _ ->
@@ -301,19 +206,19 @@ fun App() {
                     entry<AppRoute.Home> {
                         HomeScreen(
                             book = currentBook,
-                            progressPercent = currentBook?.let(::progressFor) ?: 0,
+                            progressPercent = currentBook?.let(appViewModel::progressPercent) ?: 0,
                             onImportBook = launchBookImport,
                             onContinueReading = { bookId -> openReader(bookId) },
                         )
                     }
                     entry<AppRoute.Library> {
                         LibraryScreen(
-                            books = books,
-                            progressPercent = { progressFor(it) },
+                            books = uiState.books,
+                            progressPercent = appViewModel::progressPercent,
                             onImportBook = launchBookImport,
-                            onAddYouTubeVideo = ::addYouTubeVideo,
-                            onRenameBook = ::renameBook,
-                            onDeleteBook = ::deleteBook,
+                            onAddYouTubeVideo = appViewModel::addYouTubeVideo,
+                            onRenameBook = appViewModel::renameBook,
+                            onDeleteBook = appViewModel::deleteBook,
                             onContinueReading = { bookId -> openReader(bookId) },
                         )
                     }
@@ -324,7 +229,6 @@ fun App() {
                         ) { book ->
                             ReaderScreen(
                                 book = book,
-                                readingSessionRepository = readingSessionRepository,
                                 onBack = { backStack.popBack() },
                                 onOpenSpeedRead = { backStack.pushIfNeeded(AppRoute.SpeedRead) },
                             )
@@ -337,11 +241,6 @@ fun App() {
                         ) { book ->
                             SpeedReadSetupScreen(
                                 book = book,
-                                settingsRepository = speedReadSettingsRepository,
-                                remainingWords = remainingWordCount(
-                                    book.content,
-                                    readingSessionRepository.getPosition(book.id).paragraphIndex,
-                                ),
                                 onContinue = { backStack.pushIfNeeded(AppRoute.SpeedReadPlayer) },
                             )
                         }
@@ -351,28 +250,8 @@ fun App() {
                             book = currentBook,
                             onMissingBook = ::redirectToLibraryIfNoBook,
                         ) { book ->
-                            var playerSettings by remember(book.id) {
-                                mutableStateOf(speedReadSettingsRepository.load())
-                            }
-                            val startParagraphIndex = remember(book.id) {
-                                readingSessionRepository.getPosition(book.id).paragraphIndex
-                            }
                             SpeedReadPlayerScreen(
                                 book = book,
-                                settings = playerSettings,
-                                startParagraphIndex = startParagraphIndex,
-                                onParagraphIndexChanged = { paragraphIndex ->
-                                    readingSessionRepository.savePosition(
-                                        ReadingPosition(
-                                            bookId = book.id,
-                                            paragraphIndex = paragraphIndex,
-                                        ),
-                                    )
-                                },
-                                onSettingsChange = { updated ->
-                                    playerSettings = updated
-                                    speedReadSettingsRepository.save(updated)
-                                },
                                 onClose = { backStack.popBack() },
                             )
                         }

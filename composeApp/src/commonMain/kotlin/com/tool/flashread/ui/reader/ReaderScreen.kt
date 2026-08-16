@@ -66,16 +66,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tool.flashread.core.model.Book
-import com.tool.flashread.core.model.ReadingPosition
 import com.tool.flashread.core.reading.ReaderAlignment
 import com.tool.flashread.core.reading.ReaderTextDefaults
 import com.tool.flashread.core.reading.ReaderTextSettings
 import com.tool.flashread.core.reading.ReaderTheme
 import com.tool.flashread.core.reading.bookProgressPercent
-import com.tool.flashread.core.speedread.splitBookParagraphs
-import com.tool.flashread.data.repository.ReaderTextSettingsRepository
-import com.tool.flashread.data.repository.ReadingSessionRepository
 import com.tool.flashread.ui.library.MaterialTitleFormatter
 import com.tool.flashread.ui.theme.FlashReadColors
 import com.tool.flashread.ui.theme.FlashReadDimens
@@ -98,20 +96,16 @@ private data class ReaderPalette(
 @Composable
 fun ReaderScreen(
     book: Book,
-    readingSessionRepository: ReadingSessionRepository,
     onBack: () -> Unit,
     onOpenSpeedRead: () -> Unit,
     modifier: Modifier = Modifier,
-    textSettingsRepository: ReaderTextSettingsRepository = remember { ReaderTextSettingsRepository() },
+    viewModel: ReaderViewModel = viewModel(key = book.id) { ReaderViewModel(book) },
 ) {
-    val paragraphs = remember(book.content) { splitBookParagraphs(book.content) }
-    val initialPosition = remember(book.id) {
-        readingSessionRepository.getPosition(book.id).paragraphIndex
-    }
+    val paragraphs = viewModel.paragraphs
     val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = initialPosition.coerceIn(0, paragraphs.lastIndex.coerceAtLeast(0)),
+        initialFirstVisibleItemIndex = viewModel.initialParagraphIndex,
     )
-    var settings by remember { mutableStateOf(textSettingsRepository.load()) }
+    val settings by viewModel.settings.collectAsStateWithLifecycle()
     var showTextSettings by remember { mutableStateOf(false) }
     val visibleParagraphIndex by remember {
         derivedStateOf { listState.firstVisibleItemIndex.coerceAtLeast(0) }
@@ -127,19 +121,8 @@ fun ReaderScreen(
             .map { it.coerceAtLeast(0) }
             .distinctUntilChanged()
             .collect { paragraphIndex ->
-                readingSessionRepository.savePosition(
-                    ReadingPosition(
-                        bookId = book.id,
-                        paragraphIndex = paragraphIndex,
-                    ),
-                )
+                viewModel.saveParagraphIndex(paragraphIndex)
             }
-    }
-
-    fun updateSettings(updated: ReaderTextSettings) {
-        val normalized = updated.normalized()
-        settings = normalized
-        textSettingsRepository.save(normalized)
     }
 
     Column(
@@ -259,7 +242,7 @@ fun ReaderScreen(
         ReaderTextSettingsSheet(
             settings = settings,
             onDismiss = { showTextSettings = false },
-            onSettingsChange = ::updateSettings,
+            onSettingsChange = viewModel::updateSettings,
         )
     }
 }
@@ -521,17 +504,18 @@ private fun formatLineHeight(value: Float): String {
 @Preview(name = "Reader 390", widthDp = 390, heightDp = 844, showBackground = true)
 @Composable
 private fun ReaderScreenPreview() {
+    val book = Book(
+        id = "preview",
+        title = "very_long_imported_book_title_that_should_ellipsis.txt",
+        content = "Subvocalization is one of the things that can keep your reading speed down.\n\n" +
+            "Speed reading trains you to take in words visually without sounding them out.",
+    )
     FlashReadTheme {
         ReaderScreen(
-            book = Book(
-                id = "preview",
-                title = "very_long_imported_book_title_that_should_ellipsis.txt",
-                content = "Subvocalization is one of the things that can keep your reading speed down.\n\n" +
-                    "Speed reading trains you to take in words visually without sounding them out.",
-            ),
-            readingSessionRepository = ReadingSessionRepository(),
+            book = book,
             onBack = {},
             onOpenSpeedRead = {},
+            viewModel = remember { ReaderViewModel(book) },
         )
     }
 }

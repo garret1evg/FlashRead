@@ -1,0 +1,88 @@
+package com.tool.flashread
+
+import com.tool.flashread.core.model.Book
+import com.tool.flashread.core.model.MaterialSourceType
+import com.tool.flashread.platform.ImportedBook
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+
+class AppViewModelTest {
+
+    @Test
+    fun upsertImportedBookSelectsAndPersistsIt() = runTest {
+        val stored = mutableListOf<Book>()
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(stored),
+            readingSessionRepository = memoryReadingSessionRepository(),
+        )
+        val message = async { viewModel.messages.first() }
+        testScheduler.runCurrent()
+
+        viewModel.upsertImportedBook(
+            ImportedBook(id = "book-1", title = "notes.txt", content = "one two three"),
+        )
+
+        val state = viewModel.uiState.value
+        assertEquals("book-1", state.selectedBookId)
+        assertEquals(1, state.books.size)
+        assertEquals("notes.txt", state.books.single().title)
+        assertEquals(MaterialSourceType.Book, state.books.single().sourceType)
+        assertEquals(1, stored.size)
+        assertEquals("Imported notes", message.await())
+    }
+
+    @Test
+    fun addYouTubeVideoIgnoresBlankUrlAndUsesUrlAsTitleWhenNeeded() = runTest {
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(),
+            readingSessionRepository = memoryReadingSessionRepository(),
+        )
+
+        viewModel.addYouTubeVideo(title = "Ignored", url = "   ")
+        assertTrue(viewModel.uiState.value.books.isEmpty())
+
+        val message = async { viewModel.messages.first() }
+        testScheduler.runCurrent()
+        viewModel.addYouTubeVideo(title = "  ", url = "https://youtu.be/abc")
+
+        val book = viewModel.uiState.value.currentBook
+        assertEquals("youtube:https://youtu.be/abc", book?.id)
+        assertEquals("https://youtu.be/abc", book?.title)
+        assertEquals(MaterialSourceType.YouTube, book?.sourceType)
+        assertEquals("Added https://youtu.be/abc", message.await())
+    }
+
+    @Test
+    fun renameAndDeleteUpdateLibraryAndClearSelection() = runTest {
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(),
+            readingSessionRepository = memoryReadingSessionRepository(),
+        )
+        viewModel.upsertImportedBook(
+            ImportedBook(id = "keep", title = "Keep.txt", content = "alpha"),
+        )
+        viewModel.upsertImportedBook(
+            ImportedBook(id = "gone", title = "Gone.txt", content = "beta"),
+        )
+        viewModel.renameBook("keep", "  Renamed keep  ")
+        assertEquals("Renamed keep", viewModel.uiState.value.books.first { it.id == "keep" }.title)
+
+        viewModel.renameBook("keep", "   ")
+        assertEquals("Renamed keep", viewModel.uiState.value.books.first { it.id == "keep" }.title)
+
+        viewModel.deleteBook("gone")
+        assertNull(viewModel.uiState.value.books.firstOrNull { it.id == "gone" })
+        assertNull(viewModel.uiState.value.selectedBookId)
+        assertEquals("keep", viewModel.uiState.value.books.single().id)
+
+        viewModel.selectBook("keep")
+        viewModel.deleteBook("keep")
+        assertTrue(viewModel.uiState.value.books.isEmpty())
+        assertNull(viewModel.uiState.value.selectedBookId)
+    }
+}

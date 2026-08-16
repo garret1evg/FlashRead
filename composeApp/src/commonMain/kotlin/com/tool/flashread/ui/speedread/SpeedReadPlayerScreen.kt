@@ -52,13 +52,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,23 +77,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.speedread.SpeedReadDefaults
-import com.tool.flashread.core.speedread.SpeedReadPlayback
-import com.tool.flashread.core.speedread.SpeedReadPlayerController
 import com.tool.flashread.core.speedread.SpeedReadPlayerStatus
 import com.tool.flashread.core.speedread.SpeedReadPlayerViewState
 import com.tool.flashread.core.speedread.SpeedReadPosition
-import com.tool.flashread.core.speedread.SpeedReadSessionTotals
 import com.tool.flashread.core.speedread.SpeedReadSettings
 import com.tool.flashread.core.speedread.orpParts
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadShapes
 import com.tool.flashread.ui.theme.FlashReadTheme
 import kotlin.math.roundToInt
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 
 private val OrpFrameHeight = 168.dp
 private val PlayerWordSize = 34.sp
@@ -105,110 +97,28 @@ private val PlayerWordSize = 34.sp
 @Composable
 fun SpeedReadPlayerScreen(
     book: Book,
-    settings: SpeedReadSettings,
-    startParagraphIndex: Int = 0,
-    onParagraphIndexChanged: (Int) -> Unit = {},
-    onSettingsChange: (SpeedReadSettings) -> Unit = {},
     onClose: () -> Unit = {},
     modifier: Modifier = Modifier,
+    viewModel: SpeedReadPlayerViewModel = viewModel(key = book.id) {
+        SpeedReadPlayerViewModel(book)
+    },
 ) {
-    var localSettings by remember(book.id) { mutableStateOf(settings.normalized()) }
-    var savedTokenIndex by rememberSaveable(book.id) { mutableIntStateOf(-1) }
-    var savedOffset by rememberSaveable(book.id) { mutableIntStateOf(0) }
-    var savedParagraph by rememberSaveable(book.id) { mutableIntStateOf(startParagraphIndex) }
-    var resumeOnStart by remember { mutableStateOf(false) }
-    var lastSavedParagraph by remember(book.id) { mutableIntStateOf(startParagraphIndex) }
-
-    val session by produceState<SpeedReadPlayerSession?>(
-        initialValue = null,
-        book.id,
-        book.content,
-        localSettings.chunkSize,
-    ) {
-        value = null
-        value = withContext(Dispatchers.Default) {
-            val playback = SpeedReadPlayback(book.content, localSettings.chunkSize)
-            val totals = playback.sessionTotals()
-            val restored = SpeedReadPosition(savedTokenIndex, savedOffset, savedParagraph)
-            val start = when {
-                savedTokenIndex >= 0 &&
-                    savedTokenIndex % localSettings.chunkSize == 0 &&
-                    playback.chunkAt(restored) != null -> restored
-                savedTokenIndex >= 0 -> playback.startPosition(savedParagraph)
-                else -> playback.startPosition(startParagraphIndex)
-            }
-            SpeedReadPlayerSession(playback, totals, start)
-        }
-    }
-
-    val controller = remember(session) {
-        session?.let { prepared ->
-            SpeedReadPlayerController(
-                playback = prepared.playback,
-                totals = prepared.totals,
-                initialPosition = prepared.start,
-                initialSettings = localSettings,
-            )
-        }
-    }
-    var viewState by remember(controller) { mutableStateOf(controller?.viewState) }
-
-    fun persistPosition(force: Boolean = false) {
-        val position = controller?.viewState?.position ?: return
-        savedTokenIndex = position.tokenIndex
-        savedOffset = position.offset
-        savedParagraph = position.paragraphIndex
-        if (force || position.paragraphIndex != lastSavedParagraph) {
-            lastSavedParagraph = position.paragraphIndex
-            onParagraphIndexChanged(position.paragraphIndex)
-        }
-    }
-
-    fun publish() {
-        val current = controller ?: return
-        viewState = current.viewState
-        persistPosition()
-    }
-
-    fun changeSettings(updated: SpeedReadSettings) {
-        val normalized = updated.normalized()
-        localSettings = normalized
-        controller?.updateSettings(normalized)
-        onSettingsChange(normalized)
-        publish()
-    }
-
-    LaunchedEffect(controller, viewState?.status, viewState?.position, viewState?.settings?.wpm) {
-        val current = controller ?: return@LaunchedEffect
-        if (current.viewState.status != SpeedReadPlayerStatus.Playing) return@LaunchedEffect
-        delay(current.currentDelayMs())
-        current.onTick()
-        publish()
-    }
+    val viewState by viewModel.viewState.collectAsStateWithLifecycle()
 
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-        persistPosition(force = true)
-        if (controller?.viewState?.isPlaying == true) {
-            resumeOnStart = true
-            controller.pause()
-            publish()
-        }
+        viewModel.onHostStop()
     }
 
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
-        if (resumeOnStart) {
-            resumeOnStart = false
-            controller?.play()
-            publish()
-        }
+        viewModel.onHostStart()
     }
 
-    DisposableEffect(controller) {
-        onDispose { persistPosition(force = true) }
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.persistNow() }
     }
 
     val currentState = viewState
-    if (controller == null || currentState == null) {
+    if (currentState == null) {
         Box(
             modifier = modifier
                 .fillMaxSize()
@@ -224,26 +134,14 @@ fun SpeedReadPlayerScreen(
     SpeedReadPlayerPane(
         state = currentState,
         onClose = {
-            persistPosition(force = true)
+            viewModel.persistNow()
             onClose()
         },
-        onRestart = {
-            controller.restart()
-            publish()
-        },
-        onTogglePlayPause = {
-            controller.togglePlayPause()
-            publish()
-        },
-        onPrevious = {
-            controller.stepBack()
-            publish()
-        },
-        onNext = {
-            controller.stepForward()
-            publish()
-        },
-        onSettingsChange = ::changeSettings,
+        onRestart = viewModel::restart,
+        onTogglePlayPause = viewModel::togglePlayPause,
+        onPrevious = viewModel::stepBack,
+        onNext = viewModel::stepForward,
+        onSettingsChange = viewModel::updateSettings,
         modifier = modifier,
     )
 }
@@ -753,12 +651,6 @@ internal fun formatPlayerClock(durationMs: Long): String {
         "$minutes:${seconds.toString().padStart(2, '0')}"
     }
 }
-
-private data class SpeedReadPlayerSession(
-    val playback: SpeedReadPlayback,
-    val totals: SpeedReadSessionTotals,
-    val start: SpeedReadPosition,
-)
 
 internal object SpeedReadPlayerDemo {
     private val settings = SpeedReadSettings(wpm = 300, chunkSize = 1, spritzEnabled = true)
