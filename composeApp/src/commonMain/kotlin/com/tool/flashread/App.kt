@@ -7,7 +7,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,9 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
@@ -31,7 +27,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,7 +49,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -68,7 +62,7 @@ import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.MaterialSourceType
 import com.tool.flashread.core.model.ReadingPosition
 import com.tool.flashread.core.reading.bookProgressPercent
-import com.tool.flashread.core.speedread.splitBookParagraphs
+import com.tool.flashread.core.reading.remainingWordCount
 import com.tool.flashread.data.repository.ReadingSessionRepository
 import com.tool.flashread.data.repository.SpeedReadSettingsRepository
 import com.tool.flashread.navigation.AppRoute
@@ -83,13 +77,12 @@ import com.tool.flashread.platform.ImportedBook
 import com.tool.flashread.platform.rememberBookImportLauncher
 import com.tool.flashread.ui.library.LibraryScreen
 import com.tool.flashread.ui.library.MaterialTitleFormatter
+import com.tool.flashread.ui.reader.ReaderScreen
 import com.tool.flashread.ui.speedread.SpeedReadPlayerScreen
 import com.tool.flashread.ui.speedread.SpeedReadSetupScreen
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadShapes
 import com.tool.flashread.ui.theme.FlashReadTheme
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @Composable
@@ -198,7 +191,7 @@ fun App() {
         val currentRoute = backStack.lastOrNull() ?: AppRoute.Home
         val currentScreen = AppScreen.fromRoute(currentRoute)
         val showBottomBar = currentRoute.isTopLevel
-        val showTopBar = !currentRoute.isTopLevel && currentRoute !is AppRoute.SpeedReadPlayer
+        val showTopBar = currentRoute is AppRoute.SpeedRead
 
         fun openReader(bookId: String) {
             selectedBookId = bookId
@@ -326,6 +319,7 @@ fun App() {
                             ReaderScreen(
                                 book = book,
                                 readingSessionRepository = readingSessionRepository,
+                                onBack = { backStack.popBack() },
                                 onOpenSpeedRead = { backStack.pushIfNeeded(AppRoute.SpeedRead) },
                             )
                         }
@@ -338,6 +332,10 @@ fun App() {
                             SpeedReadSetupScreen(
                                 book = book,
                                 settingsRepository = speedReadSettingsRepository,
+                                remainingWords = remainingWordCount(
+                                    book.content,
+                                    readingSessionRepository.getPosition(book.id).paragraphIndex,
+                                ),
                                 onContinue = { backStack.pushIfNeeded(AppRoute.SpeedReadPlayer) },
                             )
                         }
@@ -537,81 +535,6 @@ private fun EmptyBookState(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-        }
-    }
-}
-
-@Composable
-private fun ReaderScreen(
-    book: Book,
-    readingSessionRepository: ReadingSessionRepository,
-    onOpenSpeedRead: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val paragraphs = remember(book.content) { splitBookParagraphs(book.content) }
-    val initialPosition = remember(book.id) { readingSessionRepository.getPosition(book.id).paragraphIndex }
-    val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = initialPosition.coerceIn(0, paragraphs.lastIndex.coerceAtLeast(0)),
-    )
-
-    LaunchedEffect(book.id, listState) {
-        snapshotFlow { listState.firstVisibleItemIndex }
-            .map { it.coerceAtLeast(0) }
-            .distinctUntilChanged()
-            .collect { paragraphIndex ->
-                readingSessionRepository.savePosition(
-                    ReadingPosition(
-                        bookId = book.id,
-                        paragraphIndex = paragraphIndex,
-                    ),
-                )
-            }
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = FlashReadDimens.screenHorizontalPadding),
-    ) {
-        Text(
-            text = MaterialTitleFormatter.displayTitle(book.title),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(vertical = FlashReadDimens.space12),
-        )
-        Button(
-            onClick = onOpenSpeedRead,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = FlashReadDimens.minTouchTarget),
-            shape = FlashReadShapes.button,
-            contentPadding = PaddingValues(horizontal = FlashReadDimens.space16),
-        ) {
-            Text(
-                text = "Switch to SpeedRead",
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = FlashReadDimens.space12),
-            color = MaterialTheme.colorScheme.outline,
-        )
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            state = listState,
-        ) {
-            items(paragraphs) { paragraph ->
-                Text(
-                    text = paragraph,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(bottom = FlashReadDimens.space12),
-                )
-            }
         }
     }
 }

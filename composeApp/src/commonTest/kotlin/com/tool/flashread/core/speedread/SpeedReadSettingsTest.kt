@@ -29,6 +29,25 @@ class SpeedReadSettingsTest {
     }
 
     @Test
+    fun normalizedSnapsWpmToTwentyFiveStep() {
+        assertEquals(100, SpeedReadSettings(wpm = 100).normalized().wpm)
+        assertEquals(1000, SpeedReadSettings(wpm = 1000).normalized().wpm)
+        assertEquals(325, SpeedReadSettings(wpm = 317).normalized().wpm)
+        assertEquals(300, SpeedReadSettings(wpm = 312).normalized().wpm)
+        assertEquals(250, SpeedReadSettings(wpm = 240).normalized().wpm)
+    }
+
+    @Test
+    fun snapWpmAndPresetsStayInsideSupportedRange() {
+        SpeedReadDefaults.WPM_PRESETS.forEach { preset ->
+            assertEquals(preset, SpeedReadDefaults.snapWpm(preset))
+        }
+        assertEquals(4, SpeedReadDefaults.MAX_CHUNK_SIZE)
+        assertEquals(1000, SpeedReadDefaults.MAX_WPM)
+        assertEquals(25, SpeedReadDefaults.WPM_STEP)
+    }
+
+    @Test
     fun normalizedPreservesFlags() {
         val settings = SpeedReadSettings(
             spritzEnabled = false,

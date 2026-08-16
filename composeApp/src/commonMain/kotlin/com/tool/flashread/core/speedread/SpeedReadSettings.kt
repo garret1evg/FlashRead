@@ -7,7 +7,7 @@ data class SpeedReadSettings(
     val loopEnabled: Boolean = SpeedReadDefaults.DEFAULT_LOOP_ENABLED,
 ) {
     fun normalized(): SpeedReadSettings = copy(
-        wpm = wpm.coerceIn(SpeedReadDefaults.MIN_WPM, SpeedReadDefaults.MAX_WPM),
+        wpm = SpeedReadDefaults.snapWpm(wpm),
         chunkSize = chunkSize.coerceIn(SpeedReadDefaults.MIN_CHUNK_SIZE, SpeedReadDefaults.MAX_CHUNK_SIZE),
     )
 }

@@ -4,13 +4,24 @@ import kotlin.math.roundToLong
 
 object SpeedReadDefaults {
     const val MIN_WPM = 100
-    const val MAX_WPM = 800
+    const val MAX_WPM = 1000
+    const val WPM_STEP = 25
     const val DEFAULT_WPM = 300
     const val MIN_CHUNK_SIZE = 1
-    const val MAX_CHUNK_SIZE = 5
+    const val MAX_CHUNK_SIZE = 4
     const val DEFAULT_CHUNK_SIZE = 1
     const val DEFAULT_SPRITZ_ENABLED = true
     const val DEFAULT_LOOP_ENABLED = false
+    val WPM_PRESETS = listOf(250, 400, 600, 800)
+    val CHUNK_SIZES = (MIN_CHUNK_SIZE..MAX_CHUNK_SIZE).toList()
+    val WPM_SLIDER_STEPS = (MAX_WPM - MIN_WPM) / WPM_STEP - 1
+
+    fun snapWpm(wpm: Int): Int {
+        val clamped = wpm.coerceIn(MIN_WPM, MAX_WPM)
+        val offset = clamped - MIN_WPM
+        val snappedOffset = ((offset + WPM_STEP / 2) / WPM_STEP) * WPM_STEP
+        return (MIN_WPM + snappedOffset).coerceIn(MIN_WPM, MAX_WPM)
+    }
 }
 
 object SpeedReadTiming {

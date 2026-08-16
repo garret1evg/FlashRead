@@ -22,7 +22,7 @@ val AppRoute.title: String
         AppRoute.Home -> "Home"
         AppRoute.Library -> "Library"
         AppRoute.Reader -> "Reader"
-        AppRoute.SpeedRead -> "SpeedRead"
+        AppRoute.SpeedRead -> "Скорочтение"
         AppRoute.SpeedReadPlayer -> "SpeedRead"
         AppRoute.Settings -> "Settings"
     }
