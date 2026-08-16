@@ -38,6 +38,33 @@ class SpeedReadTokenizerTest {
     }
 
     @Test
+    fun scannerNextAndPreviousWalkTheSameTokens() {
+        val content = "  One   two  \r\n\n  \nThree four.\n\nYes!"
+        val expected = tokenizeBook(content)
+        val source = SpeedReadSource(content)
+        val forward = ArrayList<String>()
+        var current = source.first()
+        while (current != null) {
+            forward.add(source.text.substring(current.start, current.end))
+            current = source.next(current)
+        }
+        assertEquals(expected.map { it.text }, forward)
+
+        val backward = ArrayList<String>()
+        current = source.first()
+        while (current != null) {
+            val next = source.next(current)
+            if (next == null) break
+            current = next
+        }
+        while (current != null) {
+            backward.add(source.text.substring(current.start, current.end))
+            current = source.previous(current)
+        }
+        assertEquals(expected.map { it.text }.asReversed(), backward)
+    }
+
+    @Test
     fun groupsTokensByChunkSize() {
         val tokens = tokenizeBook("one two three four five six seven")
         val chunks = chunkTokens(tokens, chunkSize = 3)

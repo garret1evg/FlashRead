@@ -2,6 +2,7 @@ package com.tool.flashread.ui.speedread
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.KeyboardDoubleArrowLeft
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -27,8 +29,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -49,11 +51,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.speedread.SpeedReadPlayback
+import com.tool.flashread.core.speedread.SpeedReadPosition
 import com.tool.flashread.core.speedread.SpeedReadSettings
 import com.tool.flashread.core.speedread.orpIndex
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.withContext
 
 private val OrpHighlightColor = Color(0xFFE53935)
 
@@ -65,32 +70,50 @@ fun SpeedReadPlayerScreen(
     onParagraphIndexChanged: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val playback = remember(book.content, settings.chunkSize) {
-        SpeedReadPlayback(book.content, settings.chunkSize)
+    val session by produceState<Pair<SpeedReadPlayback, SpeedReadPosition>?>(
+        initialValue = null,
+        book.id,
+        book.content,
+        settings.chunkSize,
+        startParagraphIndex,
+    ) {
+        value = null
+        value = withContext(Dispatchers.Default) {
+            val prepared = SpeedReadPlayback(book.content, settings.chunkSize)
+            prepared to prepared.startPosition(startParagraphIndex)
+        }
     }
-    var chunkIndex by remember(playback, startParagraphIndex) {
-        mutableIntStateOf(playback.startChunkIndex(startParagraphIndex))
+    val currentSession = session
+    if (currentSession == null) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator()
+        }
+        return
     }
-    var isPlaying by remember { mutableStateOf(false) }
-    val currentText = playback.chunks.getOrNull(chunkIndex)?.displayText.orEmpty()
-    val hasChunks = playback.chunks.isNotEmpty()
 
-    LaunchedEffect(book.id, playback) {
-        snapshotFlow { playback.chunks.getOrNull(chunkIndex)?.paragraphIndex }
+    val currentPlayback = currentSession.first
+    var position by remember(currentSession) { mutableStateOf(currentSession.second) }
+    var isPlaying by remember(currentSession) { mutableStateOf(false) }
+    val currentText = currentPlayback.chunkAt(position)?.displayText.orEmpty()
+    val hasChunks = !currentPlayback.isEmpty
+
+    LaunchedEffect(book.id, currentPlayback) {
+        snapshotFlow { position.paragraphIndex }
             .distinctUntilChanged()
             .collect { paragraphIndex ->
-                if (paragraphIndex != null) {
-                    onParagraphIndexChanged(paragraphIndex)
-                }
+                onParagraphIndexChanged(paragraphIndex)
             }
     }
 
-    LaunchedEffect(isPlaying, chunkIndex, playback, settings.wpm, settings.loopEnabled) {
+    LaunchedEffect(isPlaying, position, currentPlayback, settings.wpm, settings.loopEnabled) {
         if (!isPlaying || !hasChunks) return@LaunchedEffect
-        delay(playback.delayMs(chunkIndex, settings.wpm))
-        val next = playback.nextChunkIndex(chunkIndex, settings.loopEnabled)
+        delay(currentPlayback.delayMs(position, settings.wpm))
+        val next = currentPlayback.next(position, settings.loopEnabled)
         if (next != null) {
-            chunkIndex = next
+            position = next
         } else {
             isPlaying = false
         }
@@ -113,27 +136,27 @@ fun SpeedReadPlayerScreen(
             isPlaying = isPlaying,
             enabled = hasChunks,
             onPreviousSentence = {
-                chunkIndex = playback.previousSentenceChunkIndex(chunkIndex)
+                position = currentPlayback.previousSentence(position)
             },
             onStepBack = {
-                chunkIndex = playback.previousChunkIndex(chunkIndex)
+                position = currentPlayback.previous(position)
             },
             onPlayPause = {
                 if (isPlaying) {
                     isPlaying = false
                 } else if (hasChunks) {
-                    if (!settings.loopEnabled && chunkIndex >= playback.chunks.lastIndex) {
-                        chunkIndex = 0
+                    if (!settings.loopEnabled && currentPlayback.isLastChunk(position)) {
+                        position = currentPlayback.startPosition(0)
                     }
                     isPlaying = true
                 }
             },
             onStepForward = {
-                val next = playback.nextChunkIndex(chunkIndex, settings.loopEnabled)
-                if (next != null) chunkIndex = next
+                val next = currentPlayback.next(position, settings.loopEnabled)
+                if (next != null) position = next
             },
             onNextSentence = {
-                chunkIndex = playback.nextSentenceChunkIndex(chunkIndex)
+                position = currentPlayback.nextSentence(position)
             },
         )
         Spacer(Modifier.height(24.dp))

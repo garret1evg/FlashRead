@@ -73,7 +73,7 @@ fun SpeedReadSetupScreen(
     ) {
         BookPreviewBox(
             title = book.title,
-            content = book.content,
+            content = remember(book.content) { previewBookContent(book.content) },
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
@@ -207,6 +207,13 @@ private fun SettingsCheckboxRow(
             style = MaterialTheme.typography.bodyLarge,
         )
     }
+}
+
+private const val BOOK_PREVIEW_MAX_CHARS = 4_000
+
+private fun previewBookContent(content: String): String {
+    if (content.length <= BOOK_PREVIEW_MAX_CHARS) return content
+    return content.take(BOOK_PREVIEW_MAX_CHARS).trimEnd() + "…"
 }
 
 private fun chunkSizeLabel(chunkSize: Int): String {

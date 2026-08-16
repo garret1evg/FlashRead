@@ -3,6 +3,7 @@ package com.tool.flashread.core.speedread
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class SpeedReadPlaybackTest {
 
@@ -11,59 +12,67 @@ class SpeedReadPlaybackTest {
     @Test
     fun startsAtFirstChunkOfRequestedParagraph() {
         val playback = SpeedReadPlayback(twoParagraphs, chunkSize = 1)
-        assertEquals(0, playback.startChunkIndex(paragraphIndex = 0))
-        assertEquals(
-            "Yes",
-            playback.chunks[playback.startChunkIndex(paragraphIndex = 1)].displayText,
-        )
+        val first = playback.chunkAt(playback.startPosition(0))
+        val second = playback.chunkAt(playback.startPosition(1))
+        assertEquals("The", first?.displayText)
+        assertEquals("Yes", second?.displayText)
+        assertEquals(1, second?.tokens?.first()?.paragraphIndex)
     }
 
     @Test
     fun startPastLastParagraphClampsToEnd() {
         val playback = SpeedReadPlayback(twoParagraphs, chunkSize = 1)
-        val index = playback.startChunkIndex(paragraphIndex = 99)
-        assertEquals(playback.chunks.lastIndex, index)
+        val position = playback.startPosition(99)
+        assertTrue(playback.isLastChunk(position))
+        assertEquals("did!", playback.chunkAt(position)?.displayText)
     }
 
     @Test
     fun nextChunkAdvancesAndLoopsAtEnd() {
         val playback = SpeedReadPlayback("one two three", chunkSize = 1)
-        assertEquals(1, playback.nextChunkIndex(fromChunkIndex = 0, loop = false))
-        assertEquals(2, playback.nextChunkIndex(fromChunkIndex = 1, loop = false))
-        assertNull(playback.nextChunkIndex(fromChunkIndex = 2, loop = false))
-        assertEquals(0, playback.nextChunkIndex(fromChunkIndex = 2, loop = true))
+        val first = playback.startPosition(0)
+        val second = playback.next(first, loop = false)!!
+        val third = playback.next(second, loop = false)!!
+        assertEquals("two", playback.chunkAt(second)?.displayText)
+        assertEquals("three", playback.chunkAt(third)?.displayText)
+        assertNull(playback.next(third, loop = false))
+        assertEquals("one", playback.chunkAt(playback.next(third, loop = true)!!)?.displayText)
     }
 
     @Test
     fun previousChunkStopsAtStart() {
         val playback = SpeedReadPlayback("one two", chunkSize = 1)
-        assertEquals(0, playback.previousChunkIndex(fromChunkIndex = 0))
-        assertEquals(0, playback.previousChunkIndex(fromChunkIndex = 1))
+        val first = playback.startPosition(0)
+        val second = playback.next(first, loop = false)!!
+        assertEquals("one", playback.chunkAt(playback.previous(first))?.displayText)
+        assertEquals("one", playback.chunkAt(playback.previous(second))?.displayText)
     }
 
     @Test
     fun sentenceJumpsLandOnSentenceBoundaries() {
         val playback = SpeedReadPlayback("The cat sat. The dog ran. Yes!", chunkSize = 1)
+        val tokens = tokenizeBook("The cat sat. The dog ran. Yes!")
         assertEquals(
             listOf("The", "cat", "sat.", "The", "dog", "ran.", "Yes!"),
-            playback.tokens.map { it.text },
+            tokens.map { it.text },
         )
 
-        val secondSentence = playback.nextSentenceChunkIndex(fromChunkIndex = 0)
-        assertEquals("The", playback.chunks[secondSentence].displayText)
-        assertEquals(3, secondSentence)
+        val first = playback.startPosition(0)
+        val secondSentence = playback.nextSentence(first)
+        assertEquals("The", playback.chunkAt(secondSentence)?.displayText)
+        assertEquals(3, secondSentence.tokenIndex)
 
-        val thirdSentence = playback.nextSentenceChunkIndex(fromChunkIndex = secondSentence)
-        assertEquals("Yes!", playback.chunks[thirdSentence].displayText)
+        val thirdSentence = playback.nextSentence(secondSentence)
+        assertEquals("Yes!", playback.chunkAt(thirdSentence)?.displayText)
 
-        val backToSecond = playback.previousSentenceChunkIndex(fromChunkIndex = thirdSentence)
+        val backToSecond = playback.previousSentence(thirdSentence)
         assertEquals(secondSentence, backToSecond)
 
-        val midSecond = secondSentence + 1
-        assertEquals("dog", playback.chunks[midSecond].displayText)
+        val midSecond = playback.next(secondSentence, loop = false)!!
+        assertEquals("dog", playback.chunkAt(midSecond)?.displayText)
         assertEquals(
             secondSentence,
-            playback.previousSentenceChunkIndex(fromChunkIndex = midSecond),
+            playback.previousSentence(midSecond),
         )
     }
 
@@ -72,19 +81,58 @@ class SpeedReadPlaybackTest {
         val playback = SpeedReadPlayback("The cat sat. The dog ran.", chunkSize = 2)
         assertEquals(
             listOf("The cat", "sat. The", "dog ran."),
-            playback.chunks.map { it.displayText },
+            playback.chunkTexts(),
         )
-        val next = playback.nextSentenceChunkIndex(fromChunkIndex = 0)
-        assertEquals("sat. The", playback.chunks[next].displayText)
+        val next = playback.nextSentence(playback.startPosition(0))
+        assertEquals("sat. The", playback.chunkAt(next)?.displayText)
     }
 
     @Test
     fun emptyContentIsSafeToNavigate() {
         val playback = SpeedReadPlayback("   \n\n")
-        assertEquals(0, playback.startChunkIndex(0))
-        assertNull(playback.nextChunkIndex(0, loop = false))
-        assertEquals(0, playback.previousChunkIndex(0))
-        assertEquals(0, playback.nextSentenceChunkIndex(0))
-        assertEquals(0, playback.previousSentenceChunkIndex(0))
+        val position = playback.startPosition(0)
+        assertTrue(playback.isEmpty)
+        assertNull(playback.chunkAt(position))
+        assertNull(playback.next(position, loop = false))
+        assertEquals(position, playback.previous(position))
+        assertEquals(position, playback.nextSentence(position))
+        assertEquals(position, playback.previousSentence(position))
     }
+
+    @Test
+    fun walkingChunksMatchesEagerTokenization() {
+        val content = "The cat sat. The dog ran.\n\nYes it did!"
+        val playback = SpeedReadPlayback(content, chunkSize = 2)
+        val expected = chunkTokens(tokenizeBook(content), chunkSize = 2)
+        val walked = playback.chunks()
+        assertEquals(expected.map { it.displayText }, walked.map { it.displayText })
+        assertEquals(expected.map { it.startTokenIndex }, walked.map { it.startTokenIndex })
+        assertEquals(expected.map { it.paragraphIndex }, walked.map { it.paragraphIndex })
+    }
+
+    @Test
+    fun startPositionAlignsToChunkThatBeginsInRequestedParagraph() {
+        val content = (0..400).joinToString("\n\n") { "Word$it next extra." }
+        val playback = SpeedReadPlayback(content, chunkSize = 2)
+        val aligned = playback.startPosition(1)
+        assertEquals(1, playback.chunkAt(aligned)?.paragraphIndex)
+        assertEquals("next extra.", playback.chunkAt(aligned)?.displayText)
+
+        val later = playback.startPosition(250)
+        assertEquals(250, playback.chunkAt(later)?.paragraphIndex)
+        assertEquals("Word250 next", playback.chunkAt(later)?.displayText)
+    }
+}
+
+private fun SpeedReadPlayback.chunkTexts(): List<String> = chunks().map { it.displayText }
+
+private fun SpeedReadPlayback.chunks(): List<SpeedReadChunk> {
+    if (isEmpty) return emptyList()
+    val chunks = ArrayList<SpeedReadChunk>()
+    var position = startPosition(0)
+    while (true) {
+        chunks.add(chunkAt(position) ?: break)
+        position = next(position, loop = false) ?: break
+    }
+    return chunks
 }
