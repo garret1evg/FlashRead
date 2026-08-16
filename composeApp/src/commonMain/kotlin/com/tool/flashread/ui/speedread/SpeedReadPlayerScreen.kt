@@ -34,7 +34,6 @@ import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -117,22 +116,8 @@ fun SpeedReadPlayerScreen(
         onDispose { viewModel.persistNow() }
     }
 
-    val currentState = viewState
-    if (currentState == null) {
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .windowInsetsPadding(WindowInsets.safeDrawing),
-            contentAlignment = Alignment.Center,
-        ) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
     SpeedReadPlayerPane(
-        state = currentState,
+        state = viewState,
         onClose = {
             viewModel.persistNow()
             onClose()

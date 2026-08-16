@@ -29,6 +29,19 @@ data class SpeedReadPlayerViewState(
 ) {
     val isPlaying: Boolean get() = status == SpeedReadPlayerStatus.Playing
     val isFinished: Boolean get() = status == SpeedReadPlayerStatus.Finished
+
+    companion object {
+        fun placeholder(settings: SpeedReadSettings) = SpeedReadPlayerViewState(
+            status = SpeedReadPlayerStatus.Paused,
+            text = "",
+            position = SpeedReadPosition.Empty,
+            progress = 0f,
+            elapsedMs = 0,
+            remainingMs = 0,
+            settings = settings,
+            isEmpty = true,
+        )
+    }
 }
 
 /**
@@ -37,14 +50,15 @@ data class SpeedReadPlayerViewState(
  */
 class SpeedReadPlayerController(
     private val playback: SpeedReadPlayback,
-    private val totals: SpeedReadSessionTotals,
+    private var totals: SpeedReadSessionTotals,
     initialPosition: SpeedReadPosition,
     initialSettings: SpeedReadSettings,
 ) {
     private var status: SpeedReadPlayerStatus = initialStatus()
     private var position: SpeedReadPosition = initialPosition
     private var settings: SpeedReadSettings = initialSettings.normalized()
-    private var elapsedUnits: Double = playback.elapsedDelayUnits(initialPosition)
+    private var elapsedUnits: Double = 0.0
+    private var elapsedIsAbsolute: Boolean = initialPosition.tokenIndex == 0
 
     var viewState: SpeedReadPlayerViewState = computeViewState()
         private set
@@ -88,8 +102,21 @@ class SpeedReadPlayerController(
         val previous = playback.previous(position)
         position = previous
         elapsedUnits = playback.elapsedDelayUnits(position)
+        elapsedIsAbsolute = true
         if (status == SpeedReadPlayerStatus.Finished) {
             status = SpeedReadPlayerStatus.Paused
+        }
+        publish()
+    }
+
+    fun applySessionMetrics(totals: SpeedReadSessionTotals, elapsedAtInitialPosition: Double) {
+        this.totals = totals
+        if (!elapsedIsAbsolute) {
+            elapsedUnits += elapsedAtInitialPosition
+            elapsedIsAbsolute = true
+        }
+        if (status == SpeedReadPlayerStatus.Finished && totals.delayUnits > 0.0) {
+            elapsedUnits = totals.delayUnits
         }
         publish()
     }
@@ -125,6 +152,7 @@ class SpeedReadPlayerController(
         val next = playback.next(position, settings.loopEnabled)
         if (next != null) {
             elapsedUnits = if (wasLast && next.tokenIndex == 0) {
+                elapsedIsAbsolute = true
                 0.0
             } else {
                 elapsedUnits + playback.delayUnitsAt(position)
@@ -135,7 +163,10 @@ class SpeedReadPlayerController(
             }
         } else if (fromTicker) {
             status = SpeedReadPlayerStatus.Finished
-            elapsedUnits = totals.delayUnits
+            if (totals.delayUnits > 0.0) {
+                elapsedUnits = totals.delayUnits
+                elapsedIsAbsolute = true
+            }
         }
         publish()
     }
@@ -143,6 +174,7 @@ class SpeedReadPlayerController(
     private fun restartInternal() {
         position = playback.startPosition(0)
         elapsedUnits = 0.0
+        elapsedIsAbsolute = true
     }
 
     private fun initialStatus(): SpeedReadPlayerStatus {

@@ -96,6 +96,49 @@ class SpeedReadPlayerControllerTest {
     }
 
     @Test
+    fun applySessionMetricsFillsElapsedWhenStartingMidBook() {
+        val playback = SpeedReadPlayback("one two three four", chunkSize = 1)
+        val second = playback.next(playback.startPosition(0), loop = false)!!
+        val controller = SpeedReadPlayerController(
+            playback = playback,
+            totals = SpeedReadSessionTotals.Empty,
+            initialPosition = second,
+            initialSettings = SpeedReadSettings(wpm = 300, chunkSize = 1),
+        )
+        assertEquals(0L, controller.viewState.elapsedMs)
+        assertEquals(0f, controller.viewState.progress)
+
+        controller.applySessionMetrics(
+            totals = playback.sessionTotals(),
+            elapsedAtInitialPosition = playback.elapsedDelayUnits(second),
+        )
+        assertTrue(controller.viewState.elapsedMs > 0L)
+        assertTrue(controller.viewState.remainingMs > 0L)
+        assertTrue(controller.viewState.progress > 0f)
+    }
+
+    @Test
+    fun applySessionMetricsKeepsForwardProgressFromStart() {
+        val playback = SpeedReadPlayback("one two three", chunkSize = 1)
+        val controller = SpeedReadPlayerController(
+            playback = playback,
+            totals = SpeedReadSessionTotals.Empty,
+            initialPosition = playback.startPosition(0),
+            initialSettings = SpeedReadSettings(wpm = 300, chunkSize = 1),
+        )
+        controller.stepForward()
+        val elapsedAfterStep = controller.viewState.elapsedMs
+        assertTrue(elapsedAfterStep > 0L)
+
+        controller.applySessionMetrics(
+            totals = playback.sessionTotals(),
+            elapsedAtInitialPosition = 0.0,
+        )
+        assertEquals(elapsedAfterStep, controller.viewState.elapsedMs)
+        assertTrue(controller.viewState.remainingMs > 0L)
+    }
+
+    @Test
     fun remainingTimeShrinksAsChunksAdvance() {
         val controller = controller("one two three four")
         val initialRemaining = controller.viewState.remainingMs

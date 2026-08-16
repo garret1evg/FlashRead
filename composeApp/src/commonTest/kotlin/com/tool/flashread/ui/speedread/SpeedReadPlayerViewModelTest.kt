@@ -9,7 +9,6 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,28 +38,28 @@ class SpeedReadPlayerViewModelTest {
             content = "one two three",
             positions = positions,
         )
-        val state = assertNotNull(viewModel.viewState.value)
+        val state = viewModel.viewState.value
         assertEquals("one", state.text)
         assertEquals(SpeedReadPlayerStatus.Paused, state.status)
 
         viewModel.stepForward()
-        assertEquals("two", viewModel.viewState.value?.text)
+        assertEquals("two", viewModel.viewState.value.text)
 
         viewModel.togglePlayPause()
-        assertEquals(SpeedReadPlayerStatus.Playing, viewModel.viewState.value?.status)
+        assertEquals(SpeedReadPlayerStatus.Playing, viewModel.viewState.value.status)
 
         viewModel.onHostStop()
-        assertEquals(SpeedReadPlayerStatus.Paused, viewModel.viewState.value?.status)
+        assertEquals(SpeedReadPlayerStatus.Paused, viewModel.viewState.value.status)
         assertEquals(0, positions["book-1"])
     }
 
     @Test
     fun changingChunkSizeRebuildsTheSession() {
         val viewModel = playerViewModel(content = "one two three four")
-        assertEquals("one", viewModel.viewState.value?.text)
+        assertEquals("one", viewModel.viewState.value.text)
 
         viewModel.updateSettings(SpeedReadSettings(wpm = 300, chunkSize = 3))
-        val rebuilt = assertNotNull(viewModel.viewState.value)
+        val rebuilt = viewModel.viewState.value
         assertEquals("one two three", rebuilt.text)
         assertEquals(3, rebuilt.settings.chunkSize)
         assertEquals(SpeedReadPlayerStatus.Paused, rebuilt.status)
@@ -69,9 +68,16 @@ class SpeedReadPlayerViewModelTest {
     @Test
     fun emptyContentFinishesImmediately() {
         val viewModel = playerViewModel(content = "   ")
-        val state = assertNotNull(viewModel.viewState.value)
+        val state = viewModel.viewState.value
         assertTrue(state.isEmpty)
         assertEquals(SpeedReadPlayerStatus.Finished, state.status)
+    }
+
+    @Test
+    fun remainingClockUsesSessionTotals() {
+        val viewModel = playerViewModel(content = "one two three")
+        assertTrue(viewModel.viewState.value.remainingMs > 0L)
+        assertTrue(viewModel.viewState.value.progress >= 0f)
     }
 
     private fun playerViewModel(

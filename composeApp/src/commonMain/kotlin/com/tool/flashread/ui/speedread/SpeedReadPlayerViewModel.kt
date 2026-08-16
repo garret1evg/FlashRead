@@ -9,6 +9,7 @@ import com.tool.flashread.core.speedread.SpeedReadPlayerController
 import com.tool.flashread.core.speedread.SpeedReadPlayerStatus
 import com.tool.flashread.core.speedread.SpeedReadPlayerViewState
 import com.tool.flashread.core.speedread.SpeedReadPosition
+import com.tool.flashread.core.speedread.SpeedReadSessionTotals
 import com.tool.flashread.core.speedread.SpeedReadSettings
 import com.tool.flashread.data.repository.ReadingSessionRepository
 import com.tool.flashread.data.repository.SpeedReadSettingsRepository
@@ -40,8 +41,8 @@ class SpeedReadPlayerViewModel(
     private var tickerJob: Job? = null
     private var prepareJob: Job? = null
 
-    private val _viewState = MutableStateFlow<SpeedReadPlayerViewState?>(null)
-    val viewState: StateFlow<SpeedReadPlayerViewState?> = _viewState.asStateFlow()
+    private val _viewState = MutableStateFlow(SpeedReadPlayerViewState.placeholder(settings))
+    val viewState: StateFlow<SpeedReadPlayerViewState> = _viewState.asStateFlow()
 
     init {
         prepareSession()
@@ -105,26 +106,28 @@ class SpeedReadPlayerViewModel(
         prepareJob?.cancel()
         stopTicker()
         controller = null
-        _viewState.value = null
         val chunkSize = settings.chunkSize
         val content = book.content
         prepareJob = viewModelScope.launch {
-            val playback = withContext(computationDispatcher) {
-                SpeedReadPlayback(content, chunkSize)
-            }
-            val totals = withContext(computationDispatcher) {
-                playback.sessionTotals()
-            }
-            val start = withContext(computationDispatcher) {
-                restoreStart(playback, chunkSize)
+            val prepared = withContext(computationDispatcher) {
+                val playback = SpeedReadPlayback(content, chunkSize)
+                playback to restoreStart(playback, chunkSize)
             }
             if (!isActive) return@launch
-            controller = SpeedReadPlayerController(
+            val (playback, start) = prepared
+            val session = SpeedReadPlayerController(
                 playback = playback,
-                totals = totals,
+                totals = SpeedReadSessionTotals.Empty,
                 initialPosition = start,
                 initialSettings = settings,
             )
+            controller = session
+            publish()
+            val (totals, elapsedAtStart) = withContext(computationDispatcher) {
+                playback.sessionTotals() to playback.elapsedDelayUnits(start)
+            }
+            if (!isActive || controller !== session) return@launch
+            session.applySessionMetrics(totals, elapsedAtStart)
             publish()
         }
     }
