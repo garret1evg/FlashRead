@@ -397,7 +397,7 @@ private fun EmptyBookState(
         )
         Spacer(Modifier.height(FlashReadDimens.space8))
         Text(
-            text = "Import a .txt file or pick one in Library.",
+            text = "Import a .txt, .fb2, or .epub file or pick one in Library.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
