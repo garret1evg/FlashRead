@@ -54,6 +54,7 @@ import com.tool.flashread.core.speedread.SpeedReadPlayback
 import com.tool.flashread.core.speedread.SpeedReadPosition
 import com.tool.flashread.core.speedread.SpeedReadSettings
 import com.tool.flashread.core.speedread.orpIndex
+import com.tool.flashread.ui.theme.FlashReadTheme
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -339,7 +340,7 @@ private fun PlayerControlButton(
 @Preview
 @Composable
 private fun SpeedReadPlayerScreenPreview() {
-    MaterialTheme {
+    FlashReadTheme {
         SpeedReadPlayerScreen(
             book = Book(
                 id = "preview",

@@ -9,15 +9,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -37,6 +36,9 @@ import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.speedread.SpeedReadDefaults
 import com.tool.flashread.core.speedread.SpeedReadSettings
 import com.tool.flashread.data.repository.SpeedReadSettingsRepository
+import com.tool.flashread.ui.theme.FlashReadDimens
+import com.tool.flashread.ui.theme.FlashReadShapes
+import com.tool.flashread.ui.theme.FlashReadTheme
 import kotlin.math.roundToInt
 
 @Composable
@@ -50,10 +52,14 @@ fun SpeedReadSetupScreen(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(horizontal = FlashReadDimens.screenHorizontalPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Pick a book in Library first.")
+            Text(
+                text = "Pick a book in Library first.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
         }
         return
     }
@@ -69,7 +75,7 @@ fun SpeedReadSetupScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(horizontal = FlashReadDimens.screenHorizontalPadding),
     ) {
         BookPreviewBox(
             title = book.title,
@@ -79,7 +85,7 @@ fun SpeedReadSetupScreen(
                 .weight(1f),
         )
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(FlashReadDimens.space20))
 
         Text(
             text = "${settings.wpm} words per minute",
@@ -92,7 +98,7 @@ fun SpeedReadSetupScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(FlashReadDimens.space8))
 
         Text(
             text = chunkSizeLabel(settings.chunkSize),
@@ -106,7 +112,7 @@ fun SpeedReadSetupScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(FlashReadDimens.space8))
 
         SettingsCheckboxRow(
             label = "Spritz",
@@ -119,7 +125,7 @@ fun SpeedReadSetupScreen(
             onCheckedChange = { updateSettings(settings.copy(loopEnabled = it)) },
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(FlashReadDimens.space16))
 
         Button(
             onClick = {
@@ -129,14 +135,14 @@ fun SpeedReadSetupScreen(
             enabled = book.content.isNotBlank(),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
-            shape = RoundedCornerShape(4.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.onSurface,
-                contentColor = MaterialTheme.colorScheme.surface,
-            ),
+                .heightIn(min = FlashReadDimens.minTouchTarget),
+            shape = FlashReadShapes.button,
         ) {
-            Text("CONTINUE TO SPEED READ")
+            Text(
+                text = "CONTINUE TO SPEED READ",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -153,7 +159,7 @@ private fun BookPreviewBox(
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outline,
-                shape = RoundedCornerShape(4.dp),
+                shape = FlashReadShapes.card,
             ),
     ) {
         Text(
@@ -161,7 +167,7 @@ private fun BookPreviewBox(
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(horizontal = FlashReadDimens.space16, vertical = FlashReadDimens.space12)
                 .verticalScroll(rememberScrollState()),
         )
         Text(
@@ -194,14 +200,15 @@ private fun SettingsCheckboxRow(
                 onValueChange = onCheckedChange,
                 role = Role.Checkbox,
             )
-            .padding(vertical = 4.dp),
+            .heightIn(min = FlashReadDimens.minTouchTarget)
+            .padding(vertical = FlashReadDimens.space4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(
             checked = checked,
             onCheckedChange = null,
         )
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(FlashReadDimens.space8))
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
@@ -227,7 +234,7 @@ private fun chunkSizeLabel(chunkSize: Int): String {
 @Preview
 @Composable
 private fun SpeedReadSetupScreenPreview() {
-    MaterialTheme {
+    FlashReadTheme {
         SpeedReadSetupScreen(
             book = Book(
                 id = "preview",
