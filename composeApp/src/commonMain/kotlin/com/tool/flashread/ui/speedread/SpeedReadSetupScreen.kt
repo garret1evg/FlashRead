@@ -57,7 +57,6 @@ import androidx.compose.ui.unit.sp
 import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.MaterialSourceType
 import com.tool.flashread.core.reading.estimatedRemainingMinutes
-import com.tool.flashread.core.reading.wordCount
 import com.tool.flashread.core.speedread.SpeedReadDefaults
 import com.tool.flashread.core.speedread.SpeedReadSettings
 import com.tool.flashread.data.repository.SpeedReadSettingsRepository
@@ -407,7 +406,7 @@ private fun previewBookContent(content: String): String {
 private fun materialSecondaryLabel(book: Book): String {
     return when (book.sourceType) {
         MaterialSourceType.YouTube -> "YouTube-видео"
-        MaterialSourceType.Book -> formatWordCount(wordCount(book.content))
+        MaterialSourceType.Book -> formatWordCount(book.wordCount)
     }
 }
 

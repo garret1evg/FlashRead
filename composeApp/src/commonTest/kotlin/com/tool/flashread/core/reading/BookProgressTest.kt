@@ -1,10 +1,58 @@
 package com.tool.flashread.core.reading
 
+import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.speedread.SpeedReadDefaults
+import com.tool.flashread.core.speedread.splitBookParagraphs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class BookProgressTest {
+
+    @Test
+    fun wordCountIgnoresExtraWhitespace() {
+        assertEquals(0, wordCount(""))
+        assertEquals(0, wordCount("   \n\t"))
+        assertEquals(2, wordCount("  hello   world  "))
+        assertEquals(3, wordCount("one\ntwo\r\nthree"))
+    }
+
+    @Test
+    fun paragraphCountMatchesSplitBookParagraphs() {
+        val samples = listOf(
+            "",
+            "   \n\n  ",
+            "one paragraph",
+            "one\n\ntwo",
+            "one\r\ntwo\r\n\r\nthree",
+            "  leading  \n\n  trailing  \n",
+        )
+        samples.forEach { content ->
+            assertEquals(
+                splitBookParagraphs(content).size,
+                paragraphCount(content),
+                "paragraphCount mismatch for: $content",
+            )
+        }
+    }
+
+    @Test
+    fun bookProgressPercentUsesParagraphCount() {
+        assertEquals(0, bookProgressPercent(paragraphIndex = 0, paragraphCount = 0))
+        assertEquals(0, bookProgressPercent(paragraphIndex = 0, paragraphCount = 4))
+        assertEquals(50, bookProgressPercent(paragraphIndex = 2, paragraphCount = 4))
+        assertEquals(100, bookProgressPercent(paragraphIndex = 4, paragraphCount = 4))
+    }
+
+    @Test
+    fun withReadingStatsCachesCountsOnBook() {
+        val book = Book(
+            id = "1",
+            title = "Sample",
+            content = "one two three\n\nfour five",
+        ).withReadingStats()
+        assertEquals(5, book.wordCount)
+        assertEquals(2, book.paragraphCount)
+    }
 
     @Test
     fun remainingWordCountStartsAtCurrentParagraph() {

@@ -116,8 +116,8 @@ fun ReaderScreen(
     val visibleParagraphIndex by remember {
         derivedStateOf { listState.firstVisibleItemIndex.coerceAtLeast(0) }
     }
-    val progressPercent = remember(book.content, visibleParagraphIndex) {
-        bookProgressPercent(book.content, visibleParagraphIndex)
+    val progressPercent = remember(paragraphs.size, visibleParagraphIndex) {
+        bookProgressPercent(visibleParagraphIndex, paragraphs.size)
     }
     val palette = remember(settings.theme) { settings.theme.palette() }
     val displayTitle = remember(book.title) { MaterialTitleFormatter.displayTitle(book.title) }

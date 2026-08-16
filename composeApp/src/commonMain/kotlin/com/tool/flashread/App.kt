@@ -63,6 +63,7 @@ import com.tool.flashread.core.model.MaterialSourceType
 import com.tool.flashread.core.model.ReadingPosition
 import com.tool.flashread.core.reading.bookProgressPercent
 import com.tool.flashread.core.reading.remainingWordCount
+import com.tool.flashread.core.reading.withReadingStats
 import com.tool.flashread.data.repository.ReadingSessionRepository
 import com.tool.flashread.data.repository.SpeedReadSettingsRepository
 import com.tool.flashread.navigation.AppRoute
@@ -114,7 +115,7 @@ fun App() {
                 title = importedBook.title,
                 content = importedBook.content,
                 sourceType = MaterialSourceType.Book,
-            )
+            ).withReadingStats()
             val index = books.indexOfFirst { it.id == importedBook.id }
             if (index == -1) {
                 books.add(book)
@@ -133,7 +134,7 @@ fun App() {
                 title = resolvedTitle,
                 content = trimmedUrl,
                 sourceType = MaterialSourceType.YouTube,
-            )
+            ).withReadingStats()
             val index = books.indexOfFirst { it.id == book.id }
             if (index == -1) {
                 books.add(book)
@@ -204,8 +205,8 @@ fun App() {
 
         fun progressFor(book: Book): Int {
             return bookProgressPercent(
-                content = book.content,
                 paragraphIndex = readingSessionRepository.getPosition(book.id).paragraphIndex,
+                paragraphCount = book.paragraphCount,
             )
         }
 

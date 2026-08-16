@@ -5,6 +5,8 @@ data class Book(
     val title: String,
     val content: String,
     val sourceType: MaterialSourceType = MaterialSourceType.Book,
+    val wordCount: Int = 0,
+    val paragraphCount: Int = 0,
 )
 
 enum class MaterialSourceType {

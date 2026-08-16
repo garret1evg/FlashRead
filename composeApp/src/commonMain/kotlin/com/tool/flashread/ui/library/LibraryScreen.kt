@@ -60,7 +60,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.MaterialSourceType
-import com.tool.flashread.core.reading.wordCount
+import com.tool.flashread.core.reading.withReadingStats
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadShapes
 import com.tool.flashread.ui.theme.FlashReadTheme
@@ -120,7 +120,9 @@ fun LibraryScreen(
             ) {
                 items(books, key = { it.id }) { book ->
                     LibraryMaterialCard(
-                        book = book,
+                        title = book.title,
+                        sourceType = book.sourceType,
+                        wordCount = book.wordCount,
                         progressPercent = progressPercent(book),
                         onContinue = { onContinueReading(book.id) },
                         onRename = { bookPendingRename = book },
@@ -249,15 +251,19 @@ private fun LibraryEmptyState(
 
 @Composable
 private fun LibraryMaterialCard(
-    book: Book,
+    title: String,
+    sourceType: MaterialSourceType,
+    wordCount: Int,
     progressPercent: Int,
     onContinue: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val displayTitle = remember(book.title) { MaterialTitleFormatter.displayTitle(book.title) }
-    val secondary = remember(book) { materialSecondaryLabel(book) }
+    val displayTitle = remember(title) { MaterialTitleFormatter.displayTitle(title) }
+    val secondary = remember(sourceType, wordCount) {
+        materialSecondaryLabel(sourceType, wordCount)
+    }
     var menuExpanded by remember { mutableStateOf(false) }
 
     Card(
@@ -277,7 +283,7 @@ private fun LibraryMaterialCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top,
             ) {
-                MaterialTypeIcon(sourceType = book.sourceType)
+                MaterialTypeIcon(sourceType = sourceType)
                 Spacer(Modifier.width(FlashReadDimens.space12))
                 Column(
                     modifier = Modifier
@@ -476,10 +482,13 @@ private fun AddMaterialSheetAction(
     )
 }
 
-private fun materialSecondaryLabel(book: Book): String {
-    return when (book.sourceType) {
+private fun materialSecondaryLabel(
+    sourceType: MaterialSourceType,
+    wordCount: Int,
+): String {
+    return when (sourceType) {
         MaterialSourceType.YouTube -> "YouTube-видео"
-        MaterialSourceType.Book -> formatWordCount(wordCount(book.content))
+        MaterialSourceType.Book -> formatWordCount(wordCount)
     }
 }
 
@@ -635,11 +644,11 @@ private fun previewBooks(): List<Book> = listOf(
         title = "very_long_imported_book_title_that_should_wrap_nicely_12345.txt",
         content = "one two three four five six seven eight nine ten",
         sourceType = MaterialSourceType.Book,
-    ),
+    ).withReadingStats(),
     Book(
         id = "2",
         title = "Speed reading lecture",
         content = "https://youtu.be/dQw4w9wg",
         sourceType = MaterialSourceType.YouTube,
-    ),
+    ).withReadingStats(),
 )
