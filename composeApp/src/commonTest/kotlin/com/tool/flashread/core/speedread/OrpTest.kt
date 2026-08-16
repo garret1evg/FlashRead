@@ -47,4 +47,34 @@ class OrpTest {
         assertNull(orpIndex("hello", spritzEnabled = false))
         assertNull(orpIndex("a", spritzEnabled = false))
     }
+
+    @Test
+    fun partsKeepLongWordPivotAtClassicIndex() {
+        val parts = orpParts("supercalifragilistic")
+        assertEquals(4, parts.pivotIndex)
+        assertEquals("supe", parts.before)
+        assertEquals("r", parts.pivot)
+        assertEquals("califragilistic", parts.after)
+        assertEquals("supercalifragilistic", parts.before + parts.pivot + parts.after)
+    }
+
+    @Test
+    fun partsSplitMultiWordGroupAroundPivot() {
+        val text = "one two three"
+        val parts = orpParts(text)
+        assertEquals(4, parts.pivotIndex)
+        assertEquals("one ", parts.before)
+        assertEquals("t", parts.pivot)
+        assertEquals("wo three", parts.after)
+        assertEquals(text, parts.before + parts.pivot + parts.after)
+    }
+
+    @Test
+    fun partsWithoutSpritzCenterTheWholeText() {
+        val parts = orpParts("hello", spritzEnabled = false)
+        assertNull(parts.pivotIndex)
+        assertEquals("", parts.before)
+        assertEquals("", parts.pivot)
+        assertEquals("hello", parts.after)
+    }
 }

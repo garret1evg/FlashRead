@@ -1,8 +1,10 @@
 package com.tool.flashread.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -18,6 +20,18 @@ object FlashReadColors {
     val outline = Color(0xFFE5E0EA)
     val primaryContainer = Color(0xFFEDE7F6)
     val onPrimaryContainer = Color(0xFF3D2A6E)
+}
+
+object FlashReadDarkColors {
+    val background = Color(0xFF121016)
+    val surface = Color(0xFF1C1B20)
+    val primary = Color(0xFFC4B0F0)
+    val onPrimary = Color(0xFF2D1B54)
+    val textPrimary = Color(0xFFE6E1E5)
+    val textSecondary = Color(0xFFCAC4D0)
+    val outline = Color(0xFF49454F)
+    val primaryContainer = Color(0xFF4A3A73)
+    val onPrimaryContainer = Color(0xFFEDE7F6)
 }
 
 object FlashReadDimens {
@@ -44,7 +58,7 @@ object FlashReadShapes {
     )
 }
 
-private val FlashReadColorScheme = lightColorScheme(
+private val FlashReadLightColorScheme = lightColorScheme(
     primary = FlashReadColors.primary,
     onPrimary = FlashReadColors.onPrimary,
     primaryContainer = FlashReadColors.primaryContainer,
@@ -63,6 +77,25 @@ private val FlashReadColorScheme = lightColorScheme(
     outlineVariant = FlashReadColors.outline,
 )
 
+private val FlashReadDarkColorScheme = darkColorScheme(
+    primary = FlashReadDarkColors.primary,
+    onPrimary = FlashReadDarkColors.onPrimary,
+    primaryContainer = FlashReadDarkColors.primaryContainer,
+    onPrimaryContainer = FlashReadDarkColors.onPrimaryContainer,
+    secondary = FlashReadDarkColors.primary,
+    onSecondary = FlashReadDarkColors.onPrimary,
+    secondaryContainer = FlashReadDarkColors.primaryContainer,
+    onSecondaryContainer = FlashReadDarkColors.onPrimaryContainer,
+    background = FlashReadDarkColors.background,
+    onBackground = FlashReadDarkColors.textPrimary,
+    surface = FlashReadDarkColors.surface,
+    onSurface = FlashReadDarkColors.textPrimary,
+    surfaceVariant = FlashReadDarkColors.primaryContainer,
+    onSurfaceVariant = FlashReadDarkColors.textSecondary,
+    outline = FlashReadDarkColors.outline,
+    outlineVariant = FlashReadDarkColors.outline,
+)
+
 private val FlashReadMaterialShapes = Shapes(
     extraSmall = FlashReadShapes.button,
     small = FlashReadShapes.button,
@@ -72,9 +105,12 @@ private val FlashReadMaterialShapes = Shapes(
 )
 
 @Composable
-fun FlashReadTheme(content: @Composable () -> Unit) {
+fun FlashReadTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) {
     MaterialTheme(
-        colorScheme = FlashReadColorScheme,
+        colorScheme = if (darkTheme) FlashReadDarkColorScheme else FlashReadLightColorScheme,
         shapes = FlashReadMaterialShapes,
         content = content,
     )

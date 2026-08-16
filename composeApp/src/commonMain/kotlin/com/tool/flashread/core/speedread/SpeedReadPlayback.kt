@@ -123,6 +123,34 @@ class SpeedReadPlayback(
         return nextChunkStart(position) == null
     }
 
+    fun sessionTotals(): SpeedReadSessionTotals {
+        if (isEmpty) return SpeedReadSessionTotals.Empty
+        var tokenCount = 0
+        var delayUnits = 0.0
+        source.forEachToken { start, end, _ ->
+            delayUnits += SpeedReadTiming.pauseMultiplier(source.text.substring(start, end))
+            tokenCount++
+            true
+        }
+        return SpeedReadSessionTotals(tokenCount = tokenCount, delayUnits = delayUnits)
+    }
+
+    fun delayUnitsAt(position: SpeedReadPosition): Double {
+        val chunk = chunkAt(position) ?: return 0.0
+        return chunk.tokens.sumOf { it.pauseMultiplier }
+    }
+
+    fun elapsedDelayUnits(position: SpeedReadPosition): Double {
+        if (isEmpty || position.tokenIndex <= 0) return 0.0
+        var units = 0.0
+        var current = startPosition(0)
+        while (current.tokenIndex < position.tokenIndex) {
+            units += delayUnitsAt(current)
+            current = next(current, loop = false) ?: break
+        }
+        return units
+    }
+
     private fun nextChunkStart(position: SpeedReadPosition): SpeedReadPosition? {
         var current = source.tokenAt(position.offset, position.paragraphIndex) ?: return null
         repeat(size) {

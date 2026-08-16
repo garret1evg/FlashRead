@@ -61,7 +61,6 @@ import com.tool.flashread.core.speedread.SpeedReadDefaults
 import com.tool.flashread.core.speedread.SpeedReadSettings
 import com.tool.flashread.data.repository.SpeedReadSettingsRepository
 import com.tool.flashread.ui.library.MaterialTitleFormatter
-import com.tool.flashread.ui.theme.FlashReadColors
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadShapes
 import com.tool.flashread.ui.theme.FlashReadTheme
@@ -252,8 +251,8 @@ fun SpeedReadSetupScreen(
                 .semantics { contentDescription = "Начать скорочтение" },
             shape = FlashReadShapes.button,
             colors = ButtonDefaults.buttonColors(
-                containerColor = FlashReadColors.primary,
-                contentColor = FlashReadColors.onPrimary,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
             ),
         ) {
             Text(

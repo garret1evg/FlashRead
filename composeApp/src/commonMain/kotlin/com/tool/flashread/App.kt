@@ -5,7 +5,6 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -284,7 +283,13 @@ fun App() {
             NavDisplay(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .then(
+                        if (currentRoute is AppRoute.SpeedReadPlayer) {
+                            Modifier
+                        } else {
+                            Modifier.padding(innerPadding)
+                        },
+                    ),
                 backStack = backStack,
                 onBack = { backStack.popBack() },
                 transitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
@@ -346,34 +351,30 @@ fun App() {
                             book = currentBook,
                             onMissingBook = ::redirectToLibraryIfNoBook,
                         ) { book ->
-                            val settings = remember { speedReadSettingsRepository.load() }
+                            var playerSettings by remember(book.id) {
+                                mutableStateOf(speedReadSettingsRepository.load())
+                            }
                             val startParagraphIndex = remember(book.id) {
                                 readingSessionRepository.getPosition(book.id).paragraphIndex
                             }
-                            Box(Modifier.fillMaxSize()) {
-                                SpeedReadPlayerScreen(
-                                    book = book,
-                                    settings = settings,
-                                    startParagraphIndex = startParagraphIndex,
-                                    onParagraphIndexChanged = { paragraphIndex ->
-                                        readingSessionRepository.savePosition(
-                                            ReadingPosition(
-                                                bookId = book.id,
-                                                paragraphIndex = paragraphIndex,
-                                            ),
-                                        )
-                                    },
-                                )
-                                IconButton(
-                                    onClick = { backStack.popBack() },
-                                    modifier = Modifier.align(Alignment.TopStart),
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Back",
+                            SpeedReadPlayerScreen(
+                                book = book,
+                                settings = playerSettings,
+                                startParagraphIndex = startParagraphIndex,
+                                onParagraphIndexChanged = { paragraphIndex ->
+                                    readingSessionRepository.savePosition(
+                                        ReadingPosition(
+                                            bookId = book.id,
+                                            paragraphIndex = paragraphIndex,
+                                        ),
                                     )
-                                }
-                            }
+                                },
+                                onSettingsChange = { updated ->
+                                    playerSettings = updated
+                                    speedReadSettingsRepository.save(updated)
+                                },
+                                onClose = { backStack.popBack() },
+                            )
                         }
                     }
                     entry<AppRoute.Settings> {

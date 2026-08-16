@@ -122,6 +122,19 @@ class SpeedReadPlaybackTest {
         assertEquals(250, playback.chunkAt(later)?.paragraphIndex)
         assertEquals("Word250 next", playback.chunkAt(later)?.displayText)
     }
+
+    @Test
+    fun sessionTotalsCountTokensAndPunctuationDelayUnits() {
+        val playback = SpeedReadPlayback("Wait. Go", chunkSize = 1)
+        val totals = playback.sessionTotals()
+        assertEquals(2, totals.tokenCount)
+        assertEquals(2.2 + 1.0, totals.delayUnits, absoluteTolerance = 1e-9)
+        val first = playback.startPosition(0)
+        val second = playback.next(first, loop = false)!!
+        assertEquals(0.0, playback.elapsedDelayUnits(first), absoluteTolerance = 1e-9)
+        assertEquals(2.2, playback.elapsedDelayUnits(second), absoluteTolerance = 1e-9)
+        assertEquals(2.2, playback.delayUnitsAt(first), absoluteTolerance = 1e-9)
+    }
 }
 
 private fun SpeedReadPlayback.chunkTexts(): List<String> = chunks().map { it.displayText }
