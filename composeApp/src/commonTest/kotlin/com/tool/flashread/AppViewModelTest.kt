@@ -4,6 +4,7 @@ import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.MaterialSourceType
 import com.tool.flashread.platform.ImportedBook
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -84,5 +85,37 @@ class AppViewModelTest {
         viewModel.deleteBook("keep")
         assertTrue(viewModel.uiState.value.books.isEmpty())
         assertNull(viewModel.uiState.value.selectedBookId)
+    }
+
+    @Test
+    fun upsertImportedBookPersistsCoverAndDeletesItWithTheBook() = runTest {
+        val stored = mutableListOf<Book>()
+        val covers = mutableMapOf<String, ByteArray>()
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(stored),
+            readingSessionRepository = memoryReadingSessionRepository(),
+            coverRepository = memoryCoverRepository(covers),
+        )
+        val cover = byteArrayOf(1, 2, 3, 4)
+
+        viewModel.upsertImportedBook(
+            ImportedBook(
+                id = "book-1",
+                title = "novel.epub",
+                content = "chapter",
+                coverBytes = cover,
+                coverMimeType = "image/jpeg",
+            ),
+        )
+
+        val book = viewModel.uiState.value.books.single()
+        assertEquals(1, covers.size)
+        assertEquals(covers.keys.single(), book.coverFileName)
+        assertContentEquals(cover, covers.values.single())
+        assertEquals(book.coverFileName, stored.single().coverFileName)
+
+        viewModel.deleteBook("book-1")
+        assertTrue(covers.isEmpty())
+        assertTrue(stored.isEmpty())
     }
 }

@@ -122,6 +122,7 @@ fun LibraryScreen(
                     LibraryMaterialCard(
                         title = book.title,
                         sourceType = book.sourceType,
+                        coverFileName = book.coverFileName,
                         wordCount = book.wordCount,
                         progressPercent = progressPercent(book),
                         onContinue = { onContinueReading(book.id) },
@@ -253,6 +254,7 @@ private fun LibraryEmptyState(
 private fun LibraryMaterialCard(
     title: String,
     sourceType: MaterialSourceType,
+    coverFileName: String?,
     wordCount: Int,
     progressPercent: Int,
     onContinue: () -> Unit,
@@ -283,7 +285,7 @@ private fun LibraryMaterialCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top,
             ) {
-                MaterialTypeIcon(sourceType = sourceType)
+                MaterialArtwork(sourceType = sourceType, coverFileName = coverFileName)
                 Spacer(Modifier.width(FlashReadDimens.space12))
                 Column(
                     modifier = Modifier
@@ -380,34 +382,6 @@ private fun LibraryMaterialCard(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun MaterialTypeIcon(
-    sourceType: MaterialSourceType,
-    modifier: Modifier = Modifier,
-) {
-    val icon: ImageVector = when (sourceType) {
-        MaterialSourceType.Book -> Icons.AutoMirrored.Filled.MenuBook
-        MaterialSourceType.YouTube -> Icons.Filled.PlayCircle
-    }
-    Box(
-        modifier = modifier
-            .size(FlashReadDimens.typeIconSize)
-            .clip(RoundedCornerShape(FlashReadDimens.space12))
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = when (sourceType) {
-                MaterialSourceType.Book -> "Книга"
-                MaterialSourceType.YouTube -> "YouTube-видео"
-            },
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp),
-        )
     }
 }
 

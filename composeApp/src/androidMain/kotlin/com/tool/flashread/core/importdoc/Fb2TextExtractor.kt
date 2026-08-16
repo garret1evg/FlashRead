@@ -4,6 +4,7 @@ import org.kxml2.io.KXmlParser
 import org.xmlpull.v1.XmlPullParser
 import java.io.BufferedInputStream
 import java.io.InputStream
+import java.util.Base64
 import java.util.zip.ZipInputStream
 
 /**
@@ -61,6 +62,10 @@ private fun parseFictionBook(parser: XmlPullParser): ExtractedBook {
     val paragraphs = ArrayList<String>()
     var descriptionDepth = 0
     var bodyDepth = 0
+    var inCoverpage = false
+    var coverHref: String? = null
+    var coverBytes: ByteArray? = null
+    var coverMimeType: String? = null
 
     var event = parser.eventType
     while (event != XmlPullParser.END_DOCUMENT) {
@@ -69,7 +74,19 @@ private fun parseFictionBook(parser: XmlPullParser): ExtractedBook {
                 when (parser.localName()) {
                     "description" -> descriptionDepth++
                     "body" -> bodyDepth++
-                    "binary" -> parser.skipElement()
+                    "coverpage" -> if (descriptionDepth > 0) inCoverpage = true
+                    "image" -> {
+                        if (inCoverpage && coverHref == null) {
+                            coverHref = parser.coverHref()
+                        }
+                    }
+                    "binary" -> {
+                        val extracted = parser.readCoverBinary(coverHref)
+                        if (extracted != null && (extracted.preferred || coverBytes == null)) {
+                            coverBytes = extracted.bytes
+                            coverMimeType = extracted.mimeType
+                        }
+                    }
                     "book-title" -> {
                         if (descriptionDepth > 0 && title == null) {
                             title = parser.readInnerText().ifBlank { null }
@@ -98,6 +115,7 @@ private fun parseFictionBook(parser: XmlPullParser): ExtractedBook {
                 when (parser.localName()) {
                     "description" -> if (descriptionDepth > 0) descriptionDepth--
                     "body" -> if (bodyDepth > 0) bodyDepth--
+                    "coverpage" -> inCoverpage = false
                 }
             }
         }
@@ -106,7 +124,59 @@ private fun parseFictionBook(parser: XmlPullParser): ExtractedBook {
     return ExtractedBook(
         title = title,
         content = paragraphs.joinToString("\n"),
+        coverBytes = coverBytes,
+        coverMimeType = coverMimeType,
     )
+}
+
+private data class CoverBinary(
+    val bytes: ByteArray,
+    val mimeType: String,
+    val preferred: Boolean,
+)
+
+private fun XmlPullParser.readCoverBinary(coverHref: String?): CoverBinary? {
+    val id = attr("id")?.trim().orEmpty().removePrefix("#")
+    val contentType = attr("content-type")?.trim().orEmpty()
+    val wanted = coverHref?.removePrefix("#").orEmpty()
+    val isImage = contentType.startsWith("image/", ignoreCase = true)
+    val preferred = wanted.isNotEmpty() && id.equals(wanted, ignoreCase = true)
+    val fallback = isImage && id.contains("cover", ignoreCase = true)
+    if (!isImage || (!preferred && !fallback)) {
+        skipElement()
+        return null
+    }
+    val decoded = decodeBase64(readInnerText()) ?: return null
+    if (decoded.isEmpty() || decoded.size > BookCoverLimits.MAX_SOURCE_BYTES) return null
+    return CoverBinary(bytes = decoded, mimeType = contentType, preferred = preferred)
+}
+
+private fun XmlPullParser.coverHref(): String? {
+    val raw = attr("href")?.trim().orEmpty()
+    return raw.removePrefix("#").trim().ifEmpty { null }
+}
+
+private fun decodeBase64(value: String): ByteArray? {
+    val cleaned = value.filterNot { it.isWhitespace() }
+    if (cleaned.isEmpty()) return null
+    val maxChars = BookCoverLimits.MAX_SOURCE_BYTES * 4 / 3 + 4
+    if (cleaned.length > maxChars) return null
+    return try {
+        Base64.getDecoder().decode(cleaned)
+    } catch (_: IllegalArgumentException) {
+        null
+    }
+}
+
+private fun XmlPullParser.attr(name: String): String? {
+    val wanted = name.lowercase()
+    for (index in 0 until attributeCount) {
+        val raw = getAttributeName(index) ?: continue
+        if (raw.substringAfter(':').lowercase() == wanted) {
+            return getAttributeValue(index)
+        }
+    }
+    return null
 }
 
 private fun XmlPullParser.localName(): String =

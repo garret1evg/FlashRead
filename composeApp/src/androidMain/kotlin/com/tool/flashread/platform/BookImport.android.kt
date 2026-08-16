@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import com.tool.flashread.core.importdoc.BookTextExtractor
+import com.tool.flashread.core.importdoc.CoverThumbnail
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -73,10 +74,13 @@ private fun importSelectedBook(
         fileName = displayName,
         mimeType = contentResolver.getType(uri),
     )
+    val cover = extracted.coverBytes?.let { CoverThumbnail.prepare(it, extracted.coverMimeType) }
     return ImportedBook(
         id = uri.toString(),
         title = extracted.title?.trim()?.takeIf { it.isNotEmpty() } ?: displayName ?: "Imported Book",
         content = extracted.content,
+        coverBytes = cover?.first,
+        coverMimeType = cover?.second,
     )
 }
 

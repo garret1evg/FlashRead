@@ -15,6 +15,7 @@ actual object BookStorage {
     private const val KEY_TYPE_PREFIX = "book_type_"
     private const val KEY_WORD_COUNT_PREFIX = "book_word_count_"
     private const val KEY_PARAGRAPH_COUNT_PREFIX = "book_paragraph_count_"
+    private const val KEY_COVER_PREFIX = "book_cover_"
 
     actual fun saveBooks(books: List<Book>) {
         val preferences = prefs()
@@ -27,6 +28,7 @@ actual object BookStorage {
                 remove(KEY_TYPE_PREFIX + storageKey)
                 remove(KEY_WORD_COUNT_PREFIX + storageKey)
                 remove(KEY_PARAGRAPH_COUNT_PREFIX + storageKey)
+                remove(KEY_COVER_PREFIX + storageKey)
             }
 
             val newKeys = books.map { storageKey(it.id) }.toSet()
@@ -39,6 +41,10 @@ actual object BookStorage {
                 putString(KEY_TYPE_PREFIX + key, book.sourceType.name)
                 putInt(KEY_WORD_COUNT_PREFIX + key, book.wordCount)
                 putInt(KEY_PARAGRAPH_COUNT_PREFIX + key, book.paragraphCount)
+                val coverFileName = book.coverFileName?.trim().orEmpty()
+                if (coverFileName.isNotEmpty()) {
+                    putString(KEY_COVER_PREFIX + key, coverFileName)
+                }
             }
         }
     }
@@ -74,6 +80,9 @@ actual object BookStorage {
                 } else {
                     countParagraphs(content)
                 },
+                coverFileName = preferences.getString(KEY_COVER_PREFIX + key, null)
+                    ?.trim()
+                    ?.ifEmpty { null },
             )
         }
         if (migrated) {

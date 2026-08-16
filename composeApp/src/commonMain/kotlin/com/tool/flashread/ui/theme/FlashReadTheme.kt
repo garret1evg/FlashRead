@@ -47,6 +47,8 @@ object FlashReadDimens {
     val buttonRadius = 14.dp
     val minTouchTarget = 48.dp
     val typeIconSize = 40.dp
+    val coverThumbWidth = 48.dp
+    val coverThumbHeight = 72.dp
 }
 
 object FlashReadShapes {

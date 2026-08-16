@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
@@ -20,6 +21,7 @@ class EpubTextExtractorTest {
         val book = EpubTextExtractor.extract(epub.inputStream())
         assertEquals("War and Peace", book.title)
         assertEquals("Hello world.", book.content)
+        assertNull(book.coverBytes)
     }
 
     @Test
@@ -73,6 +75,8 @@ class EpubTextExtractorTest {
         )
         val book = EpubTextExtractor.extract(epub.inputStream())
         assertEquals("Only this.", book.content)
+        assertContentEquals(byteArrayOf(0xFF.toByte(), 0xD8.toByte()), book.coverBytes)
+        assertEquals("image/jpeg", book.coverMimeType)
     }
 
     @Test
@@ -169,6 +173,61 @@ class EpubTextExtractorTest {
             EpubTextExtractor.extract(zip.inputStream())
         }
         assertEquals("EPUB package document was not found: OEBPS/missing.opf", error.message)
+    }
+
+    @Test
+    fun extractsCoverFromEpub3CoverImageProperty() {
+        val cover = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47)
+        val epub = zipBytes(
+            "mimetype" to "application/epub+zip".toByteArray(),
+            "META-INF/container.xml" to containerXml("OEBPS/content.opf").toByteArray(),
+            "OEBPS/Images/front.png" to cover,
+            "OEBPS/chapter1.xhtml" to xhtml("<p>Story.</p>").toByteArray(),
+            "OEBPS/content.opf" to opf(
+                title = "Illustrated",
+                manifest = """
+                    <item id="img1" href="Images/front.png" media-type="image/png" properties="cover-image"/>
+                    <item id="c1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+                """.trimIndent(),
+                spine = """<itemref idref="c1"/>""",
+            ).toByteArray(),
+        )
+        val book = EpubTextExtractor.extract(epub.inputStream())
+        assertEquals("Story.", book.content)
+        assertContentEquals(cover, book.coverBytes)
+        assertEquals("image/png", book.coverMimeType)
+    }
+
+    @Test
+    fun extractsCoverFromEpub2MetaName() {
+        val cover = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xD9.toByte())
+        val epub = zipBytes(
+            "mimetype" to "application/epub+zip".toByteArray(),
+            "META-INF/container.xml" to containerXml("OEBPS/content.opf").toByteArray(),
+            "OEBPS/cover.jpg" to cover,
+            "OEBPS/chapter1.xhtml" to xhtml("<p>Story.</p>").toByteArray(),
+            "OEBPS/content.opf" to """<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+    <dc:identifier id="bookid">id</dc:identifier>
+    <dc:title>Classic</dc:title>
+    <dc:language>en</dc:language>
+    <meta name="cover" content="cover-id"/>
+  </metadata>
+  <manifest>
+    <item id="cover-id" href="cover.jpg" media-type="image/jpeg"/>
+    <item id="c1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine>
+    <itemref idref="c1"/>
+  </spine>
+</package>
+""".toByteArray(),
+        )
+        val book = EpubTextExtractor.extract(epub.inputStream())
+        assertEquals("Classic", book.title)
+        assertContentEquals(cover, book.coverBytes)
+        assertEquals("image/jpeg", book.coverMimeType)
     }
 }
 

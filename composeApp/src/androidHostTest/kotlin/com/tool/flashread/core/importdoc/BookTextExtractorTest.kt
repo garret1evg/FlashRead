@@ -17,6 +17,7 @@ class BookTextExtractorTest {
         val book = BookTextExtractor.extract(file, fileName = "notes.txt", mimeType = "text/plain")
         assertNull(book.title)
         assertEquals("Hello world.\nSecond line.", book.content)
+        assertNull(book.coverBytes)
     }
 
     @Test
@@ -49,6 +50,7 @@ class BookTextExtractorTest {
         )
         assertEquals("War and Peace", book.title)
         assertEquals("Hello world.", book.content)
+        assertNull(book.coverBytes)
     }
 
     @Test
@@ -93,6 +95,7 @@ class BookTextExtractorTest {
         )
         assertEquals("War and Peace", book.title)
         assertEquals("Hello world.", book.content)
+        assertNull(book.coverBytes)
     }
 
     @Test

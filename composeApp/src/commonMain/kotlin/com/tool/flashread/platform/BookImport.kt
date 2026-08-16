@@ -6,6 +6,8 @@ data class ImportedBook(
     val id: String,
     val title: String,
     val content: String,
+    val coverBytes: ByteArray? = null,
+    val coverMimeType: String? = null,
 )
 
 @Composable

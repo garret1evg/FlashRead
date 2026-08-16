@@ -4,9 +4,11 @@ import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.reading.ReaderTextSettings
 import com.tool.flashread.core.speedread.SpeedReadSettings
 import com.tool.flashread.data.repository.BookRepository
+import com.tool.flashread.data.repository.CoverRepository
 import com.tool.flashread.data.repository.ReaderTextSettingsRepository
 import com.tool.flashread.data.repository.ReadingSessionRepository
 import com.tool.flashread.data.repository.SpeedReadSettingsRepository
+import com.tool.flashread.platform.coverFileNameFor
 
 internal fun memoryBookRepository(
     books: MutableList<Book> = mutableListOf(),
@@ -44,5 +46,18 @@ internal fun memoryReaderTextSettingsRepository(
     return ReaderTextSettingsRepository(
         onLoad = { settings[0] },
         onSave = { settings[0] = it },
+    )
+}
+
+internal fun memoryCoverRepository(
+    files: MutableMap<String, ByteArray> = mutableMapOf(),
+): CoverRepository {
+    return CoverRepository(
+        onSave = { bookId, bytes, mimeType ->
+            val name = coverFileNameFor(bookId, mimeType)
+            files[name] = bytes
+            name
+        },
+        onDelete = { files.remove(it) },
     )
 }

@@ -6,6 +6,7 @@ import java.nio.charset.Charset
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
@@ -21,6 +22,7 @@ class Fb2TextExtractorTest {
         val book = Fb2TextExtractor.extract(fb2.byteInputStream())
         assertEquals("War and Peace", book.title)
         assertEquals("Hello world.", book.content)
+        assertNull(book.coverBytes)
     }
 
     @Test
@@ -97,6 +99,8 @@ class Fb2TextExtractorTest {
         val book = Fb2TextExtractor.extract(fb2.byteInputStream())
         assertEquals("Visible title", book.title)
         assertEquals("Only body text.\nImage here.", book.content)
+        assertContentEquals(java.util.Base64.getDecoder().decode("YmFzZTY0c2hvdWxkbm90YXBwZWFy"), book.coverBytes)
+        assertEquals("image/jpeg", book.coverMimeType)
     }
 
     @Test
@@ -201,6 +205,33 @@ class Fb2TextExtractorTest {
             """.trimIndent(),
         )
         assertEquals("Hello world", Fb2TextExtractor.extract(fb2.byteInputStream()).content)
+    }
+
+    @Test
+    fun extractsCoverFromCoverpageBinary() {
+        val cover = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xD9.toByte())
+        val encoded = java.util.Base64.getEncoder().encodeToString(cover)
+        val fb2 = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+              <description>
+                <title-info>
+                  <book-title>Covered</book-title>
+                  <coverpage>
+                    <image l:href="#front.png"/>
+                  </coverpage>
+                </title-info>
+              </description>
+              <body><p>Story.</p></body>
+              <binary id="other.jpg" content-type="image/jpeg">aaaa</binary>
+              <binary id="front.png" content-type="image/png">$encoded</binary>
+            </FictionBook>
+        """.trimIndent()
+        val book = Fb2TextExtractor.extract(fb2.byteInputStream())
+        assertEquals("Covered", book.title)
+        assertEquals("Story.", book.content)
+        assertContentEquals(cover, book.coverBytes)
+        assertEquals("image/png", book.coverMimeType)
     }
 }
 

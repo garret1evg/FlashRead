@@ -27,9 +27,12 @@ object EpubTextExtractor {
             val text = HtmlToPlainText.convert(decodeText(bytes))
             if (text.isNotEmpty()) chapters.add(text)
         }
+        val coverBytes = opf.coverPath?.let { findEntry(entries, it) }
         return ExtractedBook(
             title = opf.title,
             content = chapters.joinToString("\n"),
+            coverBytes = coverBytes,
+            coverMimeType = coverBytes?.let { opf.coverMediaType },
         )
     }
 }
@@ -43,18 +46,31 @@ private val HTML_MEDIA_TYPES = setOf(
 )
 private val HTML_EXTENSIONS = setOf("xhtml", "html", "htm")
 private val SKIP_ENTRY_EXTENSIONS = setOf(
-    "jpg", "jpeg", "png", "gif", "webp", "bmp", "tif", "tiff", "svg",
+    "tif", "tiff", "svg",
     "css", "otf", "ttf", "woff", "woff2", "eot",
     "mp3", "mp4", "m4a", "ogg", "opus", "wav",
     "ncx", "smil", "xpgt",
 )
+private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "gif", "webp", "bmp")
+private val IMAGE_MEDIA_TYPES = setOf(
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "image/bmp",
+)
+private const val MAX_IMAGE_BYTES = BookCoverLimits.MAX_SOURCE_BYTES
 
 private data class OpfPackage(
     val title: String?,
     val chapterPaths: List<String>,
+    val coverPath: String?,
+    val coverMediaType: String?,
 )
 
 private data class ManifestItem(
+    val id: String,
     val href: String,
     val mediaType: String,
     val properties: String,
@@ -74,7 +90,12 @@ private fun readZipEntries(input: InputStream): Map<String, ByteArray> {
                 zip.closeEntry()
                 continue
             }
-            entries[name] = zip.readBytes()
+            val bytes = if (isImageEntry(name)) {
+                readLimited(zip, MAX_IMAGE_BYTES)
+            } else {
+                zip.readBytes()
+            }
+            if (bytes != null) entries[name] = bytes
             zip.closeEntry()
         }
     }
@@ -89,6 +110,30 @@ private fun shouldSkipEntry(name: String): Boolean {
     if (fileName.startsWith(".")) return true
     val extension = fileName.substringAfterLast('.', missingDelimiterValue = "")
     return extension in SKIP_ENTRY_EXTENSIONS
+}
+
+private fun isImageEntry(name: String): Boolean {
+    val extension = name.substringAfterLast('.', missingDelimiterValue = "").lowercase()
+    return extension in IMAGE_EXTENSIONS
+}
+
+private fun readLimited(input: InputStream, maxBytes: Int): ByteArray? {
+    val out = ByteArrayOutputStream(minOf(maxBytes, 64 * 1024))
+    val buffer = ByteArray(8 * 1024)
+    var total = 0
+    while (true) {
+        val read = input.read(buffer)
+        if (read <= 0) break
+        total += read
+        if (total > maxBytes) {
+            while (input.read(buffer) > 0) {
+                // Drain the rest of this zip entry so the archive stays readable.
+            }
+            return null
+        }
+        out.write(buffer, 0, read)
+    }
+    return out.toByteArray()
 }
 
 private fun findEntry(entries: Map<String, ByteArray>, path: String): ByteArray? {
@@ -128,6 +173,9 @@ private fun parseOpf(bytes: ByteArray, opfPath: String): OpfPackage {
     var inMetadata = false
     var inManifest = false
     var inSpine = false
+    var inGuide = false
+    var coverMetaId: String? = null
+    var coverGuideHref: String? = null
     val manifest = LinkedHashMap<String, ManifestItem>()
     val spine = ArrayList<Pair<String, Boolean>>()
 
@@ -138,9 +186,18 @@ private fun parseOpf(bytes: ByteArray, opfPath: String): OpfPackage {
                 "metadata" -> inMetadata = true
                 "manifest" -> inManifest = true
                 "spine" -> inSpine = true
+                "guide" -> inGuide = true
                 "title" -> {
                     if (inMetadata && title == null) {
                         title = parser.readInnerText().ifBlank { null }
+                    }
+                }
+                "meta" -> {
+                    if (inMetadata && coverMetaId == null) {
+                        val name = parser.attr("name")?.trim().orEmpty()
+                        if (name.equals("cover", ignoreCase = true)) {
+                            coverMetaId = parser.attr("content")?.trim()?.ifEmpty { null }
+                        }
                     }
                 }
                 "item" -> {
@@ -149,6 +206,7 @@ private fun parseOpf(bytes: ByteArray, opfPath: String): OpfPackage {
                         val href = parser.attr("href")?.trim().orEmpty()
                         if (id.isNotEmpty() && href.isNotEmpty()) {
                             manifest[id] = ManifestItem(
+                                id = id,
                                 href = href,
                                 mediaType = parser.attr("media-type").orEmpty(),
                                 properties = parser.attr("properties").orEmpty(),
@@ -165,11 +223,20 @@ private fun parseOpf(bytes: ByteArray, opfPath: String): OpfPackage {
                         }
                     }
                 }
+                "reference" -> {
+                    if (inGuide && coverGuideHref == null) {
+                        val type = parser.attr("type")?.trim().orEmpty()
+                        if (type.equals("cover", ignoreCase = true)) {
+                            coverGuideHref = parser.attr("href")?.trim()?.ifEmpty { null }
+                        }
+                    }
+                }
             }
             XmlPullParser.END_TAG -> when (parser.localName()) {
                 "metadata" -> inMetadata = false
                 "manifest" -> inManifest = false
                 "spine" -> inSpine = false
+                "guide" -> inGuide = false
             }
         }
         event = parser.next()
@@ -189,7 +256,83 @@ private fun parseOpf(bytes: ByteArray, opfPath: String): OpfPackage {
         if (!isHtmlChapter(item)) continue
         chapterPaths.add(resolveHref(opfPath, item.href))
     }
-    return OpfPackage(title = title, chapterPaths = chapterPaths)
+    val cover = findCoverItem(manifest.values, byId, byIdLower, coverMetaId, coverGuideHref)
+    return OpfPackage(
+        title = title,
+        chapterPaths = chapterPaths,
+        coverPath = cover?.let { resolveHref(opfPath, it.href) },
+        coverMediaType = cover?.normalizedMediaType(),
+    )
+}
+
+private fun findCoverItem(
+    items: Collection<ManifestItem>,
+    byId: Map<String, ManifestItem>,
+    byIdLower: Map<String, ManifestItem>,
+    coverMetaId: String?,
+    coverGuideHref: String?,
+): ManifestItem? {
+    items.firstOrNull { it.hasProperty("cover-image") && it.isRasterImage() }?.let { return it }
+
+    if (!coverMetaId.isNullOrBlank()) {
+        val named = byId[coverMetaId] ?: byIdLower[coverMetaId.lowercase()]
+        if (named != null && named.isRasterImage()) return named
+    }
+
+    if (!coverGuideHref.isNullOrBlank()) {
+        val guidePath = coverGuideHref.substringBefore('#').substringBefore('?')
+        items.firstOrNull { item ->
+            item.isRasterImage() && item.href.substringBefore('#').substringBefore('?')
+                .equals(guidePath, ignoreCase = true)
+        }?.let { return it }
+        val guideName = guidePath.substringAfterLast('/')
+        items.firstOrNull { item ->
+            item.isRasterImage() &&
+                item.href.substringBefore('#').substringBefore('?').substringAfterLast('/')
+                    .equals(guideName, ignoreCase = true)
+        }?.let { return it }
+    }
+
+    return items.firstOrNull { item ->
+        item.isRasterImage() && (
+            item.id.contains("cover", ignoreCase = true) ||
+                item.href.substringAfterLast('/').contains("cover", ignoreCase = true)
+            )
+    }
+}
+
+private fun ManifestItem.hasProperty(name: String): Boolean {
+    return properties.splitToSequence(' ', '\t', '\n', '\r')
+        .map { it.trim().lowercase() }
+        .any { it == name }
+}
+
+private fun ManifestItem.isRasterImage(): Boolean {
+    val media = mediaType.substringBefore(';').trim().lowercase()
+    if (media in IMAGE_MEDIA_TYPES) return true
+    if (media.isNotEmpty()) return false
+    val extension = href.substringBefore('#').substringBefore('?')
+        .substringAfterLast('.', missingDelimiterValue = "")
+        .lowercase()
+    return extension in IMAGE_EXTENSIONS
+}
+
+private fun ManifestItem.normalizedMediaType(): String {
+    val media = mediaType.substringBefore(';').trim().lowercase()
+    if (media in IMAGE_MEDIA_TYPES) {
+        return if (media == "image/jpg") "image/jpeg" else media
+    }
+    return when (
+        href.substringBefore('#').substringBefore('?')
+            .substringAfterLast('.', missingDelimiterValue = "")
+            .lowercase()
+    ) {
+        "png" -> "image/png"
+        "gif" -> "image/gif"
+        "webp" -> "image/webp"
+        "bmp" -> "image/bmp"
+        else -> "image/jpeg"
+    }
 }
 
 private fun isHtmlChapter(item: ManifestItem): Boolean {

@@ -3,7 +3,6 @@ package com.tool.flashread.ui.speedread
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -13,15 +12,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -29,7 +23,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -42,8 +35,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -58,6 +49,7 @@ import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.MaterialSourceType
 import com.tool.flashread.core.speedread.SpeedReadDefaults
 import com.tool.flashread.core.speedread.SpeedReadSettings
+import com.tool.flashread.ui.library.MaterialArtwork
 import com.tool.flashread.ui.library.MaterialTitleFormatter
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadShapes
@@ -264,7 +256,7 @@ private fun MaterialSummaryCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                MaterialTypeIcon(sourceType = book.sourceType)
+                MaterialArtwork(sourceType = book.sourceType, coverFileName = book.coverFileName)
                 Spacer(Modifier.width(FlashReadDimens.space12))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -295,34 +287,6 @@ private fun MaterialSummaryCard(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun MaterialTypeIcon(
-    sourceType: MaterialSourceType,
-    modifier: Modifier = Modifier,
-) {
-    val icon: ImageVector = when (sourceType) {
-        MaterialSourceType.Book -> Icons.AutoMirrored.Filled.MenuBook
-        MaterialSourceType.YouTube -> Icons.Filled.PlayCircle
-    }
-    Box(
-        modifier = modifier
-            .size(FlashReadDimens.typeIconSize)
-            .clip(RoundedCornerShape(FlashReadDimens.space12))
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = when (sourceType) {
-                MaterialSourceType.Book -> "Книга"
-                MaterialSourceType.YouTube -> "YouTube-видео"
-            },
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp),
-        )
     }
 }
 
