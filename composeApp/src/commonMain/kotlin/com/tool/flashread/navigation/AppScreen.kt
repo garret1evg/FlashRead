@@ -1,17 +1,16 @@
 package com.tool.flashread.navigation
 
 enum class AppScreen(val title: String, val route: AppRoute) {
+    Home("Home", AppRoute.Home),
     Library("Library", AppRoute.Library),
-    Reader("Reader", AppRoute.Reader),
-    SpeedRead("SpeedRead", AppRoute.SpeedRead),
     Settings("Settings", AppRoute.Settings);
 
     companion object {
-        fun fromRoute(route: AppRoute): AppScreen = when (route) {
+        fun fromRoute(route: AppRoute): AppScreen? = when (route) {
+            AppRoute.Home -> Home
             AppRoute.Library -> Library
-            AppRoute.Reader -> Reader
-            AppRoute.SpeedRead, AppRoute.SpeedReadPlayer -> SpeedRead
             AppRoute.Settings -> Settings
+            AppRoute.Reader, AppRoute.SpeedRead, AppRoute.SpeedReadPlayer -> null
         }
     }
 }
