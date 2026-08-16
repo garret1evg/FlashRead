@@ -51,10 +51,14 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.ReadingPosition
+import com.tool.flashread.core.speedread.splitBookParagraphs
 import com.tool.flashread.data.repository.ReadingSessionRepository
+import com.tool.flashread.data.repository.SpeedReadSettingsRepository
 import com.tool.flashread.navigation.AppRoute
 import com.tool.flashread.navigation.AppScreen
 import com.tool.flashread.platform.BookStorage
+import com.tool.flashread.ui.speedread.SpeedReadPlayerScreen
+import com.tool.flashread.ui.speedread.SpeedReadSetupScreen
 import com.tool.flashread.platform.ImportedBook
 import com.tool.flashread.platform.rememberBookImportLauncher
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -67,6 +71,7 @@ import kotlinx.coroutines.launch
 fun App() {
     MaterialTheme {
         val readingSessionRepository = remember { ReadingSessionRepository() }
+        val speedReadSettingsRepository = remember { SpeedReadSettingsRepository() }
         val books = remember {
             mutableStateListOf<Book>().apply {
                 addAll(BookStorage.loadBooks())
@@ -180,14 +185,42 @@ fun App() {
                         )
                     }
                     entry<AppRoute.SpeedRead> {
-                        SpeedReadScreen(
-                            onBackToReader = {
-                                if (backStack.size > 1) backStack.removeLast()
-                                if (backStack.lastOrNull() != AppRoute.Reader) {
-                                    pushIfNeeded(backStack, AppRoute.Reader)
-                                }
-                            },
+                        SpeedReadSetupScreen(
+                            book = currentBook,
+                            settingsRepository = speedReadSettingsRepository,
+                            onContinue = { pushIfNeeded(backStack, AppRoute.SpeedReadPlayer) },
                         )
+                    }
+                    entry<AppRoute.SpeedReadPlayer> {
+                        val book = currentBook
+                        if (book == null) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text("Pick a book in Library first.")
+                            }
+                        } else {
+                            val settings = remember { speedReadSettingsRepository.load() }
+                            val startParagraphIndex = remember(book.id) {
+                                readingSessionRepository.getPosition(book.id).paragraphIndex
+                            }
+                            SpeedReadPlayerScreen(
+                                book = book,
+                                settings = settings,
+                                startParagraphIndex = startParagraphIndex,
+                                onParagraphIndexChanged = { paragraphIndex ->
+                                    readingSessionRepository.savePosition(
+                                        ReadingPosition(
+                                            bookId = book.id,
+                                            paragraphIndex = paragraphIndex,
+                                        ),
+                                    )
+                                },
+                            )
+                        }
                     }
                     entry<AppRoute.Settings> {
                         SettingsScreen()
@@ -264,7 +297,7 @@ private fun LibraryScreen(
             modifier = Modifier.fillMaxSize(),
         ) {
             items(books, key = { it.id }) { book ->
-                val paragraphs = remember(book.content) { splitIntoParagraphs(book.content) }
+                val paragraphs = remember(book.content) { splitBookParagraphs(book.content) }
                 val position = readingSessionRepository.getPosition(book.id).paragraphIndex
                 val progress = if (paragraphs.isEmpty()) 0 else ((position * 100) / paragraphs.size).coerceIn(0, 100)
                 val dismissState = rememberSwipeToDismissBoxState(
@@ -335,7 +368,7 @@ private fun ReaderScreen(
         return
     }
 
-    val paragraphs = remember(book.content) { splitIntoParagraphs(book.content) }
+    val paragraphs = remember(book.content) { splitBookParagraphs(book.content) }
     val initialPosition = remember(book.id) { readingSessionRepository.getPosition(book.id).paragraphIndex }
     val listState = rememberLazyListState(
         initialFirstVisibleItemIndex = initialPosition.coerceIn(0, paragraphs.lastIndex.coerceAtLeast(0)),
@@ -386,23 +419,6 @@ private fun ReaderScreen(
 }
 
 @Composable
-private fun SpeedReadScreen(
-    modifier: Modifier = Modifier,
-    onBackToReader: () -> Unit,
-) {
-    Column(
-        modifier = modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text("SpeedRead")
-        Button(onClick = onBackToReader) {
-            Text("Back to Reader")
-        }
-    }
-}
-
-@Composable
 private fun SettingsScreen(
     modifier: Modifier = Modifier,
 ) {
@@ -413,12 +429,4 @@ private fun SettingsScreen(
     ) {
         Text("Settings")
     }
-}
-
-private fun splitIntoParagraphs(content: String): List<String> {
-    return content
-        .replace("\r\n", "\n")
-        .split("\n")
-        .map { it.trim() }
-        .filter { it.isNotBlank() }
 }

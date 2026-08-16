@@ -6,5 +6,6 @@ sealed interface AppRoute : NavKey {
     data object Library : AppRoute
     data object Reader : AppRoute
     data object SpeedRead : AppRoute
+    data object SpeedReadPlayer : AppRoute
     data object Settings : AppRoute
 }

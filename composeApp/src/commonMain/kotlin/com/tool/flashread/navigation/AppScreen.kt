@@ -10,7 +10,7 @@ enum class AppScreen(val title: String, val route: AppRoute) {
         fun fromRoute(route: AppRoute): AppScreen = when (route) {
             AppRoute.Library -> Library
             AppRoute.Reader -> Reader
-            AppRoute.SpeedRead -> SpeedRead
+            AppRoute.SpeedRead, AppRoute.SpeedReadPlayer -> SpeedRead
             AppRoute.Settings -> Settings
         }
     }

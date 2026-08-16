@@ -8,10 +8,13 @@ xcuserdata
 !src/**/build/
 local.properties
 .idea
+.vscode
 .DS_Store
 captures
 .externalNativeBuild
 .cxx
+.cursorignore
+.cursorindexingignore
 *.xcodeproj/*
 !*.xcodeproj/project.pbxproj
 !*.xcodeproj/xcshareddata/
