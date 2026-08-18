@@ -67,6 +67,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
@@ -98,6 +99,7 @@ private data class ReaderPalette(
     val outline: Color,
     val progressTrack: Color,
     val wordHighlight: Color,
+    val wordHighlightText: Color,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -234,6 +236,7 @@ fun ReaderScreen(
                         style = readerBodyStyle(settings, palette.onBackground),
                         textAlign = settings.alignment.toTextAlign(),
                         highlightColor = palette.wordHighlight,
+                        highlightTextColor = palette.wordHighlightText,
                         onWordSelected = viewModel::selectWord,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -439,13 +442,14 @@ private fun HighlightedParagraph(
     style: TextStyle,
     textAlign: TextAlign,
     highlightColor: Color,
+    highlightTextColor: Color,
     onWordSelected: (paragraphIndex: Int, localCharOffset: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
-    val annotatedText = remember(text, startWord, paragraphIndex, highlightColor) {
-        buildHighlightedText(text, paragraphIndex, startWord, highlightColor)
+    val annotatedText = remember(text, startWord, paragraphIndex, highlightColor, highlightTextColor) {
+        buildHighlightedText(text, paragraphIndex, startWord, highlightColor, highlightTextColor)
     }
 
     Text(
@@ -469,6 +473,7 @@ private fun buildHighlightedText(
     paragraphIndex: Int,
     startWord: ReaderStartWord?,
     highlightColor: Color,
+    highlightTextColor: Color,
 ): AnnotatedString {
     if (startWord == null || startWord.paragraphIndex != paragraphIndex) {
         return AnnotatedString(text)
@@ -477,7 +482,13 @@ private fun buildHighlightedText(
     val end = startWord.localEnd.coerceIn(start, text.length)
     return buildAnnotatedString {
         append(text.substring(0, start))
-        withStyle(SpanStyle(background = highlightColor)) {
+        withStyle(
+            SpanStyle(
+                background = highlightColor,
+                color = highlightTextColor,
+                fontWeight = FontWeight.SemiBold,
+            ),
+        ) {
             append(text.substring(start, end))
         }
         append(text.substring(end))
@@ -537,21 +548,24 @@ private fun ReaderTheme.palette(): ReaderPalette = when (this) {
         onBackground = FlashReadColors.textPrimary,
         outline = FlashReadColors.outline,
         progressTrack = FlashReadColors.primaryContainer,
-        wordHighlight = FlashReadColors.primaryContainer,
+        wordHighlight = FlashReadColors.primary,
+        wordHighlightText = FlashReadColors.onPrimary,
     )
     ReaderTheme.Sepia -> ReaderPalette(
         background = Color(0xFFF4ECD8),
         onBackground = Color(0xFF5C4B32),
         outline = Color(0xFFE6D9BF),
         progressTrack = Color(0xFFE8DCC4),
-        wordHighlight = Color(0xFFD4C4A8),
+        wordHighlight = Color(0xFF8B5A12),
+        wordHighlightText = Color(0xFFFFF8E7),
     )
     ReaderTheme.Dark -> ReaderPalette(
         background = Color(0xFF121212),
         onBackground = Color(0xFFE8E6E3),
         outline = Color(0xFF3A3A3A),
         progressTrack = Color(0xFF2C2C2C),
-        wordHighlight = Color(0xFF4A3A73),
+        wordHighlight = Color(0xFFC4B0F0),
+        wordHighlightText = Color(0xFF2D1B54),
     )
 }
 
