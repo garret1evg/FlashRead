@@ -23,7 +23,9 @@ class SpeedReadSetupViewModel(
     private val settingsRepository: SpeedReadSettingsRepository = SpeedReadSettingsRepository(),
     private val readingSessionRepository: ReadingSessionRepository = ReadingSessionRepository(),
 ) : ViewModel() {
-    private val startParagraphIndex = readingSessionRepository.getPosition(book.id).paragraphIndex
+    private val startPosition = readingSessionRepository.getPosition(book.id)
+    private val startParagraphIndex = startPosition.paragraphIndex
+    private val startWordOffset = startPosition.wordOffset
     private var cachedChunkSize: Int? = null
     private var cachedRemainingDelayUnits: Double = 0.0
 
@@ -56,9 +58,12 @@ class SpeedReadSetupViewModel(
     private fun remainingDelayUnits(chunkSize: Int): Double {
         if (cachedChunkSize != chunkSize) {
             val playback = SpeedReadPlayback(book.content, chunkSize)
-            cachedRemainingDelayUnits = playback.remainingDelayUnits(
-                playback.startPosition(startParagraphIndex),
-            )
+            val startPlaybackPosition = if (startWordOffset >= 0) {
+                playback.positionAtOffset(startWordOffset)
+            } else {
+                playback.startPosition(startParagraphIndex)
+            }
+            cachedRemainingDelayUnits = playback.remainingDelayUnits(startPlaybackPosition)
             cachedChunkSize = chunkSize
         }
         return cachedRemainingDelayUnits

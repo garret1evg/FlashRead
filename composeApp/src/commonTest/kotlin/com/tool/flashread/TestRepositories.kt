@@ -1,6 +1,7 @@
 package com.tool.flashread
 
 import com.tool.flashread.core.model.Book
+import com.tool.flashread.core.model.ReadingPosition
 import com.tool.flashread.core.reading.ReaderTextSettings
 import com.tool.flashread.core.speedread.SpeedReadSettings
 import com.tool.flashread.data.repository.BookRepository
@@ -24,10 +25,20 @@ internal fun memoryBookRepository(
 
 internal fun memoryReadingSessionRepository(
     positions: MutableMap<String, Int> = mutableMapOf(),
+    wordOffsets: MutableMap<String, Int> = mutableMapOf(),
 ): ReadingSessionRepository {
     return ReadingSessionRepository(
-        onLoad = { positions[it] ?: 0 },
-        onSave = { bookId, paragraphIndex -> positions[bookId] = paragraphIndex },
+        onLoad = { bookId ->
+            ReadingPosition(
+                bookId = bookId,
+                paragraphIndex = positions[bookId] ?: 0,
+                wordOffset = wordOffsets[bookId] ?: ReadingPosition.UNSET,
+            )
+        },
+        onSave = { position ->
+            positions[position.bookId] = position.paragraphIndex
+            wordOffsets[position.bookId] = position.wordOffset
+        },
     )
 }
 

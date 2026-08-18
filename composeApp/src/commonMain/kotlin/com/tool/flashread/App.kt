@@ -231,6 +231,7 @@ fun App() {
                                 book = book,
                                 onBack = { backStack.popBack() },
                                 onOpenSpeedRead = { backStack.pushIfNeeded(AppRoute.SpeedRead) },
+                                isActiveRoute = currentRoute is AppRoute.Reader,
                             )
                         }
                     }

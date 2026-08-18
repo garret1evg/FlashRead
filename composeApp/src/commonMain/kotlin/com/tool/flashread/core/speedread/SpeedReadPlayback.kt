@@ -47,6 +47,30 @@ class SpeedReadPlayback(
         return found ?: lastChunk
     }
 
+    /**
+     * Returns a position starting at the word containing [contentOffset].
+     * If the offset falls in whitespace, returns the next word.
+     * Does NOT align back to chunk boundary: the first flash starts exactly
+     * at the selected word.
+     */
+    fun positionAtOffset(contentOffset: Int): SpeedReadPosition {
+        if (isEmpty) return SpeedReadPosition.Empty
+        var tokenIndex = 0
+        var lastPosition = SpeedReadPosition.Empty
+        source.forEachToken { start, end, paragraph ->
+            lastPosition = SpeedReadPosition(tokenIndex, start, paragraph)
+            if (contentOffset in start until end) {
+                return@forEachToken false
+            }
+            if (start > contentOffset) {
+                return@forEachToken false
+            }
+            tokenIndex++
+            true
+        }
+        return lastPosition
+    }
+
     fun chunkAt(position: SpeedReadPosition): SpeedReadChunk? {
         var current = source.tokenAt(position.offset, position.paragraphIndex) ?: return null
         val tokens = ArrayList<SpeedReadToken>(size)

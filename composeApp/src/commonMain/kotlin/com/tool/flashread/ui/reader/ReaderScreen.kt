@@ -1,6 +1,7 @@
 package com.tool.flashread.ui.reader
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
@@ -58,11 +59,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -90,6 +97,7 @@ private data class ReaderPalette(
     val onBackground: Color,
     val outline: Color,
     val progressTrack: Color,
+    val wordHighlight: Color,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,6 +107,7 @@ fun ReaderScreen(
     onBack: () -> Unit,
     onOpenSpeedRead: () -> Unit,
     modifier: Modifier = Modifier,
+    isActiveRoute: Boolean = true,
     viewModel: ReaderViewModel = viewModel(key = book.id) { ReaderViewModel(book) },
 ) {
     val paragraphs = viewModel.paragraphs
@@ -106,6 +115,8 @@ fun ReaderScreen(
         initialFirstVisibleItemIndex = viewModel.initialParagraphIndex,
     )
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val startWord by viewModel.startWord.collectAsStateWithLifecycle()
+    val scrollToParagraph by viewModel.scrollToParagraph.collectAsStateWithLifecycle()
     var showTextSettings by remember { mutableStateOf(false) }
     val visibleParagraphIndex by remember {
         derivedStateOf { listState.firstVisibleItemIndex.coerceAtLeast(0) }
@@ -115,6 +126,20 @@ fun ReaderScreen(
     }
     val palette = remember(settings.theme) { settings.theme.palette() }
     val displayTitle = remember(book.title) { MaterialTitleFormatter.displayTitle(book.title) }
+
+    LaunchedEffect(isActiveRoute) {
+        if (isActiveRoute) {
+            viewModel.refreshPosition()
+        }
+    }
+
+    LaunchedEffect(scrollToParagraph) {
+        val targetParagraph = scrollToParagraph
+        if (targetParagraph != null) {
+            listState.animateScrollToItem(targetParagraph)
+            viewModel.onScrollHandled()
+        }
+    }
 
     LaunchedEffect(book.id, listState) {
         snapshotFlow { listState.firstVisibleItemIndex }
@@ -201,11 +226,15 @@ fun ReaderScreen(
                     vertical = FlashReadDimens.space16,
                 ),
             ) {
-                items(paragraphs) { paragraph ->
-                    Text(
+                itemsIndexed(paragraphs) { paragraphIndex, paragraph ->
+                    HighlightedParagraph(
                         text = paragraph,
+                        paragraphIndex = paragraphIndex,
+                        startWord = startWord,
                         style = readerBodyStyle(settings, palette.onBackground),
                         textAlign = settings.alignment.toTextAlign(),
+                        highlightColor = palette.wordHighlight,
+                        onWordSelected = viewModel::selectWord,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = FlashReadDimens.space16),
@@ -403,6 +432,59 @@ private fun ReaderTextSettingsSheet(
 }
 
 @Composable
+private fun HighlightedParagraph(
+    text: String,
+    paragraphIndex: Int,
+    startWord: ReaderStartWord?,
+    style: TextStyle,
+    textAlign: TextAlign,
+    highlightColor: Color,
+    onWordSelected: (paragraphIndex: Int, localCharOffset: Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+
+    val annotatedText = remember(text, startWord, paragraphIndex, highlightColor) {
+        buildHighlightedText(text, paragraphIndex, startWord, highlightColor)
+    }
+
+    Text(
+        text = annotatedText,
+        style = style,
+        textAlign = textAlign,
+        onTextLayout = { textLayoutResult = it },
+        modifier = modifier.pointerInput(paragraphIndex) {
+            detectTapGestures { offset ->
+                textLayoutResult?.let { layoutResult ->
+                    val charOffset = layoutResult.getOffsetForPosition(offset)
+                    onWordSelected(paragraphIndex, charOffset)
+                }
+            }
+        },
+    )
+}
+
+private fun buildHighlightedText(
+    text: String,
+    paragraphIndex: Int,
+    startWord: ReaderStartWord?,
+    highlightColor: Color,
+): AnnotatedString {
+    if (startWord == null || startWord.paragraphIndex != paragraphIndex) {
+        return AnnotatedString(text)
+    }
+    val start = startWord.localStart.coerceIn(0, text.length)
+    val end = startWord.localEnd.coerceIn(start, text.length)
+    return buildAnnotatedString {
+        append(text.substring(0, start))
+        withStyle(SpanStyle(background = highlightColor)) {
+            append(text.substring(start, end))
+        }
+        append(text.substring(end))
+    }
+}
+
+@Composable
 private fun SettingsSlider(
     title: String,
     valueLabel: String,
@@ -455,18 +537,21 @@ private fun ReaderTheme.palette(): ReaderPalette = when (this) {
         onBackground = FlashReadColors.textPrimary,
         outline = FlashReadColors.outline,
         progressTrack = FlashReadColors.primaryContainer,
+        wordHighlight = FlashReadColors.primaryContainer,
     )
     ReaderTheme.Sepia -> ReaderPalette(
         background = Color(0xFFF4ECD8),
         onBackground = Color(0xFF5C4B32),
         outline = Color(0xFFE6D9BF),
         progressTrack = Color(0xFFE8DCC4),
+        wordHighlight = Color(0xFFD4C4A8),
     )
     ReaderTheme.Dark -> ReaderPalette(
         background = Color(0xFF121212),
         onBackground = Color(0xFFE8E6E3),
         outline = Color(0xFF3A3A3A),
         progressTrack = Color(0xFF2C2C2C),
+        wordHighlight = Color(0xFF4A3A73),
     )
 }
 

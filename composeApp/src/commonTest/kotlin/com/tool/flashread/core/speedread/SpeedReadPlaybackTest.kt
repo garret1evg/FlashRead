@@ -137,6 +137,68 @@ class SpeedReadPlaybackTest {
         assertEquals(3.2, playback.remainingDelayUnits(first), absoluteTolerance = 1e-9)
         assertEquals(1.0, playback.remainingDelayUnits(second), absoluteTolerance = 1e-9)
     }
+
+    @Test
+    fun positionAtOffsetStartsAtExactWord() {
+        val content = "The cat sat."
+        val playback = SpeedReadPlayback(content, chunkSize = 2)
+        val catOffset = content.indexOf("cat")
+        val position = playback.positionAtOffset(catOffset)
+        assertEquals(1, position.tokenIndex)
+        assertEquals("cat sat.", playback.chunkAt(position)?.displayText)
+    }
+
+    @Test
+    fun positionAtOffsetDoesNotAlignToChunkBoundary() {
+        val content = "one two three four five"
+        val playback = SpeedReadPlayback(content, chunkSize = 2)
+        assertEquals(listOf("one two", "three four", "five"), playback.chunkTexts())
+
+        val threeOffset = content.indexOf("three")
+        val position = playback.positionAtOffset(threeOffset)
+        assertEquals(2, position.tokenIndex)
+        assertEquals("three four", playback.chunkAt(position)?.displayText)
+
+        val fourOffset = content.indexOf("four")
+        val fourPos = playback.positionAtOffset(fourOffset)
+        assertEquals(3, fourPos.tokenIndex)
+        assertEquals("four five", playback.chunkAt(fourPos)?.displayText)
+    }
+
+    @Test
+    fun positionAtOffsetInWhitespaceSelectsNextWord() {
+        val content = "Hello world"
+        val playback = SpeedReadPlayback(content, chunkSize = 1)
+        val spaceOffset = 5
+        val position = playback.positionAtOffset(spaceOffset)
+        assertEquals(1, position.tokenIndex)
+        assertEquals("world", playback.chunkAt(position)?.displayText)
+    }
+
+    @Test
+    fun positionAtOffsetWithMultipleParagraphs() {
+        val content = "First line.\n\nSecond line here"
+        val playback = SpeedReadPlayback(content, chunkSize = 1)
+        val secondOffset = content.indexOf("Second")
+        val position = playback.positionAtOffset(secondOffset)
+        assertEquals(1, position.paragraphIndex)
+        assertEquals("Second", playback.chunkAt(position)?.displayText)
+    }
+
+    @Test
+    fun positionAtOffsetPastEndReturnsLastWord() {
+        val content = "Hello world"
+        val playback = SpeedReadPlayback(content, chunkSize = 1)
+        val position = playback.positionAtOffset(100)
+        assertEquals("world", playback.chunkAt(position)?.displayText)
+    }
+
+    @Test
+    fun positionAtOffsetOnEmptyContentReturnsEmpty() {
+        val playback = SpeedReadPlayback("   \n\n", chunkSize = 1)
+        val position = playback.positionAtOffset(0)
+        assertEquals(SpeedReadPosition.Empty, position)
+    }
 }
 
 private fun SpeedReadPlayback.chunkTexts(): List<String> = chunks().map { it.displayText }

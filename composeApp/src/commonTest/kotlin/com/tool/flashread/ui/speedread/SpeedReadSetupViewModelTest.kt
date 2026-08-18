@@ -69,6 +69,39 @@ class SpeedReadSetupViewModelTest {
         )
     }
 
+    @Test
+    fun remainingMinutesStartsAtWordOffsetWhenSet() {
+        val content = List(600) { "word" }.joinToString(" ")
+        val settings = SpeedReadSettings(wpm = 300, chunkSize = 1)
+        val wordOffset = 300 * 5 // 300 words in, each word is 5 chars ("word ")
+        val viewModel = SpeedReadSetupViewModel(
+            book = Book(id = "book-1", title = "Sample", content = content),
+            settingsRepository = memorySpeedReadSettingsRepository(arrayOf(settings)),
+            readingSessionRepository = memoryReadingSessionRepository(
+                positions = mutableMapOf("book-1" to 0),
+                wordOffsets = mutableMapOf("book-1" to wordOffset),
+            ),
+        )
+
+        assertEquals(
+            expectedRemainingMinutesFromOffset(content, wordOffset, settings),
+            viewModel.uiState.value.remainingMinutes,
+        )
+    }
+
+    private fun expectedRemainingMinutesFromOffset(
+        content: String,
+        wordOffset: Int,
+        settings: SpeedReadSettings,
+    ): Int {
+        val playback = SpeedReadPlayback(content, settings.chunkSize)
+        val remainingMs = delayUnitsToMs(
+            playback.remainingDelayUnits(playback.positionAtOffset(wordOffset)),
+            settings.wpm,
+        )
+        return remainingMsToMinutes(remainingMs)
+    }
+
     private fun expectedRemainingMinutes(
         content: String,
         paragraphIndex: Int,

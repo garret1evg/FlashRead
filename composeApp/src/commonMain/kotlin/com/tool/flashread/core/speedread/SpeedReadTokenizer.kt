@@ -1,6 +1,115 @@
 package com.tool.flashread.core.speedread
 
 /**
+ * Locates a word in book content, providing both the global content offset
+ * and the local range within the displayed (trimmed) paragraph text.
+ */
+data class WordLocation(
+    /** Character offset in book.content where the word starts. */
+    val contentOffset: Int,
+    /** Paragraph index (matching [splitBookParagraphs] index). */
+    val paragraphIndex: Int,
+    /** Start index within the trimmed paragraph text. */
+    val localStart: Int,
+    /** End index (exclusive) within the trimmed paragraph text. */
+    val localEnd: Int,
+)
+
+/**
+ * Returns the first word in the specified paragraph, or null if the paragraph
+ * doesn't exist or has no words.
+ */
+fun firstWordInParagraph(content: String, paragraphIndex: Int): WordLocation? {
+    val source = SpeedReadSource(content)
+    var current = source.first() ?: return null
+    while (current.paragraphIndex < paragraphIndex) {
+        current = source.next(current) ?: return null
+    }
+    if (current.paragraphIndex != paragraphIndex) return null
+    return wordLocationFromRef(source, current)
+}
+
+/**
+ * Returns the word at the given local offset within a paragraph's displayed
+ * (trimmed) text. If the offset is in whitespace, returns the nearest word
+ * (next word preferred, previous if at end).
+ */
+fun wordAtParagraphOffset(content: String, paragraphIndex: Int, localCharOffset: Int): WordLocation? {
+    val source = SpeedReadSource(content)
+    var current = source.first() ?: return null
+    while (current.paragraphIndex < paragraphIndex) {
+        current = source.next(current) ?: return null
+    }
+    if (current.paragraphIndex != paragraphIndex) return null
+
+    val paragraphContentStart = findParagraphContentStart(source.text, current.start)
+    val targetOffset = paragraphContentStart + localCharOffset
+
+    var firstInParagraph = current
+    var lastInParagraph = current
+    var bestMatch: SpeedReadTokenRef? = null
+
+    while (current.paragraphIndex == paragraphIndex) {
+        lastInParagraph = current
+        if (targetOffset in current.start until current.end) {
+            bestMatch = current
+            break
+        }
+        if (bestMatch == null && current.start >= targetOffset) {
+            bestMatch = current
+        }
+        current = source.next(current) ?: break
+    }
+
+    val result = bestMatch ?: lastInParagraph
+    return wordLocationFromRef(source, result)
+}
+
+/**
+ * Returns the word at the given content offset (for rendering a saved position).
+ * If the offset is in whitespace, returns the next word (or null if past end).
+ */
+fun wordHighlightAtContentOffset(content: String, wordOffset: Int): WordLocation? {
+    if (wordOffset < 0 || wordOffset >= content.length) return null
+    val source = SpeedReadSource(content)
+    var current = source.first() ?: return null
+    var lastSeen = current
+
+    while (true) {
+        if (wordOffset in current.start until current.end) {
+            return wordLocationFromRef(source, current)
+        }
+        if (current.start > wordOffset) {
+            return wordLocationFromRef(source, current)
+        }
+        lastSeen = current
+        current = source.next(current) ?: break
+    }
+    return wordLocationFromRef(source, lastSeen)
+}
+
+private fun wordLocationFromRef(source: SpeedReadSource, ref: SpeedReadTokenRef): WordLocation {
+    val paragraphContentStart = findParagraphContentStart(source.text, ref.start)
+    return WordLocation(
+        contentOffset = ref.start,
+        paragraphIndex = ref.paragraphIndex,
+        localStart = ref.start - paragraphContentStart,
+        localEnd = ref.end - paragraphContentStart,
+    )
+}
+
+private fun findParagraphContentStart(text: String, offsetInParagraph: Int): Int {
+    var lineStart = offsetInParagraph
+    while (lineStart > 0 && text[lineStart - 1] != '\n') {
+        lineStart--
+    }
+    while (lineStart < text.length && text[lineStart].isWhitespace() && text[lineStart] != '\n') {
+        lineStart++
+    }
+    return lineStart
+}
+
+/**
  * Splits book content the same way the Reader does, so SpeedRead paragraph
  * indices line up with [com.tool.flashread.core.model.ReadingPosition].
  */

@@ -30,11 +30,15 @@ class SpeedReadPlayerViewModel(
     private val settingsRepository: SpeedReadSettingsRepository = SpeedReadSettingsRepository(),
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
-    private val startParagraphIndex = readingSessionRepository.getPosition(book.id).paragraphIndex
+    private val startPosition = readingSessionRepository.getPosition(book.id)
+    private val startParagraphIndex = startPosition.paragraphIndex
+    private val startWordOffset = startPosition.wordOffset
     private var savedTokenIndex = -1
     private var savedOffset = 0
     private var savedParagraph = startParagraphIndex
+    private var savedWordOffset = startWordOffset
     private var lastSavedParagraph = startParagraphIndex
+    private var lastSavedWordOffset = startWordOffset
     private var resumeOnStart = false
     private var settings: SpeedReadSettings = settingsRepository.load().normalized()
     private var controller: SpeedReadPlayerController? = null
@@ -142,6 +146,7 @@ class SpeedReadPlayerViewModel(
                 savedTokenIndex % chunkSize == 0 &&
                 playback.chunkAt(restored) != null -> restored
             savedTokenIndex >= 0 -> playback.startPosition(savedParagraph)
+            startWordOffset >= 0 -> playback.positionAtOffset(startWordOffset)
             else -> playback.startPosition(startParagraphIndex)
         }
     }
@@ -158,12 +163,17 @@ class SpeedReadPlayerViewModel(
         savedTokenIndex = position.tokenIndex
         savedOffset = position.offset
         savedParagraph = position.paragraphIndex
-        if (force || position.paragraphIndex != lastSavedParagraph) {
+        savedWordOffset = position.offset
+        val positionChanged = position.paragraphIndex != lastSavedParagraph ||
+            position.offset != lastSavedWordOffset
+        if (force || positionChanged) {
             lastSavedParagraph = position.paragraphIndex
+            lastSavedWordOffset = position.offset
             readingSessionRepository.savePosition(
                 ReadingPosition(
                     bookId = book.id,
                     paragraphIndex = position.paragraphIndex,
+                    wordOffset = position.offset,
                 ),
             )
         }

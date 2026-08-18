@@ -80,14 +80,42 @@ class SpeedReadPlayerViewModelTest {
         assertTrue(viewModel.viewState.value.progress >= 0f)
     }
 
+    @Test
+    fun startsFromWordOffsetWhenSet() {
+        val content = "first second third fourth"
+        val wordOffsets = mutableMapOf("book-1" to 6) // offset of "second"
+        val viewModel = playerViewModel(
+            content = content,
+            wordOffsets = wordOffsets,
+        )
+        assertEquals("second", viewModel.viewState.value.text)
+    }
+
+    @Test
+    fun persistsWordOffsetOnPositionChange() {
+        val content = "one two three"
+        val wordOffsets = mutableMapOf<String, Int>()
+        val viewModel = playerViewModel(
+            content = content,
+            wordOffsets = wordOffsets,
+        )
+        assertEquals("one", viewModel.viewState.value.text)
+
+        viewModel.stepForward()
+        assertEquals("two", viewModel.viewState.value.text)
+        viewModel.persistNow()
+        assertEquals(4, wordOffsets["book-1"])
+    }
+
     private fun playerViewModel(
         content: String,
         positions: MutableMap<String, Int> = mutableMapOf(),
+        wordOffsets: MutableMap<String, Int> = mutableMapOf(),
         settings: SpeedReadSettings = SpeedReadSettings(wpm = 300, chunkSize = 1),
     ): SpeedReadPlayerViewModel {
         return SpeedReadPlayerViewModel(
             book = Book(id = "book-1", title = "Sample", content = content),
-            readingSessionRepository = memoryReadingSessionRepository(positions),
+            readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
             settingsRepository = memorySpeedReadSettingsRepository(arrayOf(settings)),
             computationDispatcher = dispatcher,
         )

@@ -2,6 +2,8 @@ package com.tool.flashread.core.speedread
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SpeedReadTokenizerTest {
@@ -85,5 +87,130 @@ class SpeedReadTokenizerTest {
         assertEquals(2, chunkTokens(tokens, chunkSize = 5).size)
         assertEquals(6, chunkTokens(tokens, chunkSize = 0).size)
         assertEquals(2, chunkTokens(tokens, chunkSize = 99).size)
+    }
+
+    @Test
+    fun firstWordInParagraphReturnsCorrectWord() {
+        val content = "Hello world.\n\nNext line here"
+        val first = firstWordInParagraph(content, 0)
+        assertNotNull(first)
+        assertEquals(0, first.paragraphIndex)
+        assertEquals(0, first.localStart)
+        assertEquals(5, first.localEnd)
+        assertEquals("Hello", content.substring(first.contentOffset, first.contentOffset + 5))
+
+        val second = firstWordInParagraph(content, 1)
+        assertNotNull(second)
+        assertEquals(1, second.paragraphIndex)
+        assertEquals(0, second.localStart)
+        assertEquals(4, second.localEnd)
+        assertEquals("Next", content.substring(second.contentOffset, second.contentOffset + 4))
+    }
+
+    @Test
+    fun firstWordInParagraphWithLeadingWhitespace() {
+        val content = "  First word\n\n  Second word"
+        val paragraphs = splitBookParagraphs(content)
+        assertEquals("First word", paragraphs[0])
+        assertEquals("Second word", paragraphs[1])
+
+        val first = firstWordInParagraph(content, 0)
+        assertNotNull(first)
+        assertEquals(0, first.localStart)
+        assertEquals(5, first.localEnd)
+
+        val second = firstWordInParagraph(content, 1)
+        assertNotNull(second)
+        assertEquals(0, second.localStart)
+        assertEquals(6, second.localEnd)
+    }
+
+    @Test
+    fun firstWordInParagraphReturnsNullForMissingParagraph() {
+        val content = "Only one paragraph"
+        assertNull(firstWordInParagraph(content, 1))
+        assertNull(firstWordInParagraph("", 0))
+    }
+
+    @Test
+    fun wordAtParagraphOffsetClickInMiddleOfWord() {
+        val content = "Hello world"
+        val location = wordAtParagraphOffset(content, 0, 2)
+        assertNotNull(location)
+        assertEquals(0, location.localStart)
+        assertEquals(5, location.localEnd)
+        assertEquals("Hello", content.substring(location.contentOffset, location.contentOffset + 5))
+    }
+
+    @Test
+    fun wordAtParagraphOffsetClickInWhitespace() {
+        val content = "Hello world"
+        val location = wordAtParagraphOffset(content, 0, 5)
+        assertNotNull(location)
+        assertEquals(6, location.localStart)
+        assertEquals(11, location.localEnd)
+        assertEquals("world", content.substring(location.contentOffset, location.contentOffset + 5))
+    }
+
+    @Test
+    fun wordAtParagraphOffsetClickAtEndReturnsLastWord() {
+        val content = "Hello world"
+        val location = wordAtParagraphOffset(content, 0, 20)
+        assertNotNull(location)
+        assertEquals(6, location.localStart)
+        assertEquals(11, location.localEnd)
+    }
+
+    @Test
+    fun wordHighlightAtContentOffsetFindsWord() {
+        val content = "Hello world.\n\nNext line"
+        val tokens = tokenizeBook(content)
+        assertEquals(listOf("Hello", "world.", "Next", "line"), tokens.map { it.text })
+
+        val helloOffset = 0
+        val hello = wordHighlightAtContentOffset(content, helloOffset)
+        assertNotNull(hello)
+        assertEquals(0, hello.paragraphIndex)
+        assertEquals(0, hello.localStart)
+        assertEquals(5, hello.localEnd)
+
+        val nextOffset = content.indexOf("Next")
+        val next = wordHighlightAtContentOffset(content, nextOffset)
+        assertNotNull(next)
+        assertEquals(1, next.paragraphIndex)
+        assertEquals(0, next.localStart)
+        assertEquals(4, next.localEnd)
+    }
+
+    @Test
+    fun wordHighlightAtContentOffsetInWhitespaceReturnsNextWord() {
+        val content = "Hello world"
+        val location = wordHighlightAtContentOffset(content, 5)
+        assertNotNull(location)
+        assertEquals(6, location.localStart)
+        assertEquals(11, location.localEnd)
+    }
+
+    @Test
+    fun wordHighlightAtContentOffsetHandlesEdgeCases() {
+        assertNull(wordHighlightAtContentOffset("Hello", -1))
+        assertNull(wordHighlightAtContentOffset("Hello", 100))
+        assertNull(wordHighlightAtContentOffset("", 0))
+    }
+
+    @Test
+    fun localRangesMatchDisplayedTrimmedText() {
+        val content = "  Hello   world  \n\n  Next  "
+        val paragraphs = splitBookParagraphs(content)
+        assertEquals("Hello   world", paragraphs[0])
+        assertEquals("Next", paragraphs[1])
+
+        val hello = firstWordInParagraph(content, 0)
+        assertNotNull(hello)
+        assertEquals("Hello", paragraphs[0].substring(hello.localStart, hello.localEnd))
+
+        val next = firstWordInParagraph(content, 1)
+        assertNotNull(next)
+        assertEquals("Next", paragraphs[1].substring(next.localStart, next.localEnd))
     }
 }
