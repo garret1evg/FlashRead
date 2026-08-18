@@ -151,6 +151,10 @@ class SpeedReadPlayback(
         return units
     }
 
+    fun remainingDelayUnits(position: SpeedReadPosition): Double {
+        return (sessionTotals().delayUnits - elapsedDelayUnits(position)).coerceAtLeast(0.0)
+    }
+
     private fun nextChunkStart(position: SpeedReadPosition): SpeedReadPosition? {
         var current = source.tokenAt(position.offset, position.paragraphIndex) ?: return null
         repeat(size) {

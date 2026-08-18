@@ -146,6 +146,14 @@ class SpeedReadPlayerControllerTest {
         assertTrue(controller.viewState.remainingMs < initialRemaining)
         assertTrue(controller.viewState.elapsedMs > 0L)
     }
+
+    @Test
+    fun remainingMsToMinutesRoundsUpPartialMinutes() {
+        assertEquals(0, remainingMsToMinutes(0))
+        assertEquals(1, remainingMsToMinutes(1_500))
+        assertEquals(1, remainingMsToMinutes(60_000))
+        assertEquals(2, remainingMsToMinutes(60_001))
+    }
 }
 
 private fun controller(

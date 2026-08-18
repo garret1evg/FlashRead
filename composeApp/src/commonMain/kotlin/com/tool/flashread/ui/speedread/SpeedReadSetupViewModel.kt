@@ -2,9 +2,10 @@ package com.tool.flashread.ui.speedread
 
 import androidx.lifecycle.ViewModel
 import com.tool.flashread.core.model.Book
-import com.tool.flashread.core.reading.estimatedRemainingMinutes
-import com.tool.flashread.core.reading.remainingWordCount
+import com.tool.flashread.core.speedread.SpeedReadPlayback
 import com.tool.flashread.core.speedread.SpeedReadSettings
+import com.tool.flashread.core.speedread.delayUnitsToMs
+import com.tool.flashread.core.speedread.remainingMsToMinutes
 import com.tool.flashread.data.repository.ReadingSessionRepository
 import com.tool.flashread.data.repository.SpeedReadSettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,10 +23,9 @@ class SpeedReadSetupViewModel(
     private val settingsRepository: SpeedReadSettingsRepository = SpeedReadSettingsRepository(),
     private val readingSessionRepository: ReadingSessionRepository = ReadingSessionRepository(),
 ) : ViewModel() {
-    private val remainingWords = remainingWordCount(
-        book.content,
-        readingSessionRepository.getPosition(book.id).paragraphIndex,
-    )
+    private val startParagraphIndex = readingSessionRepository.getPosition(book.id).paragraphIndex
+    private var cachedChunkSize: Int? = null
+    private var cachedRemainingDelayUnits: Double = 0.0
 
     private val _uiState = MutableStateFlow(stateFrom(settingsRepository.load()))
     val uiState: StateFlow<SpeedReadSetupUiState> = _uiState.asStateFlow()
@@ -42,10 +42,25 @@ class SpeedReadSetupViewModel(
 
     private fun stateFrom(settings: SpeedReadSettings): SpeedReadSetupUiState {
         val normalized = settings.normalized()
+        val remainingMs = delayUnitsToMs(
+            remainingDelayUnits(normalized.chunkSize),
+            normalized.wpm,
+        )
         return SpeedReadSetupUiState(
             settings = normalized,
-            remainingMinutes = estimatedRemainingMinutes(remainingWords, normalized.wpm),
+            remainingMinutes = remainingMsToMinutes(remainingMs),
             canStart = book.content.isNotBlank(),
         )
+    }
+
+    private fun remainingDelayUnits(chunkSize: Int): Double {
+        if (cachedChunkSize != chunkSize) {
+            val playback = SpeedReadPlayback(book.content, chunkSize)
+            cachedRemainingDelayUnits = playback.remainingDelayUnits(
+                playback.startPosition(startParagraphIndex),
+            )
+            cachedChunkSize = chunkSize
+        }
+        return cachedRemainingDelayUnits
     }
 }

@@ -1,5 +1,6 @@
 package com.tool.flashread.core.speedread
 
+import kotlin.math.ceil
 import kotlin.math.roundToLong
 
 enum class SpeedReadPlayerStatus {
@@ -213,4 +214,9 @@ internal fun delayUnitsToMs(units: Double, wpm: Int): Long {
     if (units <= 0.0) return 0L
     val clampedWpm = wpm.coerceIn(SpeedReadDefaults.MIN_WPM, SpeedReadDefaults.MAX_WPM)
     return (60_000.0 / clampedWpm * units).roundToLong()
+}
+
+internal fun remainingMsToMinutes(remainingMs: Long): Int {
+    if (remainingMs <= 0L) return 0
+    return ceil(remainingMs / 60_000.0).toInt()
 }

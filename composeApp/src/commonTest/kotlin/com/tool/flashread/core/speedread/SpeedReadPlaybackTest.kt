@@ -134,6 +134,8 @@ class SpeedReadPlaybackTest {
         assertEquals(0.0, playback.elapsedDelayUnits(first), absoluteTolerance = 1e-9)
         assertEquals(2.2, playback.elapsedDelayUnits(second), absoluteTolerance = 1e-9)
         assertEquals(2.2, playback.delayUnitsAt(first), absoluteTolerance = 1e-9)
+        assertEquals(3.2, playback.remainingDelayUnits(first), absoluteTolerance = 1e-9)
+        assertEquals(1.0, playback.remainingDelayUnits(second), absoluteTolerance = 1e-9)
     }
 }
 
