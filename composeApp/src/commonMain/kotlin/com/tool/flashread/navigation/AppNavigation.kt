@@ -13,6 +13,16 @@ fun MutableList<AppRoute>.pushIfNeeded(route: AppRoute) {
     }
 }
 
+fun MutableList<AppRoute>.openReaderFromLibrary() {
+    if (firstOrNull() != AppRoute.Library) {
+        clear()
+        add(AppRoute.Library)
+    } else if (size > 1) {
+        subList(1, size).clear()
+    }
+    pushIfNeeded(AppRoute.Reader)
+}
+
 fun MutableList<AppRoute>.popBack(): Boolean {
     if (size <= 1) return false
     removeLastOrNull()

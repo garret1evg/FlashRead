@@ -7,8 +7,12 @@ import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tool.flashread.core.importdoc.BookTextExtractor
 import com.tool.flashread.core.importdoc.CoverThumbnail
 import kotlinx.coroutines.CancellationException
@@ -43,7 +47,7 @@ actual fun rememberBookImportLauncher(
         scope.launch {
             try {
                 val imported = withContext(Dispatchers.IO) {
-                    importSelectedBook(contentResolver, uri, cacheDir)
+                    importBookFromUri(contentResolver, uri, cacheDir)
                 }
                 if (imported.content.isBlank()) {
                     onError("Selected file is empty.")
@@ -61,7 +65,34 @@ actual fun rememberBookImportLauncher(
     return { launcher.launch(BOOK_IMPORT_MIME_TYPES) }
 }
 
-private fun importSelectedBook(
+@Composable
+actual fun ObserveExternalBookOpens(
+    onOpenStarted: () -> Unit,
+    onImported: (ImportedBook) -> Unit,
+    onError: (String) -> Unit,
+) {
+    val state by ExternalBookImporter.state.collectAsStateWithLifecycle()
+    val onOpenStartedState by rememberUpdatedState(onOpenStarted)
+    val onImportedState by rememberUpdatedState(onImported)
+    val onErrorState by rememberUpdatedState(onError)
+
+    LaunchedEffect(state.sessionId, state.phase) {
+        when (state.phase) {
+            ExternalBookImportState.Phase.Idle -> Unit
+            ExternalBookImportState.Phase.Importing -> onOpenStartedState()
+            ExternalBookImportState.Phase.Success -> {
+                state.book?.let(onImportedState)
+                ExternalBookImporter.consume(state.sessionId)
+            }
+            ExternalBookImportState.Phase.Error -> {
+                onErrorState(state.error ?: "Failed to import book.")
+                ExternalBookImporter.consume(state.sessionId)
+            }
+        }
+    }
+}
+
+internal fun importBookFromUri(
     contentResolver: ContentResolver,
     uri: Uri,
     cacheDir: File,

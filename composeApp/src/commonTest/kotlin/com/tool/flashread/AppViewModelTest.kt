@@ -7,6 +7,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
@@ -117,5 +118,62 @@ class AppViewModelTest {
         viewModel.deleteBook("book-1")
         assertTrue(covers.isEmpty())
         assertTrue(stored.isEmpty())
+    }
+
+    @Test
+    fun externalOpenShowsLibraryThenOpensReaderAfterImport() = runTest {
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(),
+            readingSessionRepository = memoryReadingSessionRepository(),
+        )
+
+        viewModel.onExternalBookOpenStarted()
+        assertTrue(viewModel.uiState.value.isImportingExternalBook)
+        assertNull(viewModel.uiState.value.pendingReaderBookId)
+
+        val message = async { viewModel.messages.first() }
+        testScheduler.runCurrent()
+        viewModel.upsertImportedBook(
+            ImportedBook(id = "content://books/war.epub", title = "War.epub", content = "chapter"),
+            openInReader = true,
+        )
+
+        val state = viewModel.uiState.value
+        assertEquals("content://books/war.epub", state.selectedBookId)
+        assertEquals("content://books/war.epub", state.pendingReaderBookId)
+        assertFalse(state.isImportingExternalBook)
+        assertEquals("Imported War", message.await())
+
+        viewModel.consumePendingReaderNavigation()
+        assertNull(viewModel.uiState.value.pendingReaderBookId)
+        assertEquals("content://books/war.epub", viewModel.uiState.value.selectedBookId)
+    }
+
+    @Test
+    fun pickerImportDoesNotOpenReader() = runTest {
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(),
+            readingSessionRepository = memoryReadingSessionRepository(),
+        )
+        viewModel.upsertImportedBook(
+            ImportedBook(id = "book-1", title = "notes.txt", content = "one"),
+        )
+        assertNull(viewModel.uiState.value.pendingReaderBookId)
+    }
+
+    @Test
+    fun importErrorClearsExternalImportingState() = runTest {
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(),
+            readingSessionRepository = memoryReadingSessionRepository(),
+        )
+        viewModel.onExternalBookOpenStarted()
+        val message = async { viewModel.messages.first() }
+        testScheduler.runCurrent()
+        viewModel.onImportError("Failed to import book.")
+
+        assertFalse(viewModel.uiState.value.isImportingExternalBook)
+        assertNull(viewModel.uiState.value.pendingReaderBookId)
+        assertEquals("Failed to import book.", message.await())
     }
 }

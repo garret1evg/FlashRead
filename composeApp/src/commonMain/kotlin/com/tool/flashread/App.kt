@@ -61,9 +61,12 @@ import com.tool.flashread.navigation.AppRoute
 import com.tool.flashread.navigation.AppScreen
 import com.tool.flashread.navigation.isTopLevel
 import com.tool.flashread.navigation.navigateToTopLevel
+import com.tool.flashread.navigation.openReaderFromLibrary
 import com.tool.flashread.navigation.popBack
 import com.tool.flashread.navigation.pushIfNeeded
 import com.tool.flashread.navigation.title
+import com.tool.flashread.platform.ObserveExternalBookOpens
+import com.tool.flashread.platform.launchRouteForExternalBookOpen
 import com.tool.flashread.platform.rememberBookImportLauncher
 import com.tool.flashread.ui.library.LibraryScreen
 import com.tool.flashread.ui.library.MaterialTitleFormatter
@@ -95,7 +98,9 @@ fun App() {
             onError = appViewModel::onImportError,
         )
 
-        val backStack = remember { mutableStateListOf<AppRoute>(AppRoute.Home) }
+        val backStack = remember {
+            mutableStateListOf(launchRouteForExternalBookOpen() ?: AppRoute.Home)
+        }
         val currentRoute = backStack.lastOrNull() ?: AppRoute.Home
         val currentScreen = AppScreen.fromRoute(currentRoute)
         val showBottomBar = currentRoute.isTopLevel
@@ -108,6 +113,25 @@ fun App() {
 
         fun redirectToLibraryIfNoBook() {
             backStack.navigateToTopLevel(AppRoute.Library)
+        }
+
+        ObserveExternalBookOpens(
+            onOpenStarted = {
+                appViewModel.onExternalBookOpenStarted()
+                backStack.navigateToTopLevel(AppRoute.Library)
+            },
+            onImported = { imported ->
+                appViewModel.upsertImportedBook(imported, openInReader = true)
+            },
+            onError = appViewModel::onImportError,
+        )
+
+        val pendingReaderBookId = uiState.pendingReaderBookId
+        LaunchedEffect(pendingReaderBookId) {
+            val bookId = pendingReaderBookId ?: return@LaunchedEffect
+            appViewModel.selectBook(bookId)
+            backStack.openReaderFromLibrary()
+            appViewModel.consumePendingReaderNavigation()
         }
 
         Scaffold(
@@ -220,6 +244,7 @@ fun App() {
                             onRenameBook = appViewModel::renameBook,
                             onDeleteBook = appViewModel::deleteBook,
                             onContinueReading = { bookId -> openReader(bookId) },
+                            isImporting = uiState.isImportingExternalBook,
                         )
                     }
                     entry<AppRoute.Reader> {

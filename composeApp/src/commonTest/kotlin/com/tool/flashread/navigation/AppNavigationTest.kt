@@ -88,4 +88,27 @@ class AppNavigationTest {
         assertFalse(backStack.popBack())
         assertEquals(listOf(AppRoute.Library), backStack.toList())
     }
+
+    @Test
+    fun openReaderFromLibrary_startsFromHome() {
+        val backStack = mutableListOf<AppRoute>(AppRoute.Home)
+        backStack.openReaderFromLibrary()
+        assertEquals(listOf(AppRoute.Library, AppRoute.Reader), backStack.toList())
+    }
+
+    @Test
+    fun openReaderFromLibrary_keepsLibraryUnderReader() {
+        val backStack = mutableListOf(AppRoute.Library, AppRoute.Reader, AppRoute.SpeedRead)
+        backStack.openReaderFromLibrary()
+        assertEquals(listOf(AppRoute.Library, AppRoute.Reader), backStack.toList())
+    }
+
+    @Test
+    fun externalOpen_showsLibraryThenReader() {
+        val backStack = mutableListOf<AppRoute>(AppRoute.Home)
+        backStack.navigateToTopLevel(AppRoute.Library)
+        assertEquals(listOf(AppRoute.Library), backStack.toList())
+        backStack.openReaderFromLibrary()
+        assertEquals(listOf(AppRoute.Library, AppRoute.Reader), backStack.toList())
+    }
 }

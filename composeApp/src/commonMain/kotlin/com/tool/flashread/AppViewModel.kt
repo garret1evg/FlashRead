@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.update
 data class AppUiState(
     val books: List<Book> = emptyList(),
     val selectedBookId: String? = null,
+    val isImportingExternalBook: Boolean = false,
+    val pendingReaderBookId: String? = null,
 ) {
     val currentBook: Book?
         get() = books.firstOrNull { it.id == selectedBookId }
@@ -49,7 +51,11 @@ class AppViewModel(
         _uiState.update { it.copy(selectedBookId = bookId) }
     }
 
-    fun upsertImportedBook(importedBook: ImportedBook) {
+    fun onExternalBookOpenStarted() {
+        _uiState.update { it.copy(isImportingExternalBook = true, pendingReaderBookId = null) }
+    }
+
+    fun upsertImportedBook(importedBook: ImportedBook, openInReader: Boolean = false) {
         val existing = _uiState.value.books.firstOrNull { it.id == importedBook.id }
         val book = Book(
             id = importedBook.id,
@@ -59,11 +65,22 @@ class AppViewModel(
             coverFileName = persistImportedCover(importedBook, existing?.coverFileName),
         ).withReadingStats()
         upsert(book)
-        selectBook(book.id)
+        _uiState.update {
+            it.copy(
+                selectedBookId = book.id,
+                isImportingExternalBook = false,
+                pendingReaderBookId = if (openInReader) book.id else null,
+            )
+        }
         showMessage("Imported ${MaterialTitleFormatter.displayTitle(importedBook.title)}")
     }
 
+    fun consumePendingReaderNavigation() {
+        _uiState.update { it.copy(pendingReaderBookId = null) }
+    }
+
     fun onImportError(message: String) {
+        _uiState.update { it.copy(isImportingExternalBook = false, pendingReaderBookId = null) }
         showMessage(message)
     }
 

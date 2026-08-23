@@ -10,11 +10,171 @@
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Open with FlashRead: MIME types used by file managers. -->
+            <intent-filter android:label="@string/app_name">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/epub+zip" />
+                <data android:mimeType="application/x-fictionbook+xml" />
+                <data android:mimeType="application/x-fictionbook" />
+                <data android:mimeType="application/fictionbook+xml" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="text/markdown" />
+                <data android:mimeType="text/x-markdown" />
+                <data android:mimeType="text/html" />
+                <data android:mimeType="application/xhtml+xml" />
+                <data android:mimeType="text/xml" />
+                <data android:mimeType="application/xml" />
+            </intent-filter>
+
+            <!-- Open with FlashRead: generic MIME + file extension in the path. -->
+            <intent-filter android:label="@string/app_name">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:host="*" />
+                <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.epub" />
+                <data android:pathPattern=".*\\..*\\.epub" />
+                <data android:pathPattern=".*\\..*\\..*\\.epub" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.epub" />
+                <data android:pathPattern=".*\\.EPUB" />
+                <data android:pathPattern=".*\\..*\\.EPUB" />
+                <data android:pathPattern=".*\\..*\\..*\\.EPUB" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.EPUB" />
+                <data android:pathPattern=".*\\.fb2" />
+                <data android:pathPattern=".*\\..*\\.fb2" />
+                <data android:pathPattern=".*\\..*\\..*\\.fb2" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.fb2" />
+                <data android:pathPattern=".*\\.FB2" />
+                <data android:pathPattern=".*\\..*\\.FB2" />
+                <data android:pathPattern=".*\\..*\\..*\\.FB2" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.FB2" />
+                <data android:pathPattern=".*\\.fb2\\.zip" />
+                <data android:pathPattern=".*\\..*\\.fb2\\.zip" />
+                <data android:pathPattern=".*\\..*\\..*\\.fb2\\.zip" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.fb2\\.zip" />
+                <data android:pathPattern=".*\\.FB2\\.ZIP" />
+                <data android:pathPattern=".*\\..*\\.FB2\\.ZIP" />
+                <data android:pathPattern=".*\\..*\\..*\\.FB2\\.ZIP" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.FB2\\.ZIP" />
+                <data android:pathPattern=".*\\.txt" />
+                <data android:pathPattern=".*\\..*\\.txt" />
+                <data android:pathPattern=".*\\..*\\..*\\.txt" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.txt" />
+                <data android:pathPattern=".*\\.TXT" />
+                <data android:pathPattern=".*\\..*\\.TXT" />
+                <data android:pathPattern=".*\\..*\\..*\\.TXT" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.TXT" />
+                <data android:pathPattern=".*\\.md" />
+                <data android:pathPattern=".*\\..*\\.md" />
+                <data android:pathPattern=".*\\..*\\..*\\.md" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.md" />
+                <data android:pathPattern=".*\\.MD" />
+                <data android:pathPattern=".*\\..*\\.MD" />
+                <data android:pathPattern=".*\\..*\\..*\\.MD" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.MD" />
+                <data android:pathPattern=".*\\.html" />
+                <data android:pathPattern=".*\\..*\\.html" />
+                <data android:pathPattern=".*\\..*\\..*\\.html" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.html" />
+                <data android:pathPattern=".*\\.HTML" />
+                <data android:pathPattern=".*\\..*\\.HTML" />
+                <data android:pathPattern=".*\\..*\\..*\\.HTML" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.HTML" />
+                <data android:pathPattern=".*\\.htm" />
+                <data android:pathPattern=".*\\..*\\.htm" />
+                <data android:pathPattern=".*\\..*\\..*\\.htm" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.htm" />
+                <data android:pathPattern=".*\\.HTM" />
+                <data android:pathPattern=".*\\..*\\.HTM" />
+                <data android:pathPattern=".*\\..*\\..*\\.HTM" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.HTM" />
+            </intent-filter>
+
+            <!-- file:// URIs often have an empty host, so host="*" would miss them. -->
+            <intent-filter android:label="@string/app_name">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="file" />
+                <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.epub" />
+                <data android:pathPattern=".*\\..*\\.epub" />
+                <data android:pathPattern=".*\\..*\\..*\\.epub" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.epub" />
+                <data android:pathPattern=".*\\.EPUB" />
+                <data android:pathPattern=".*\\..*\\.EPUB" />
+                <data android:pathPattern=".*\\..*\\..*\\.EPUB" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.EPUB" />
+                <data android:pathPattern=".*\\.fb2" />
+                <data android:pathPattern=".*\\..*\\.fb2" />
+                <data android:pathPattern=".*\\..*\\..*\\.fb2" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.fb2" />
+                <data android:pathPattern=".*\\.FB2" />
+                <data android:pathPattern=".*\\..*\\.FB2" />
+                <data android:pathPattern=".*\\..*\\..*\\.FB2" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.FB2" />
+                <data android:pathPattern=".*\\.fb2\\.zip" />
+                <data android:pathPattern=".*\\..*\\.fb2\\.zip" />
+                <data android:pathPattern=".*\\..*\\..*\\.fb2\\.zip" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.fb2\\.zip" />
+                <data android:pathPattern=".*\\.txt" />
+                <data android:pathPattern=".*\\..*\\.txt" />
+                <data android:pathPattern=".*\\..*\\..*\\.txt" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.txt" />
+                <data android:pathPattern=".*\\.TXT" />
+                <data android:pathPattern=".*\\..*\\.TXT" />
+                <data android:pathPattern=".*\\..*\\..*\\.TXT" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.TXT" />
+                <data android:pathPattern=".*\\.md" />
+                <data android:pathPattern=".*\\..*\\.md" />
+                <data android:pathPattern=".*\\..*\\..*\\.md" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.md" />
+                <data android:pathPattern=".*\\.html" />
+                <data android:pathPattern=".*\\..*\\.html" />
+                <data android:pathPattern=".*\\..*\\..*\\.html" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.html" />
+                <data android:pathPattern=".*\\.htm" />
+                <data android:pathPattern=".*\\..*\\.htm" />
+                <data android:pathPattern=".*\\..*\\..*\\.htm" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.htm" />
+            </intent-filter>
+
+            <intent-filter android:label="@string/app_name">
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="application/epub+zip" />
+                <data android:mimeType="application/x-fictionbook+xml" />
+                <data android:mimeType="application/x-fictionbook" />
+                <data android:mimeType="application/fictionbook+xml" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="text/markdown" />
+                <data android:mimeType="text/html" />
+                <data android:mimeType="application/xhtml+xml" />
+                <data android:mimeType="text/xml" />
+                <data android:mimeType="application/xml" />
             </intent-filter>
         </activity>
     </application>

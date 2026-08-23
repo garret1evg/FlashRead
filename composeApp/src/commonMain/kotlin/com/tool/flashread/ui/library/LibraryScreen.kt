@@ -76,6 +76,7 @@ fun LibraryScreen(
     onDeleteBook: (String) -> Unit,
     onContinueReading: (String) -> Unit,
     modifier: Modifier = Modifier,
+    isImporting: Boolean = false,
 ) {
     var showAddSheet by remember { mutableStateOf(false) }
     var showYouTubeDialog by remember { mutableStateOf(false) }
@@ -95,6 +96,18 @@ fun LibraryScreen(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+        if (isImporting) {
+            Spacer(Modifier.height(FlashReadDimens.space12))
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(FlashReadDimens.space8))
+            Text(
+                text = "Открываем книгу…",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         Spacer(Modifier.height(FlashReadDimens.space12))
         AddMaterialButton(
             label = "Добавить материал",
@@ -103,32 +116,38 @@ fun LibraryScreen(
         )
         Spacer(Modifier.height(FlashReadDimens.space16))
 
-        if (books.isEmpty()) {
-            LibraryEmptyState(
-                onAddMaterial = { showAddSheet = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(FlashReadDimens.space12),
-                contentPadding = PaddingValues(bottom = FlashReadDimens.space24),
-            ) {
-                items(books, key = { it.id }) { book ->
-                    LibraryMaterialCard(
-                        title = book.title,
-                        sourceType = book.sourceType,
-                        coverFileName = book.coverFileName,
-                        wordCount = book.wordCount,
-                        progressPercent = progressPercent(book),
-                        onContinue = { onContinueReading(book.id) },
-                        onRename = { bookPendingRename = book },
-                        onDelete = { onDeleteBook(book.id) },
-                    )
+        when {
+            books.isEmpty() && isImporting -> {
+                Spacer(Modifier.weight(1f))
+            }
+            books.isEmpty() -> {
+                LibraryEmptyState(
+                    onAddMaterial = { showAddSheet = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                )
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(FlashReadDimens.space12),
+                    contentPadding = PaddingValues(bottom = FlashReadDimens.space24),
+                ) {
+                    items(books, key = { it.id }) { book ->
+                        LibraryMaterialCard(
+                            title = book.title,
+                            sourceType = book.sourceType,
+                            coverFileName = book.coverFileName,
+                            wordCount = book.wordCount,
+                            progressPercent = progressPercent(book),
+                            onContinue = { onContinueReading(book.id) },
+                            onRename = { bookPendingRename = book },
+                            onDelete = { onDeleteBook(book.id) },
+                        )
+                    }
                 }
             }
         }
