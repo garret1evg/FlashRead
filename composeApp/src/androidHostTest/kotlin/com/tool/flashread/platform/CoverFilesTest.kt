@@ -166,6 +166,22 @@ class CoverFilesTest {
     }
 
     @Test
+    fun resolveReturnsExistingFile() {
+        val fileName = covers.save("resolve-book", byteArrayOf(4, 5), "image/png")
+        val resolved = covers.resolve(fileName)
+        assertEquals(File(tempDir, fileName), resolved)
+        assertTrue(resolved!!.isFile)
+    }
+
+    @Test
+    fun resolveReturnsNullWhenMissingOrUnsafe() {
+        assertNull(covers.resolve("missing.jpg"))
+        assertNull(covers.resolve("../secret.jpg"))
+        assertNull(covers.resolve("dir\\secret.jpg"))
+        assertNull(covers.resolve(""))
+    }
+
+    @Test
     fun deleteRemovesFile() {
         val fileName = covers.save("to-delete", byteArrayOf(1), "image/jpeg")
         covers.delete(fileName)

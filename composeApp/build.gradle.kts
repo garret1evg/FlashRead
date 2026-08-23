@@ -51,6 +51,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.jetbrains.navigation3.runtime)
             implementation(libs.jetbrains.navigation3.ui)
+            implementation(libs.coil.compose)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

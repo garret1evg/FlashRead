@@ -16,4 +16,8 @@ actual object CoverStorage {
     fun findCoverFileName(bookId: String): String? {
         return CoverFiles.create().findCoverFileName(bookId)
     }
+
+    actual fun coverImageModel(fileName: String): Any? {
+        return CoverFiles.create().resolve(fileName)
+    }
 }

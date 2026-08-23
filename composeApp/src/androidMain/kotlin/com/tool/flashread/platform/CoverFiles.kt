@@ -19,10 +19,15 @@ internal class CoverFiles(private val coversDir: File) {
     }
 
     fun load(fileName: String): ByteArray? {
+        return resolve(fileName)?.let { file ->
+            runCatching { file.readBytes() }.getOrNull()
+        }
+    }
+
+    fun resolve(fileName: String): File? {
         if (!isSafeFileName(fileName)) return null
         val file = File(coversDir, fileName)
-        if (!file.isFile) return null
-        return runCatching { file.readBytes() }.getOrNull()
+        return file.takeIf { it.isFile }
     }
 
     fun delete(fileName: String) {

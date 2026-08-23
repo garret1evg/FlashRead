@@ -4,6 +4,9 @@ expect object CoverStorage {
     fun saveCover(bookId: String, bytes: ByteArray, mimeType: String): String
     fun loadCover(fileName: String): ByteArray?
     fun deleteCover(fileName: String)
+
+    /** Coil model for [fileName], or null if the cover is missing. */
+    fun coverImageModel(fileName: String): Any?
 }
 
 internal fun coverFileExtension(mimeType: String): String {

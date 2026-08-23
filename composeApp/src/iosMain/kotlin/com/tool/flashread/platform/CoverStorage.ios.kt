@@ -14,4 +14,6 @@ actual object CoverStorage {
     actual fun deleteCover(fileName: String) {
         files.remove(fileName)
     }
+
+    actual fun coverImageModel(fileName: String): Any? = files[fileName]
 }
