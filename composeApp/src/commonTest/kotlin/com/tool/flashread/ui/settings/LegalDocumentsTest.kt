@@ -2,6 +2,7 @@ package com.tool.flashread.ui.settings
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class LegalDocumentsTest {
@@ -35,5 +36,23 @@ class LegalDocumentsTest {
         val text = LegalDocuments.termsAndConditions.sections.joinToString(" ") { it.body }
         assertTrue(text.contains("write your own books", ignoreCase = true))
         assertTrue(text.contains("books you write", ignoreCase = true))
+    }
+
+    @Test
+    fun privacyPolicy_mentionsYouTubeCaptionDownload() {
+        val text = LegalDocuments.privacyPolicy.sections.joinToString(" ") { it.body }
+        assertTrue(text.contains("YouTube", ignoreCase = true))
+        assertTrue(text.contains("captions", ignoreCase = true))
+        assertTrue(text.contains("transcript", ignoreCase = true))
+        assertTrue(text.contains("contacts YouTube", ignoreCase = true))
+        assertFalse(text.contains("stores the title and URL you provide", ignoreCase = true))
+    }
+
+    @Test
+    fun termsAndConditions_mentionsYouTubeCaptionDownload() {
+        val text = LegalDocuments.termsAndConditions.sections.joinToString(" ") { it.body }
+        assertTrue(text.contains("YouTube", ignoreCase = true))
+        assertTrue(text.contains("captions", ignoreCase = true))
+        assertTrue(text.contains("transcript", ignoreCase = true))
     }
 }

@@ -1,25 +1,41 @@
 package com.tool.flashread
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.tool.flashread.core.locale.AppLanguage
 import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.MaterialSourceType
 import com.tool.flashread.core.model.ReadingPosition
 import com.tool.flashread.core.reading.bookProgressPercent
 import com.tool.flashread.core.reading.withReadingStats
+import com.tool.flashread.core.youtube.InnertubeYouTubeTranscriptFetcher
+import com.tool.flashread.core.youtube.YouTubeCaptionTracks
+import com.tool.flashread.core.youtube.YouTubeTranscriptException
+import com.tool.flashread.core.youtube.YouTubeTranscriptFailureKind
+import com.tool.flashread.core.youtube.YouTubeTranscriptFetcher
+import com.tool.flashread.core.youtube.YouTubeVideoId
+import com.tool.flashread.data.repository.AppLanguageRepository
 import com.tool.flashread.data.repository.BookRepository
 import com.tool.flashread.data.repository.CoverRepository
 import com.tool.flashread.data.repository.ReadingSessionRepository
 import com.tool.flashread.data.repository.RecentBookRepository
 import com.tool.flashread.platform.ImportedBook
+import com.tool.flashread.platform.currentSystemLanguageTag
 import com.tool.flashread.ui.library.MaterialTitleFormatter
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 internal const val ScratchSpeedReadBookId = "scratch:speed-read"
 internal const val DefaultNewBookTitle = "New book"
@@ -30,6 +46,7 @@ sealed interface AppMessage {
     data class Added(val title: String) : AppMessage
     data class Deleted(val title: String) : AppMessage
     data class Error(val text: String) : AppMessage
+    data class YouTubeTranscriptFailed(val kind: YouTubeTranscriptFailureKind) : AppMessage
 }
 
 data class AppUiState(
@@ -38,6 +55,7 @@ data class AppUiState(
     val editorBookId: String? = null,
     val scratchBook: Book? = null,
     val isImportingExternalBook: Boolean = false,
+    val isFetchingYouTubeTranscript: Boolean = false,
     val pendingReaderBookId: String? = null,
 ) {
     val currentBook: Book?
@@ -52,12 +70,19 @@ class AppViewModel(
     private val readingSessionRepository: ReadingSessionRepository = ReadingSessionRepository(),
     private val coverRepository: CoverRepository = CoverRepository(),
     private val recentBookRepository: RecentBookRepository = RecentBookRepository(),
+    private val youTubeTranscriptFetcher: YouTubeTranscriptFetcher = InnertubeYouTubeTranscriptFetcher(),
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val appLanguageRepository: AppLanguageRepository = AppLanguageRepository(),
+    private val systemLanguageTag: () -> String = { currentSystemLanguageTag() },
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(loadInitialState())
     val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
 
     private val _messages = Channel<AppMessage>(Channel.BUFFERED)
     val messages = _messages.receiveAsFlow()
+
+    private var youtubeFetchJob: Job? = null
+    private var youtubeFetchGeneration = 0
 
     fun progressPercent(book: Book): Int {
         return bookProgressPercent(
@@ -108,16 +133,43 @@ class AppViewModel(
     fun addYouTubeVideo(title: String, url: String) {
         val trimmedUrl = url.trim()
         if (trimmedUrl.isBlank()) return
-        val resolvedTitle = title.trim().ifBlank { trimmedUrl }
-        val book = Book(
-            id = "youtube:$trimmedUrl",
-            title = resolvedTitle,
-            content = trimmedUrl,
-            sourceType = MaterialSourceType.YouTube,
-        ).withReadingStats()
-        upsert(book)
-        selectBook(book.id)
-        showMessage(AppMessage.Added(MaterialTitleFormatter.displayTitle(resolvedTitle)))
+        val videoId = YouTubeVideoId.extract(trimmedUrl)
+        if (videoId == null) {
+            showMessage(AppMessage.YouTubeTranscriptFailed(YouTubeTranscriptFailureKind.InvalidLink))
+            return
+        }
+        youtubeFetchJob?.cancel()
+        val generation = ++youtubeFetchGeneration
+        youtubeFetchJob = viewModelScope.launch {
+            _uiState.update { it.copy(isFetchingYouTubeTranscript = true) }
+            try {
+                val transcript = withContext(ioDispatcher) {
+                    youTubeTranscriptFetcher.fetch(videoId, preferredTranscriptLanguages())
+                }
+                val resolvedTitle = title.trim()
+                    .ifBlank { transcript.title?.trim().orEmpty() }
+                    .ifBlank { videoId }
+                val book = Book(
+                    id = "youtube:$videoId",
+                    title = resolvedTitle,
+                    content = transcript.text,
+                    sourceType = MaterialSourceType.YouTube,
+                ).withReadingStats()
+                upsert(book)
+                selectBook(book.id)
+                showMessage(AppMessage.Added(MaterialTitleFormatter.displayTitle(resolvedTitle)))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: YouTubeTranscriptException) {
+                showMessage(AppMessage.YouTubeTranscriptFailed(error.kind))
+            } catch (_: Exception) {
+                showMessage(AppMessage.YouTubeTranscriptFailed(YouTubeTranscriptFailureKind.Generic))
+            } finally {
+                if (generation == youtubeFetchGeneration) {
+                    _uiState.update { it.copy(isFetchingYouTubeTranscript = false) }
+                }
+            }
+        }
     }
 
     fun startBookEditor(bookId: String?) {
@@ -268,6 +320,14 @@ class AppViewModel(
 
     private fun authoredBookTitle(title: String, defaultTitle: String): String {
         return title.trim().ifBlank { defaultTitle.trim().ifBlank { DefaultNewBookTitle } }
+    }
+
+    private fun preferredTranscriptLanguages(): List<String> {
+        val preferred = when (val language = appLanguageRepository.load()) {
+            AppLanguage.System -> systemLanguageTag()
+            is AppLanguage.Language -> language.code
+        }
+        return YouTubeCaptionTracks.languagePriority(preferred)
     }
 
     private fun showMessage(message: AppMessage) {

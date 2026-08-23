@@ -42,6 +42,7 @@
     <string name="home_empty_body">Импортируйте файл .txt, .fb2 или .epub, напишите свою книгу, вставьте текст для скорочтения или выберите книгу в Библиотеке.</string>
 
     <string name="library_opening_book">Открываем книгу…</string>
+    <string name="library_fetching_transcript">Загружаем транскрипт…</string>
     <string name="library_add_material">Добавить материал</string>
     <string name="library_empty_title">Библиотека пуста</string>
     <string name="library_empty_body">Импортируйте книгу, создайте свою, вставьте текст для скорочтения или добавьте YouTube-видео.</string>
@@ -121,6 +122,10 @@
     <string name="snackbar_imported">Импортировано: %1$s</string>
     <string name="snackbar_added">Добавлено: %1$s</string>
     <string name="snackbar_deleted">Удалено: %1$s</string>
+    <string name="youtube_error_invalid_link">Эта ссылка на YouTube недействительна.</string>
+    <string name="youtube_error_no_transcript">Для этого видео нет транскрипта.</string>
+    <string name="youtube_error_unavailable">Это видео недоступно.</string>
+    <string name="youtube_error_generic">Не удалось загрузить транскрипт YouTube.</string>
 
     <string name="import_file_empty">Выбранный файл пуст.</string>
     <string name="import_failed">Не удалось импортировать книгу.</string>

@@ -62,6 +62,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.tool.flashread.core.locale.resolveLocaleOverride
 import com.tool.flashread.core.model.Book
+import com.tool.flashread.core.youtube.YouTubeTranscriptFailureKind
 import com.tool.flashread.data.repository.AppLanguageRepository
 import com.tool.flashread.locale.AppEnvironment
 import com.tool.flashread.navigation.AppRoute
@@ -118,6 +119,11 @@ fun App() {
         val defaultNewBookTitle = stringResource(Res.string.default_new_book_title)
         val defaultSpeedReadTitle = stringResource(Res.string.default_speed_read_title)
         val backLabel = stringResource(Res.string.action_back)
+        val libraryBusyMessage = when {
+            uiState.isFetchingYouTubeTranscript -> stringResource(Res.string.library_fetching_transcript)
+            uiState.isImportingExternalBook -> stringResource(Res.string.library_opening_book)
+            else -> null
+        }
 
         LaunchedEffect(appViewModel) {
             appViewModel.messages.collect { message ->
@@ -299,7 +305,7 @@ fun App() {
                             onDeleteBook = appViewModel::deleteBook,
                             onContinueReading = { bookId -> openReader(bookId) },
                             onEditBook = { bookId -> openBookEditor(bookId) },
-                            isImporting = uiState.isImportingExternalBook,
+                            busyMessage = libraryBusyMessage,
                         )
                     }
                     entry<AppRoute.Reader> {
@@ -617,4 +623,13 @@ private suspend fun AppMessage.toSnackbarText(): String = when (this) {
     is AppMessage.Added -> getString(Res.string.snackbar_added, title)
     is AppMessage.Deleted -> getString(Res.string.snackbar_deleted, title)
     is AppMessage.Error -> text
+    is AppMessage.YouTubeTranscriptFailed -> getString(
+        when (kind) {
+            YouTubeTranscriptFailureKind.InvalidLink -> Res.string.youtube_error_invalid_link
+            YouTubeTranscriptFailureKind.NoTranscript -> Res.string.youtube_error_no_transcript
+            YouTubeTranscriptFailureKind.AgeRestrictedOrUnplayable,
+            YouTubeTranscriptFailureKind.BlockedOrUnavailable -> Res.string.youtube_error_unavailable
+            YouTubeTranscriptFailureKind.Generic -> Res.string.youtube_error_generic
+        },
+    )
 }

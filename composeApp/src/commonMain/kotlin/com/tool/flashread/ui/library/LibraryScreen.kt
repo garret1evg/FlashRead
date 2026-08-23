@@ -85,7 +85,7 @@ fun LibraryScreen(
     onContinueReading: (String) -> Unit,
     onEditBook: (String) -> Unit,
     modifier: Modifier = Modifier,
-    isImporting: Boolean = false,
+    busyMessage: String? = null,
 ) {
     var showAddSheet by remember { mutableStateOf(false) }
     var showYouTubeDialog by remember { mutableStateOf(false) }
@@ -99,12 +99,12 @@ fun LibraryScreen(
     ) {
         Spacer(Modifier.height(FlashReadDimens.space8))
         ScreenTitle(title = stringResource(Res.string.screen_library))
-        if (isImporting) {
+        if (busyMessage != null) {
             Spacer(Modifier.height(FlashReadDimens.space12))
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(FlashReadDimens.space8))
             Text(
-                text = stringResource(Res.string.library_opening_book),
+                text = busyMessage,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -120,7 +120,7 @@ fun LibraryScreen(
         Spacer(Modifier.height(FlashReadDimens.space16))
 
         when {
-            books.isEmpty() && isImporting -> {
+            books.isEmpty() && busyMessage != null -> {
                 Spacer(Modifier.weight(1f))
             }
             books.isEmpty() -> {

@@ -42,6 +42,7 @@
     <string name="home_empty_body">Importa un archivo .txt, .fb2 o .epub, escribe tu propio libro, pega texto para lectura rápida o elige uno en la Biblioteca.</string>
 
     <string name="library_opening_book">Abriendo el libro…</string>
+    <string name="library_fetching_transcript">Obteniendo la transcripción…</string>
     <string name="library_add_material">Añadir material</string>
     <string name="library_empty_title">La biblioteca está vacía</string>
     <string name="library_empty_body">Importa un libro, escribe el tuyo, pega texto para lectura rápida o añade un vídeo de YouTube.</string>
@@ -121,6 +122,10 @@
     <string name="snackbar_imported">Importado: %1$s</string>
     <string name="snackbar_added">Añadido: %1$s</string>
     <string name="snackbar_deleted">Eliminado: %1$s</string>
+    <string name="youtube_error_invalid_link">Este enlace de YouTube no es válido.</string>
+    <string name="youtube_error_no_transcript">No hay transcripción disponible para este vídeo.</string>
+    <string name="youtube_error_unavailable">Este vídeo no está disponible.</string>
+    <string name="youtube_error_generic">No se pudo obtener la transcripción de YouTube.</string>
 
     <string name="import_file_empty">El archivo seleccionado está vacío.</string>
     <string name="import_failed">No se pudo importar el libro.</string>

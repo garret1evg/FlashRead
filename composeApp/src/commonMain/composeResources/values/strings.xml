@@ -42,6 +42,7 @@
     <string name="home_empty_body">Import a .txt, .fb2, or .epub file, write your own book, paste text for speed reading, or pick one in Library.</string>
 
     <string name="library_opening_book">Opening book…</string>
+    <string name="library_fetching_transcript">Fetching transcript…</string>
     <string name="library_add_material">Add material</string>
     <string name="library_empty_title">Library is empty</string>
     <string name="library_empty_body">Import a book, write your own, paste text for speed reading, or add a YouTube video.</string>
@@ -121,6 +122,10 @@
     <string name="snackbar_imported">Imported %1$s</string>
     <string name="snackbar_added">Added %1$s</string>
     <string name="snackbar_deleted">Deleted %1$s</string>
+    <string name="youtube_error_invalid_link">This YouTube link is not valid.</string>
+    <string name="youtube_error_no_transcript">No transcript is available for this video.</string>
+    <string name="youtube_error_unavailable">This video is unavailable.</string>
+    <string name="youtube_error_generic">Could not fetch the YouTube transcript.</string>
 
     <string name="import_file_empty">Selected file is empty.</string>
     <string name="import_failed">Failed to import book.</string>

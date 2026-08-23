@@ -1,9 +1,22 @@
 package com.tool.flashread
 
+import com.tool.flashread.core.locale.AppLanguage
 import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.MaterialSourceType
 import com.tool.flashread.core.model.ReadingPosition
+import com.tool.flashread.core.youtube.YouTubeCaptionTracks
+import com.tool.flashread.core.youtube.YouTubeTranscript
+import com.tool.flashread.core.youtube.YouTubeTranscriptException
+import com.tool.flashread.core.youtube.YouTubeTranscriptFailureKind
+import com.tool.flashread.core.youtube.YouTubeTranscriptFetcher
+import com.tool.flashread.data.repository.AppLanguageRepository
+import com.tool.flashread.data.repository.BookRepository
+import com.tool.flashread.data.repository.CoverRepository
+import com.tool.flashread.data.repository.ReadingSessionRepository
+import com.tool.flashread.data.repository.RecentBookRepository
 import com.tool.flashread.platform.ImportedBook
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -11,16 +24,35 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AppViewModelTest {
+
+    private val dispatcher = UnconfinedTestDispatcher()
+
+    @BeforeTest
+    fun setUp() {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    @AfterTest
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun upsertImportedBookSelectsAndPersistsIt() = runTest {
         val stored = mutableListOf<Book>()
-        val viewModel = AppViewModel(
+        val viewModel = appViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(),
@@ -42,30 +74,212 @@ class AppViewModelTest {
     }
 
     @Test
-    fun addYouTubeVideoIgnoresBlankUrlAndUsesUrlAsTitleWhenNeeded() = runTest {
-        val viewModel = AppViewModel(
-            bookRepository = memoryBookRepository(),
-            readingSessionRepository = memoryReadingSessionRepository(),
-            recentBookRepository = memoryRecentBookRepository(),
-        )
+    fun addYouTubeVideoIgnoresBlankUrl() = runTest {
+        val fetcher = FakeYouTubeTranscriptFetcher()
+        val viewModel = appViewModel(youTubeTranscriptFetcher = fetcher)
+        val pending = async { viewModel.messages.first() }
+        testScheduler.runCurrent()
 
         viewModel.addYouTubeVideo(title = "Ignored", url = "   ")
+
+        assertTrue(viewModel.uiState.value.books.isEmpty())
+        assertFalse(viewModel.uiState.value.isFetchingYouTubeTranscript)
+        assertTrue(fetcher.recordedVideoIds.isEmpty())
+        assertFalse(pending.isCompleted)
+        pending.cancel()
+    }
+
+    @Test
+    fun addYouTubeVideoRejectsInvalidAndNonYouTubeUrls() = runTest {
+        val fetcher = FakeYouTubeTranscriptFetcher()
+        val viewModel = appViewModel(youTubeTranscriptFetcher = fetcher)
+
+        val invalid = async { viewModel.messages.first() }
+        testScheduler.runCurrent()
+        viewModel.addYouTubeVideo(title = "Ignored", url = "https://youtu.be/abc")
+        assertEquals(
+            AppMessage.YouTubeTranscriptFailed(YouTubeTranscriptFailureKind.InvalidLink),
+            invalid.await(),
+        )
         assertTrue(viewModel.uiState.value.books.isEmpty())
 
-        val message = async { viewModel.messages.first() }
+        val nonYouTube = async { viewModel.messages.first() }
         testScheduler.runCurrent()
-        viewModel.addYouTubeVideo(title = "  ", url = "https://youtu.be/abc")
+        viewModel.addYouTubeVideo(title = "Ignored", url = "https://example.com/watch")
+        assertEquals(
+            AppMessage.YouTubeTranscriptFailed(YouTubeTranscriptFailureKind.InvalidLink),
+            nonYouTube.await(),
+        )
+        assertTrue(viewModel.uiState.value.books.isEmpty())
+        assertTrue(fetcher.recordedVideoIds.isEmpty())
+        assertFalse(viewModel.uiState.value.isFetchingYouTubeTranscript)
+    }
+
+    @Test
+    fun addYouTubeVideoStoresTranscriptAndUpsertsByVideoId() = runTest {
+        val stored = mutableListOf<Book>()
+        val fetcher = FakeYouTubeTranscriptFetcher()
+        val viewModel = appViewModel(
+            bookRepository = memoryBookRepository(stored),
+            youTubeTranscriptFetcher = fetcher,
+        )
+
+        val added = async { viewModel.messages.first() }
+        testScheduler.runCurrent()
+        viewModel.addYouTubeVideo(title = "My video", url = "https://youtu.be/dQw4w9WgXcQ")
+        assertEquals(AppMessage.Added("My video"), added.await())
 
         val book = viewModel.uiState.value.currentBook
-        assertEquals("youtube:https://youtu.be/abc", book?.id)
-        assertEquals("https://youtu.be/abc", book?.title)
+        assertEquals("youtube:dQw4w9WgXcQ", book?.id)
+        assertEquals("My video", book?.title)
+        assertEquals("Never gonna give you up", book?.content)
         assertEquals(MaterialSourceType.YouTube, book?.sourceType)
-        assertEquals(AppMessage.Added("https://youtu.be/abc"), message.await())
+        assertEquals("youtube:dQw4w9WgXcQ", viewModel.uiState.value.selectedBookId)
+        assertEquals(1, stored.size)
+
+        val upserted = async { viewModel.messages.first() }
+        testScheduler.runCurrent()
+        viewModel.addYouTubeVideo(
+            title = "Same video",
+            url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        )
+        assertEquals(AppMessage.Added("Same video"), upserted.await())
+        assertEquals(1, viewModel.uiState.value.books.size)
+        assertEquals("Same video", viewModel.uiState.value.books.single().title)
+        assertEquals("youtube:dQw4w9WgXcQ", viewModel.uiState.value.books.single().id)
+        assertEquals(listOf("dQw4w9WgXcQ", "dQw4w9WgXcQ"), fetcher.recordedVideoIds)
+        assertFalse(viewModel.uiState.value.isFetchingYouTubeTranscript)
+    }
+
+    @Test
+    fun addYouTubeVideoFallsBackToTranscriptTitleThenVideoId() = runTest {
+        var transcriptTitle: String? = "From captions"
+        val fetcher = FakeYouTubeTranscriptFetcher { videoId, _ ->
+            YouTubeTranscript(
+                videoId = videoId,
+                text = "caption text",
+                title = transcriptTitle,
+            )
+        }
+        val viewModel = appViewModel(youTubeTranscriptFetcher = fetcher)
+
+        viewModel.addYouTubeVideo(title = "  User title  ", url = "https://youtu.be/dQw4w9WgXcQ")
+        assertEquals("User title", viewModel.uiState.value.currentBook?.title)
+
+        viewModel.addYouTubeVideo(title = "  ", url = "https://youtu.be/dQw4w9WgXcQ")
+        assertEquals("From captions", viewModel.uiState.value.currentBook?.title)
+
+        transcriptTitle = "  "
+        viewModel.addYouTubeVideo(title = "", url = "https://youtu.be/dQw4w9WgXcQ")
+        assertEquals("dQw4w9WgXcQ", viewModel.uiState.value.currentBook?.title)
+
+        transcriptTitle = null
+        viewModel.addYouTubeVideo(title = "   ", url = "https://youtu.be/dQw4w9WgXcQ")
+        assertEquals("dQw4w9WgXcQ", viewModel.uiState.value.currentBook?.title)
+        assertEquals(1, viewModel.uiState.value.books.size)
+    }
+
+    @Test
+    fun addYouTubeVideoReportsFetcherFailureWithoutAddingABook() = runTest {
+        val fetcher = FakeYouTubeTranscriptFetcher { videoId, _ ->
+            throw YouTubeTranscriptException(videoId, YouTubeTranscriptFailureKind.NoTranscript)
+        }
+        val viewModel = appViewModel(youTubeTranscriptFetcher = fetcher)
+        val message = async { viewModel.messages.first() }
+        testScheduler.runCurrent()
+
+        viewModel.addYouTubeVideo(title = "Video", url = "https://youtu.be/dQw4w9WgXcQ")
+
+        assertEquals(
+            AppMessage.YouTubeTranscriptFailed(YouTubeTranscriptFailureKind.NoTranscript),
+            message.await(),
+        )
+        assertTrue(viewModel.uiState.value.books.isEmpty())
+        assertFalse(viewModel.uiState.value.isFetchingYouTubeTranscript)
+    }
+
+    @Test
+    fun addYouTubeVideoMapsUnknownErrorsToGenericFailure() = runTest {
+        val fetcher = FakeYouTubeTranscriptFetcher { _, _ ->
+            throw IllegalStateException("boom")
+        }
+        val viewModel = appViewModel(youTubeTranscriptFetcher = fetcher)
+        val message = async { viewModel.messages.first() }
+        testScheduler.runCurrent()
+
+        viewModel.addYouTubeVideo(title = "Video", url = "https://youtu.be/dQw4w9WgXcQ")
+
+        assertEquals(
+            AppMessage.YouTubeTranscriptFailed(YouTubeTranscriptFailureKind.Generic),
+            message.await(),
+        )
+        assertTrue(viewModel.uiState.value.books.isEmpty())
+        assertFalse(viewModel.uiState.value.isFetchingYouTubeTranscript)
+    }
+
+    @Test
+    fun addYouTubeVideoSetsFetchingFlagWhileFetcherIsSuspended() = runTest {
+        val gate = CompletableDeferred<YouTubeTranscript>()
+        val viewModel = appViewModel(
+            youTubeTranscriptFetcher = FakeYouTubeTranscriptFetcher { videoId, _ ->
+                gate.await().copy(videoId = videoId)
+            },
+        )
+
+        viewModel.addYouTubeVideo(title = "Video", url = "https://youtu.be/dQw4w9WgXcQ")
+        assertTrue(viewModel.uiState.value.isFetchingYouTubeTranscript)
+        assertTrue(viewModel.uiState.value.books.isEmpty())
+
+        gate.complete(
+            YouTubeTranscript(
+                videoId = "dQw4w9WgXcQ",
+                text = "Never gonna give you up",
+                title = "Rick Astley",
+            ),
+        )
+        assertFalse(viewModel.uiState.value.isFetchingYouTubeTranscript)
+        assertEquals("youtube:dQw4w9WgXcQ", viewModel.uiState.value.currentBook?.id)
+
+        val failGate = CompletableDeferred<YouTubeTranscript>()
+        val failing = appViewModel(
+            youTubeTranscriptFetcher = FakeYouTubeTranscriptFetcher { _, _ -> failGate.await() },
+        )
+        failing.addYouTubeVideo(title = "Video", url = "https://youtu.be/dQw4w9WgXcQ")
+        assertTrue(failing.uiState.value.isFetchingYouTubeTranscript)
+        failGate.completeExceptionally(
+            YouTubeTranscriptException("dQw4w9WgXcQ", YouTubeTranscriptFailureKind.NoTranscript),
+        )
+        assertFalse(failing.uiState.value.isFetchingYouTubeTranscript)
+        assertTrue(failing.uiState.value.books.isEmpty())
+    }
+
+    @Test
+    fun addYouTubeVideoUsesAppLanguageThenEnglishForCaptions() = runTest {
+        val germanApp = FakeYouTubeTranscriptFetcher()
+        appViewModel(
+            youTubeTranscriptFetcher = germanApp,
+            appLanguageRepository = memoryAppLanguageRepository(
+                arrayOf(AppLanguage.Language("de")),
+            ),
+        ).addYouTubeVideo(title = "Video", url = "https://youtu.be/dQw4w9WgXcQ")
+        assertEquals(listOf("de", "en"), germanApp.recordedLanguages.single())
+
+        val germanSystem = FakeYouTubeTranscriptFetcher()
+        appViewModel(
+            youTubeTranscriptFetcher = germanSystem,
+            appLanguageRepository = memoryAppLanguageRepository(arrayOf(AppLanguage.System)),
+            systemLanguageTag = { "de-DE" },
+        ).addYouTubeVideo(title = "Video", url = "https://youtu.be/dQw4w9WgXcQ")
+        assertEquals(listOf("de", "en"), germanSystem.recordedLanguages.single())
+        assertEquals(
+            YouTubeCaptionTracks.languagePriority("de"),
+            germanSystem.recordedLanguages.single(),
+        )
     }
 
     @Test
     fun renameAndDeleteUpdateLibraryAndClearSelection() = runTest {
-        val viewModel = AppViewModel(
+        val viewModel = appViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(),
@@ -100,7 +314,7 @@ class AppViewModelTest {
     fun upsertImportedBookPersistsCoverAndDeletesItWithTheBook() = runTest {
         val stored = mutableListOf<Book>()
         val covers = mutableMapOf<String, ByteArray>()
-        val viewModel = AppViewModel(
+        val viewModel = appViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(),
             coverRepository = memoryCoverRepository(covers),
@@ -131,7 +345,7 @@ class AppViewModelTest {
 
     @Test
     fun externalOpenShowsLibraryThenOpensReaderAfterImport() = runTest {
-        val viewModel = AppViewModel(
+        val viewModel = appViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(),
@@ -161,7 +375,7 @@ class AppViewModelTest {
 
     @Test
     fun pickerImportDoesNotOpenReader() = runTest {
-        val viewModel = AppViewModel(
+        val viewModel = appViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(),
@@ -174,7 +388,7 @@ class AppViewModelTest {
 
     @Test
     fun importErrorClearsExternalImportingState() = runTest {
-        val viewModel = AppViewModel(
+        val viewModel = appViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(),
@@ -191,7 +405,7 @@ class AppViewModelTest {
 
     @Test
     fun startBookEditorStoresEditorBookId() = runTest {
-        val viewModel = AppViewModel(
+        val viewModel = appViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(),
@@ -208,7 +422,7 @@ class AppViewModelTest {
     @Test
     fun createBookPersistsTitleContentAndSelectsIt() = runTest {
         val stored = mutableListOf<Book>()
-        val viewModel = AppViewModel(
+        val viewModel = appViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(),
@@ -228,7 +442,7 @@ class AppViewModelTest {
 
     @Test
     fun createBookIgnoresBlankContentAndDefaultsBlankTitle() = runTest {
-        val viewModel = AppViewModel(
+        val viewModel = appViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(),
@@ -261,7 +475,7 @@ class AppViewModelTest {
     @Test
     fun updateCreatedBookChangesContentAndIgnoresImportedIds() = runTest {
         val stored = mutableListOf<Book>()
-        val viewModel = AppViewModel(
+        val viewModel = appViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(),
@@ -311,7 +525,7 @@ class AppViewModelTest {
         val stored = mutableListOf<Book>()
         val positions = mutableMapOf<String, Int>()
         val wordOffsets = mutableMapOf<String, Int>()
-        val viewModel = AppViewModel(
+        val viewModel = appViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
             recentBookRepository = memoryRecentBookRepository(),
@@ -349,7 +563,7 @@ class AppViewModelTest {
         val stored = mutableListOf<Book>()
         val positions = mutableMapOf(ScratchSpeedReadBookId to 4)
         val wordOffsets = mutableMapOf(ScratchSpeedReadBookId to 12)
-        val viewModel = AppViewModel(
+        val viewModel = appViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
             recentBookRepository = memoryRecentBookRepository(),
@@ -385,7 +599,7 @@ class AppViewModelTest {
     fun restoresPersistedRecentBookWhenItStillExists() = runTest {
         val stored = mutableListOf<Book>()
         val recentBookId = arrayOf<String?>(null)
-        val first = AppViewModel(
+        val first = appViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(recentBookId),
@@ -396,7 +610,7 @@ class AppViewModelTest {
         )
         assertEquals("book-1", recentBookId[0])
 
-        val restored = AppViewModel(
+        val restored = appViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(recentBookId),
@@ -408,7 +622,7 @@ class AppViewModelTest {
     @Test
     fun selectBookPersistsRecentBookAndDeleteClearsIt() = runTest {
         val recentBookId = arrayOf<String?>(null)
-        val viewModel = AppViewModel(
+        val viewModel = appViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(recentBookId),
@@ -435,7 +649,7 @@ class AppViewModelTest {
     @Test
     fun ignoresStaleRecentBookIdOnLoad() = runTest {
         val recentBookId = arrayOf<String?>("missing")
-        val viewModel = AppViewModel(
+        val viewModel = appViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(recentBookId),
@@ -444,5 +658,26 @@ class AppViewModelTest {
         assertNull(viewModel.uiState.value.selectedBookId)
         assertNull(viewModel.uiState.value.currentBook)
         assertNull(recentBookId[0])
+    }
+
+    private fun appViewModel(
+        bookRepository: BookRepository = memoryBookRepository(),
+        readingSessionRepository: ReadingSessionRepository = memoryReadingSessionRepository(),
+        coverRepository: CoverRepository = CoverRepository(),
+        recentBookRepository: RecentBookRepository = memoryRecentBookRepository(),
+        youTubeTranscriptFetcher: YouTubeTranscriptFetcher = FakeYouTubeTranscriptFetcher(),
+        appLanguageRepository: AppLanguageRepository = memoryAppLanguageRepository(),
+        systemLanguageTag: () -> String = { "en-US" },
+    ): AppViewModel {
+        return AppViewModel(
+            bookRepository = bookRepository,
+            readingSessionRepository = readingSessionRepository,
+            coverRepository = coverRepository,
+            recentBookRepository = recentBookRepository,
+            youTubeTranscriptFetcher = youTubeTranscriptFetcher,
+            ioDispatcher = dispatcher,
+            appLanguageRepository = appLanguageRepository,
+            systemLanguageTag = systemLanguageTag,
+        )
     }
 }
