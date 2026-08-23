@@ -71,6 +71,7 @@ import com.tool.flashread.platform.launchRouteForExternalBookOpen
 import com.tool.flashread.platform.rememberBookImportLauncher
 import com.tool.flashread.ui.components.AppLogo
 import com.tool.flashread.ui.components.ScreenTitle
+import com.tool.flashread.ui.library.BookEditorScreen
 import com.tool.flashread.ui.library.LibraryScreen
 import com.tool.flashread.ui.library.MaterialTitleFormatter
 import com.tool.flashread.ui.reader.ReaderScreen
@@ -115,6 +116,11 @@ fun App() {
         fun openReader(bookId: String) {
             appViewModel.selectBook(bookId)
             backStack.pushIfNeeded(AppRoute.Reader)
+        }
+
+        fun openBookEditor(bookId: String?) {
+            appViewModel.startBookEditor(bookId)
+            backStack.pushIfNeeded(AppRoute.BookEditor)
         }
 
         fun redirectToLibraryIfNoBook() {
@@ -238,6 +244,7 @@ fun App() {
                             book = currentBook,
                             progressPercent = currentBook?.let(appViewModel::progressPercent) ?: 0,
                             onImportBook = launchBookImport,
+                            onCreateBook = { openBookEditor(null) },
                             onContinueReading = { bookId -> openReader(bookId) },
                         )
                     }
@@ -246,10 +253,12 @@ fun App() {
                             books = uiState.books,
                             progressPercent = appViewModel::progressPercent,
                             onImportBook = launchBookImport,
+                            onCreateBook = { openBookEditor(null) },
                             onAddYouTubeVideo = appViewModel::addYouTubeVideo,
                             onRenameBook = appViewModel::renameBook,
                             onDeleteBook = appViewModel::deleteBook,
                             onContinueReading = { bookId -> openReader(bookId) },
+                            onEditBook = { bookId -> openBookEditor(bookId) },
                             isImporting = uiState.isImportingExternalBook,
                         )
                     }
@@ -300,6 +309,23 @@ fun App() {
                     entry<AppRoute.Terms> {
                         LegalDocumentScreen(document = LegalDocuments.termsAndConditions)
                     }
+                    entry<AppRoute.BookEditor> {
+                        val editorBookId = uiState.editorBookId
+                        val editorBook = uiState.books.firstOrNull { it.id == editorBookId }
+                        BookEditorScreen(
+                            initialTitle = editorBook?.title.orEmpty(),
+                            initialContent = editorBook?.content.orEmpty(),
+                            onBack = { backStack.popBack() },
+                            onSave = { title, content ->
+                                if (editorBookId == null) {
+                                    appViewModel.createBook(title, content)
+                                } else {
+                                    appViewModel.updateCreatedBook(editorBookId, title, content)
+                                }
+                                backStack.popBack()
+                            },
+                        )
+                    }
                 },
             )
         }
@@ -336,6 +362,7 @@ private fun HomeScreen(
     book: Book?,
     progressPercent: Int,
     onImportBook: () -> Unit,
+    onCreateBook: () -> Unit,
     onContinueReading: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -343,6 +370,7 @@ private fun HomeScreen(
         EmptyBookState(
             modifier = modifier,
             onImportBook = onImportBook,
+            onCreateBook = onCreateBook,
         )
         return
     }
@@ -412,6 +440,7 @@ private fun HomeScreen(
 @Composable
 private fun EmptyBookState(
     onImportBook: () -> Unit,
+    onCreateBook: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -434,7 +463,7 @@ private fun EmptyBookState(
         )
         Spacer(Modifier.height(FlashReadDimens.space8))
         Text(
-            text = "Import a .txt, .fb2, or .epub file or pick one in Library.",
+            text = "Import a .txt, .fb2, or .epub file, write your own book, or pick one in Library.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -450,6 +479,20 @@ private fun EmptyBookState(
         ) {
             Text(
                 text = "Import book",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.height(FlashReadDimens.space12))
+        Button(
+            onClick = onCreateBook,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = FlashReadDimens.minTouchTarget),
+            shape = FlashReadShapes.button,
+        ) {
+            Text(
+                text = "Создать книгу",
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

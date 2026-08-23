@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.AlertDialog
@@ -71,10 +72,12 @@ fun LibraryScreen(
     books: List<Book>,
     progressPercent: (Book) -> Int,
     onImportBook: () -> Unit,
+    onCreateBook: () -> Unit,
     onAddYouTubeVideo: (title: String, url: String) -> Unit,
     onRenameBook: (bookId: String, newTitle: String) -> Unit,
     onDeleteBook: (String) -> Unit,
     onContinueReading: (String) -> Unit,
+    onEditBook: (String) -> Unit,
     modifier: Modifier = Modifier,
     isImporting: Boolean = false,
 ) {
@@ -140,6 +143,11 @@ fun LibraryScreen(
                             onContinue = { onContinueReading(book.id) },
                             onRename = { bookPendingRename = book },
                             onDelete = { onDeleteBook(book.id) },
+                            onEdit = if (book.id.startsWith("created:")) {
+                                { onEditBook(book.id) }
+                            } else {
+                                null
+                            },
                         )
                     }
                 }
@@ -153,6 +161,10 @@ fun LibraryScreen(
             onImportBook = {
                 showAddSheet = false
                 onImportBook()
+            },
+            onCreateBook = {
+                showAddSheet = false
+                onCreateBook()
             },
             onAddYouTube = {
                 showAddSheet = false
@@ -235,7 +247,7 @@ private fun LibraryEmptyState(
         )
         Spacer(Modifier.height(FlashReadDimens.space8))
         Text(
-            text = "Добавьте книгу или YouTube-видео, чтобы начать читать в обычном режиме или скорочтении.",
+            text = "Импортируйте книгу, создайте свою или добавьте YouTube-видео, чтобы начать читать в обычном режиме или скорочтении.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -260,6 +272,7 @@ private fun LibraryMaterialCard(
     onContinue: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
+    onEdit: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val displayTitle = remember(title) { MaterialTitleFormatter.displayTitle(title) }
@@ -323,6 +336,15 @@ private fun LibraryMaterialCard(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false },
                     ) {
+                        if (onEdit != null) {
+                            DropdownMenuItem(
+                                text = { Text("Редактировать") },
+                                onClick = {
+                                    menuExpanded = false
+                                    onEdit()
+                                },
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text("Rename") },
                             onClick = {
@@ -390,6 +412,7 @@ private fun LibraryMaterialCard(
 private fun AddMaterialBottomSheet(
     onDismiss: () -> Unit,
     onImportBook: () -> Unit,
+    onCreateBook: () -> Unit,
     onAddYouTube: () -> Unit,
 ) {
     ModalBottomSheet(
@@ -416,6 +439,12 @@ private fun AddMaterialBottomSheet(
                 icon = Icons.AutoMirrored.Filled.MenuBook,
                 label = "Импортировать книгу",
                 onClick = onImportBook,
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            AddMaterialSheetAction(
+                icon = Icons.Filled.Edit,
+                label = "Создать книгу",
+                onClick = onCreateBook,
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             AddMaterialSheetAction(
@@ -588,10 +617,12 @@ private fun LibraryScreenPreview() {
             books = previewBooks(),
             progressPercent = { book -> if (book.id == "2") 64 else 12 },
             onImportBook = {},
+            onCreateBook = {},
             onAddYouTubeVideo = { _, _ -> },
             onRenameBook = { _, _ -> },
             onDeleteBook = {},
             onContinueReading = {},
+            onEditBook = {},
         )
     }
 }
@@ -604,10 +635,12 @@ private fun LibraryEmptyPreview() {
             books = emptyList(),
             progressPercent = { 0 },
             onImportBook = {},
+            onCreateBook = {},
             onAddYouTubeVideo = { _, _ -> },
             onRenameBook = { _, _ -> },
             onDeleteBook = {},
             onContinueReading = {},
+            onEditBook = {},
         )
     }
 }
@@ -624,5 +657,11 @@ private fun previewBooks(): List<Book> = listOf(
         title = "Speed reading lecture",
         content = "https://youtu.be/dQw4w9wg",
         sourceType = MaterialSourceType.YouTube,
+    ).withReadingStats(),
+    Book(
+        id = "created:preview",
+        title = "Мои заметки",
+        content = "one two three four five",
+        sourceType = MaterialSourceType.Book,
     ).withReadingStats(),
 )

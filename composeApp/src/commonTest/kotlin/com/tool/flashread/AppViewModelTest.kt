@@ -6,6 +6,7 @@ import com.tool.flashread.platform.ImportedBook
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -175,5 +176,92 @@ class AppViewModelTest {
         assertFalse(viewModel.uiState.value.isImportingExternalBook)
         assertNull(viewModel.uiState.value.pendingReaderBookId)
         assertEquals("Failed to import book.", message.await())
+    }
+
+    @Test
+    fun startBookEditorStoresEditorBookId() = runTest {
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(),
+            readingSessionRepository = memoryReadingSessionRepository(),
+        )
+        assertNull(viewModel.uiState.value.editorBookId)
+
+        viewModel.startBookEditor("created:draft")
+        assertEquals("created:draft", viewModel.uiState.value.editorBookId)
+
+        viewModel.startBookEditor(null)
+        assertNull(viewModel.uiState.value.editorBookId)
+    }
+
+    @Test
+    fun createBookPersistsTitleContentAndSelectsIt() = runTest {
+        val stored = mutableListOf<Book>()
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(stored),
+            readingSessionRepository = memoryReadingSessionRepository(),
+        )
+
+        viewModel.createBook(title = "  My notes  ", content = "one two\n\nthree")
+
+        val book = viewModel.uiState.value.books.single()
+        assertTrue(book.id.startsWith("created:"))
+        assertEquals("My notes", book.title)
+        assertEquals("one two\n\nthree", book.content)
+        assertEquals(MaterialSourceType.Book, book.sourceType)
+        assertEquals(book.id, viewModel.uiState.value.selectedBookId)
+        assertEquals(1, stored.size)
+        assertEquals(book, stored.single())
+    }
+
+    @Test
+    fun createBookIgnoresBlankContentAndDefaultsBlankTitle() = runTest {
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(),
+            readingSessionRepository = memoryReadingSessionRepository(),
+        )
+
+        viewModel.createBook(title = "Ignored", content = "   \n  ")
+        assertTrue(viewModel.uiState.value.books.isEmpty())
+        assertNull(viewModel.uiState.value.selectedBookId)
+
+        viewModel.createBook(title = "  ", content = "hello")
+        val book = viewModel.uiState.value.currentBook
+        assertNotNull(book)
+        assertEquals("Новая книга", book.title)
+        assertEquals("hello", book.content)
+        assertTrue(book.id.startsWith("created:"))
+        assertEquals(MaterialSourceType.Book, book.sourceType)
+    }
+
+    @Test
+    fun updateCreatedBookChangesContentAndIgnoresImportedIds() = runTest {
+        val stored = mutableListOf<Book>()
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(stored),
+            readingSessionRepository = memoryReadingSessionRepository(),
+        )
+        viewModel.createBook(title = "Draft", content = "one two")
+        val createdId = viewModel.uiState.value.books.single().id
+        assertEquals(2, viewModel.uiState.value.books.single().wordCount)
+
+        viewModel.updateCreatedBook(
+            bookId = createdId,
+            title = "  Revised  ",
+            content = "one two three\n\nfour five",
+        )
+        val updated = viewModel.uiState.value.books.single()
+        assertEquals("Revised", updated.title)
+        assertEquals("one two three\n\nfour five", updated.content)
+        assertEquals(5, updated.wordCount)
+        assertEquals(2, updated.paragraphCount)
+        assertEquals(updated, stored.single())
+
+        viewModel.upsertImportedBook(
+            ImportedBook(id = "imported-1", title = "novel.epub", content = "chapter one"),
+        )
+        viewModel.updateCreatedBook("imported-1", title = "Hacked", content = "changed")
+        val imported = viewModel.uiState.value.books.first { it.id == "imported-1" }
+        assertEquals("novel.epub", imported.title)
+        assertEquals("chapter one", imported.content)
     }
 }

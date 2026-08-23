@@ -16,10 +16,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 data class AppUiState(
     val books: List<Book> = emptyList(),
     val selectedBookId: String? = null,
+    val editorBookId: String? = null,
     val isImportingExternalBook: Boolean = false,
     val pendingReaderBookId: String? = null,
 ) {
@@ -99,6 +102,37 @@ class AppViewModel(
         showMessage("Added ${MaterialTitleFormatter.displayTitle(resolvedTitle)}")
     }
 
+    fun startBookEditor(bookId: String?) {
+        _uiState.update { it.copy(editorBookId = bookId) }
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    fun createBook(title: String, content: String) {
+        val trimmedContent = content.trim()
+        if (trimmedContent.isBlank()) return
+        val book = Book(
+            id = "created:${Uuid.random()}",
+            title = authoredBookTitle(title),
+            content = trimmedContent,
+            sourceType = MaterialSourceType.Book,
+        ).withReadingStats()
+        upsert(book)
+        selectBook(book.id)
+    }
+
+    fun updateCreatedBook(bookId: String, title: String, content: String) {
+        if (!bookId.startsWith("created:")) return
+        val trimmedContent = content.trim()
+        if (trimmedContent.isBlank()) return
+        val existing = _uiState.value.books.firstOrNull { it.id == bookId } ?: return
+        upsert(
+            existing.copy(
+                title = authoredBookTitle(title),
+                content = trimmedContent,
+            ).withReadingStats(),
+        )
+    }
+
     fun renameBook(bookId: String, newTitle: String) {
         val trimmed = newTitle.trim()
         if (trimmed.isBlank()) return
@@ -157,6 +191,10 @@ class AppViewModel(
 
     private fun persist(books: List<Book>) {
         bookRepository.saveBooks(books)
+    }
+
+    private fun authoredBookTitle(title: String): String {
+        return title.trim().ifBlank { "Новая книга" }
     }
 
     private fun showMessage(message: String) {

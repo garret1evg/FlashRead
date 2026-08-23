@@ -18,6 +18,7 @@ class AppNavigationTest {
         assertFalse(AppRoute.SpeedReadPlayer.isTopLevel)
         assertFalse(AppRoute.PrivacyPolicy.isTopLevel)
         assertFalse(AppRoute.Terms.isTopLevel)
+        assertFalse(AppRoute.BookEditor.isTopLevel)
     }
 
     @Test
@@ -30,6 +31,7 @@ class AppNavigationTest {
         assertNull(AppScreen.fromRoute(AppRoute.SpeedReadPlayer))
         assertNull(AppScreen.fromRoute(AppRoute.PrivacyPolicy))
         assertNull(AppScreen.fromRoute(AppRoute.Terms))
+        assertNull(AppScreen.fromRoute(AppRoute.BookEditor))
     }
 
     @Test
@@ -130,5 +132,18 @@ class AppNavigationTest {
         assertEquals(listOf(AppRoute.Settings, AppRoute.Terms), backStack.toList())
         assertTrue(backStack.popBack())
         assertEquals(listOf(AppRoute.Settings), backStack.toList())
+    }
+
+    @Test
+    fun bookEditor_isNestedWithoutScaffoldTopBar() {
+        assertFalse(AppRoute.BookEditor.isTopLevel)
+        assertFalse(AppRoute.BookEditor.showsScaffoldTopBar)
+        assertNull(AppScreen.fromRoute(AppRoute.BookEditor))
+
+        val backStack = mutableListOf<AppRoute>(AppRoute.Library)
+        backStack.pushIfNeeded(AppRoute.BookEditor)
+        assertEquals(listOf(AppRoute.Library, AppRoute.BookEditor), backStack.toList())
+        assertTrue(backStack.popBack())
+        assertEquals(listOf(AppRoute.Library), backStack.toList())
     }
 }

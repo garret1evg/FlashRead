@@ -24,15 +24,15 @@ object LegalDocuments {
             ),
             LegalSection(
                 heading = "Information stored on your device",
-                body = "FlashRead stores the books and files you import, extracted text, titles, optional cover images, reading progress, reader preferences, and speed-reading settings. If you add a YouTube link, FlashRead stores the title and URL you provide. This information stays in app storage on your device.",
+                body = "FlashRead stores the books and files you import, books you write in the app, extracted text, titles, optional cover images, reading progress, reader preferences, and speed-reading settings. If you add a YouTube link, FlashRead stores the title and URL you provide. This information stays in app storage on your device.",
             ),
             LegalSection(
                 heading = "Information we do not collect",
-                body = "FlashRead does not create an account, and it does not collect analytics, advertising identifiers, crash reports, or location data. The app does not upload your imported books or reading history to our servers.",
+                body = "FlashRead does not create an account, and it does not collect analytics, advertising identifiers, crash reports, or location data. The app does not upload your imported books, books you write, or reading history to our servers.",
             ),
             LegalSection(
                 heading = "How information is used",
-                body = "Local data is used only to show your library, remember where you left off, and apply the reading preferences you choose. YouTube links you add are stored so you can open them again from the library.",
+                body = "Local data is used only to show your library, remember where you left off, and apply the reading preferences you choose. Books you write stay on the device so you can keep editing them. YouTube links you add are stored so you can open them again from the library.",
             ),
             LegalSection(
                 heading = "Sharing",
@@ -67,11 +67,11 @@ object LegalDocuments {
             ),
             LegalSection(
                 heading = "The app",
-                body = "FlashRead lets you import reading materials, read them on your device, and practice speed-reading. Features may change as the app is updated.",
+                body = "FlashRead lets you import reading materials, write your own books, read them on your device, and practice speed-reading. Features may change as the app is updated.",
             ),
             LegalSection(
                 heading = "Your content",
-                body = "You are responsible for the files, titles, and links you add. Only import materials you have the right to use. FlashRead does not claim ownership of your imported books or saved links.",
+                body = "You are responsible for the files, titles, links, and books you write. Only import or create materials you have the right to use. FlashRead does not claim ownership of your imported books, written books, or saved links.",
             ),
             LegalSection(
                 heading = "Acceptable use",

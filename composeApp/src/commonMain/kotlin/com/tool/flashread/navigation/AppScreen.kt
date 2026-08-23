@@ -15,6 +15,7 @@ enum class AppScreen(val title: String, val route: AppRoute) {
             AppRoute.SpeedReadPlayer,
             AppRoute.PrivacyPolicy,
             AppRoute.Terms,
+            AppRoute.BookEditor,
             -> null
         }
     }
