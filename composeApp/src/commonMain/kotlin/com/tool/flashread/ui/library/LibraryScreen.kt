@@ -18,14 +18,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -61,6 +59,8 @@ import androidx.compose.ui.unit.dp
 import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.MaterialSourceType
 import com.tool.flashread.core.reading.withReadingStats
+import com.tool.flashread.ui.components.AppLogo
+import com.tool.flashread.ui.components.ScreenTitle
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadShapes
 import com.tool.flashread.ui.theme.FlashReadTheme
@@ -89,13 +89,7 @@ fun LibraryScreen(
             .padding(horizontal = FlashReadDimens.screenHorizontalPadding),
     ) {
         Spacer(Modifier.height(FlashReadDimens.space8))
-        Text(
-            text = "Библиотека",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        ScreenTitle(title = "Библиотека")
         if (isImporting) {
             Spacer(Modifier.height(FlashReadDimens.space12))
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -228,20 +222,7 @@ private fun LibraryEmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .size(72.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.MenuBook,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(36.dp),
-            )
-        }
+        AppLogo(size = 80.dp)
         Spacer(Modifier.height(FlashReadDimens.space16))
         Text(
             text = "Библиотека пуста",

@@ -68,6 +68,8 @@ import com.tool.flashread.navigation.title
 import com.tool.flashread.platform.ObserveExternalBookOpens
 import com.tool.flashread.platform.launchRouteForExternalBookOpen
 import com.tool.flashread.platform.rememberBookImportLauncher
+import com.tool.flashread.ui.components.AppLogo
+import com.tool.flashread.ui.components.ScreenTitle
 import com.tool.flashread.ui.library.LibraryScreen
 import com.tool.flashread.ui.library.MaterialTitleFormatter
 import com.tool.flashread.ui.reader.ReaderScreen
@@ -338,13 +340,7 @@ private fun HomeScreen(
             .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
             .padding(top = FlashReadDimens.space8),
     ) {
-        Text(
-            text = "Home",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        ScreenTitle(title = "Home")
         Spacer(Modifier.height(FlashReadDimens.space16))
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -412,6 +408,8 @@ private fun EmptyBookState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        AppLogo(size = 80.dp)
+        Spacer(Modifier.height(FlashReadDimens.space16))
         Text(
             text = "No book selected",
             style = MaterialTheme.typography.titleLarge,
@@ -456,13 +454,7 @@ private fun SettingsScreen(
             .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
             .padding(top = FlashReadDimens.space8),
     ) {
-        Text(
-            text = "Settings",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        ScreenTitle(title = "Settings")
         Spacer(Modifier.height(FlashReadDimens.space12))
         Text(
             text = "Reading preferences will appear here.",

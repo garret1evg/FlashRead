@@ -15,6 +15,9 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
+        // Required so composeResources (app_logo.png) are packaged into the Android APK.
+        // See https://youtrack.jetbrains.com/issue/CMP-9547
+        androidResources.enable = true
         withHostTest {}
     }
     
@@ -58,5 +61,10 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
         }
     }
+}
+
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "com.tool.flashread.resources"
 }
 
