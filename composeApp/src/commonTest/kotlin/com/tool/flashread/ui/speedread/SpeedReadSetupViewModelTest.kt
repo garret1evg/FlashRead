@@ -7,12 +7,55 @@ import com.tool.flashread.core.speedread.delayUnitsToMs
 import com.tool.flashread.core.speedread.remainingMsToMinutes
 import com.tool.flashread.memoryReadingSessionRepository
 import com.tool.flashread.memorySpeedReadSettingsRepository
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SpeedReadSetupViewModelTest {
+
+    private val dispatcher = UnconfinedTestDispatcher()
+
+    @BeforeTest
+    fun setUp() {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    @AfterTest
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun remainingMinutesLoadsInBackground() {
+        val computation = StandardTestDispatcher()
+        val viewModel = SpeedReadSetupViewModel(
+            book = Book(
+                id = "book-1",
+                title = "Sample",
+                content = List(600) { "word" }.joinToString(" "),
+            ),
+            settingsRepository = memorySpeedReadSettingsRepository(arrayOf(SpeedReadSettings(wpm = 300))),
+            readingSessionRepository = memoryReadingSessionRepository(),
+            computationDispatcher = computation,
+        )
+
+        assertNull(viewModel.uiState.value.remainingMinutes)
+        assertTrue(viewModel.uiState.value.canStart)
+
+        computation.scheduler.advanceUntilIdle()
+        assertEquals(2, viewModel.uiState.value.remainingMinutes)
+    }
 
     @Test
     fun remainingMinutesFollowsWpmAndStartRequiresContent() {
@@ -25,6 +68,7 @@ class SpeedReadSetupViewModelTest {
             ),
             settingsRepository = memorySpeedReadSettingsRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(),
+            computationDispatcher = dispatcher,
         )
 
         assertEquals(2, viewModel.uiState.value.remainingMinutes)
@@ -43,6 +87,7 @@ class SpeedReadSetupViewModelTest {
             book = Book(id = "book-1", title = "Sample", content = content),
             settingsRepository = memorySpeedReadSettingsRepository(arrayOf(settings)),
             readingSessionRepository = memoryReadingSessionRepository(mutableMapOf("book-1" to 0)),
+            computationDispatcher = dispatcher,
         )
 
         assertEquals(
@@ -61,6 +106,7 @@ class SpeedReadSetupViewModelTest {
             book = Book(id = "book-1", title = "Sample", content = content),
             settingsRepository = memorySpeedReadSettingsRepository(arrayOf(settings)),
             readingSessionRepository = memoryReadingSessionRepository(mutableMapOf("book-1" to 1)),
+            computationDispatcher = dispatcher,
         )
 
         assertEquals(
@@ -81,6 +127,7 @@ class SpeedReadSetupViewModelTest {
                 positions = mutableMapOf("book-1" to 0),
                 wordOffsets = mutableMapOf("book-1" to wordOffset),
             ),
+            computationDispatcher = dispatcher,
         )
 
         assertEquals(
@@ -121,6 +168,7 @@ class SpeedReadSetupViewModelTest {
             book = Book(id = "empty", title = "Empty", content = "   "),
             settingsRepository = memorySpeedReadSettingsRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
+            computationDispatcher = dispatcher,
         )
         assertFalse(viewModel.uiState.value.canStart)
     }

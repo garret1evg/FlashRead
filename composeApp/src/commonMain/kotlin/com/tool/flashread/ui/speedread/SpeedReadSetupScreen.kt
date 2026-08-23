@@ -360,7 +360,8 @@ private fun formatWordCount(count: Int): String {
     return "$count $word"
 }
 
-internal fun formatRemainingTime(minutes: Int): String {
+internal fun formatRemainingTime(minutes: Int?): String {
+    if (minutes == null) return "Осталось около …"
     return when {
         minutes <= 0 -> "Осталось меньше минуты"
         minutes < 60 -> "Осталось около $minutes мин"
