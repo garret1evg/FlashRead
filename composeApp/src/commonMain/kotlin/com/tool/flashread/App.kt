@@ -78,6 +78,7 @@ import com.tool.flashread.ui.reader.ReaderScreen
 import com.tool.flashread.ui.settings.LegalDocumentScreen
 import com.tool.flashread.ui.settings.LegalDocuments
 import com.tool.flashread.ui.settings.SettingsScreen
+import com.tool.flashread.ui.speedread.QuickSpeedReadScreen
 import com.tool.flashread.ui.speedread.SpeedReadPlayerScreen
 import com.tool.flashread.ui.speedread.SpeedReadSetupScreen
 import com.tool.flashread.ui.theme.FlashReadDimens
@@ -121,6 +122,15 @@ fun App() {
         fun openBookEditor(bookId: String?) {
             appViewModel.startBookEditor(bookId)
             backStack.pushIfNeeded(AppRoute.BookEditor)
+        }
+
+        fun openQuickSpeedRead() {
+            backStack.pushIfNeeded(AppRoute.QuickSpeedRead)
+        }
+
+        fun startScratchSpeedRead(content: String) {
+            if (!appViewModel.startScratchSpeedRead(content)) return
+            backStack.pushIfNeeded(AppRoute.SpeedRead)
         }
 
         fun redirectToLibraryIfNoBook() {
@@ -228,7 +238,12 @@ fun App() {
                         },
                     ),
                 backStack = backStack,
-                onBack = { backStack.popBack() },
+                onBack = {
+                    if (backStack.lastOrNull() is AppRoute.QuickSpeedRead) {
+                        appViewModel.clearScratchBook()
+                    }
+                    backStack.popBack()
+                },
                 entryDecorators = listOf(
                     rememberSaveableStateHolderNavEntryDecorator(),
                     rememberViewModelStoreNavEntryDecorator(),
@@ -245,6 +260,7 @@ fun App() {
                             progressPercent = currentBook?.let(appViewModel::progressPercent) ?: 0,
                             onImportBook = launchBookImport,
                             onCreateBook = { openBookEditor(null) },
+                            onSpeedReadText = ::openQuickSpeedRead,
                             onContinueReading = { bookId -> openReader(bookId) },
                         )
                     }
@@ -254,6 +270,7 @@ fun App() {
                             progressPercent = appViewModel::progressPercent,
                             onImportBook = launchBookImport,
                             onCreateBook = { openBookEditor(null) },
+                            onSpeedReadText = ::openQuickSpeedRead,
                             onAddYouTubeVideo = appViewModel::addYouTubeVideo,
                             onRenameBook = appViewModel::renameBook,
                             onDeleteBook = appViewModel::deleteBook,
@@ -270,14 +287,17 @@ fun App() {
                             ReaderScreen(
                                 book = book,
                                 onBack = { backStack.popBack() },
-                                onOpenSpeedRead = { backStack.pushIfNeeded(AppRoute.SpeedRead) },
+                                onOpenSpeedRead = {
+                                    appViewModel.clearScratchBook()
+                                    backStack.pushIfNeeded(AppRoute.SpeedRead)
+                                },
                                 isActiveRoute = currentRoute is AppRoute.Reader,
                             )
                         }
                     }
                     entry<AppRoute.SpeedRead> {
                         SelectedBookRoute(
-                            book = currentBook,
+                            book = uiState.speedReadBook,
                             onMissingBook = ::redirectToLibraryIfNoBook,
                         ) { book ->
                             SpeedReadSetupScreen(
@@ -288,7 +308,7 @@ fun App() {
                     }
                     entry<AppRoute.SpeedReadPlayer> {
                         SelectedBookRoute(
-                            book = currentBook,
+                            book = uiState.speedReadBook,
                             onMissingBook = ::redirectToLibraryIfNoBook,
                         ) { book ->
                             SpeedReadPlayerScreen(
@@ -324,6 +344,15 @@ fun App() {
                                 }
                                 backStack.popBack()
                             },
+                        )
+                    }
+                    entry<AppRoute.QuickSpeedRead> {
+                        QuickSpeedReadScreen(
+                            onBack = {
+                                appViewModel.clearScratchBook()
+                                backStack.popBack()
+                            },
+                            onContinue = ::startScratchSpeedRead,
                         )
                     }
                 },
@@ -363,6 +392,7 @@ private fun HomeScreen(
     progressPercent: Int,
     onImportBook: () -> Unit,
     onCreateBook: () -> Unit,
+    onSpeedReadText: () -> Unit,
     onContinueReading: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -371,6 +401,7 @@ private fun HomeScreen(
             modifier = modifier,
             onImportBook = onImportBook,
             onCreateBook = onCreateBook,
+            onSpeedReadText = onSpeedReadText,
         )
         return
     }
@@ -434,6 +465,20 @@ private fun HomeScreen(
                 }
             }
         }
+        Spacer(Modifier.height(FlashReadDimens.space12))
+        Button(
+            onClick = onSpeedReadText,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = FlashReadDimens.minTouchTarget),
+            shape = FlashReadShapes.button,
+        ) {
+            Text(
+                text = "Скорочтение текста",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -441,6 +486,7 @@ private fun HomeScreen(
 private fun EmptyBookState(
     onImportBook: () -> Unit,
     onCreateBook: () -> Unit,
+    onSpeedReadText: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -463,7 +509,7 @@ private fun EmptyBookState(
         )
         Spacer(Modifier.height(FlashReadDimens.space8))
         Text(
-            text = "Import a .txt, .fb2, or .epub file, write your own book, or pick one in Library.",
+            text = "Import a .txt, .fb2, or .epub file, write your own book, paste text for speed reading, or pick one in Library.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -493,6 +539,20 @@ private fun EmptyBookState(
         ) {
             Text(
                 text = "Создать книгу",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.height(FlashReadDimens.space12))
+        Button(
+            onClick = onSpeedReadText,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = FlashReadDimens.minTouchTarget),
+            shape = FlashReadShapes.button,
+        ) {
+            Text(
+                text = "Скорочтение текста",
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

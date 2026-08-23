@@ -2,6 +2,7 @@ package com.tool.flashread
 
 import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.MaterialSourceType
+import com.tool.flashread.core.model.ReadingPosition
 import com.tool.flashread.platform.ImportedBook
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -263,5 +264,72 @@ class AppViewModelTest {
         val imported = viewModel.uiState.value.books.first { it.id == "imported-1" }
         assertEquals("novel.epub", imported.title)
         assertEquals("chapter one", imported.content)
+    }
+
+    @Test
+    fun startScratchSpeedReadKeepsTextOutOfLibrary() = runTest {
+        val stored = mutableListOf<Book>()
+        val positions = mutableMapOf<String, Int>()
+        val wordOffsets = mutableMapOf<String, Int>()
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(stored),
+            readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
+        )
+        viewModel.upsertImportedBook(
+            ImportedBook(id = "book-1", title = "notes.txt", content = "library text"),
+        )
+        viewModel.selectBook("book-1")
+
+        assertFalse(viewModel.startScratchSpeedRead("   \n  "))
+        assertNull(viewModel.uiState.value.scratchBook)
+        assertEquals("book-1", viewModel.uiState.value.selectedBookId)
+        assertEquals("book-1", viewModel.uiState.value.currentBook?.id)
+        assertEquals("book-1", viewModel.uiState.value.speedReadBook?.id)
+
+        assertTrue(viewModel.startScratchSpeedRead("  paste this  \n\nnow  "))
+        val state = viewModel.uiState.value
+        assertEquals(ScratchSpeedReadBookId, state.scratchBook?.id)
+        assertEquals("Скорочтение", state.scratchBook?.title)
+        assertEquals("paste this  \n\nnow", state.scratchBook?.content)
+        assertEquals(MaterialSourceType.Book, state.scratchBook?.sourceType)
+        assertEquals(ScratchSpeedReadBookId, state.speedReadBook?.id)
+        assertEquals("book-1", state.selectedBookId)
+        assertEquals("book-1", state.currentBook?.id)
+        assertEquals(1, state.books.size)
+        assertEquals(1, stored.size)
+        assertEquals("notes.txt", stored.single().title)
+        assertEquals(0, positions[ScratchSpeedReadBookId])
+        assertEquals(ReadingPosition.UNSET, wordOffsets[ScratchSpeedReadBookId])
+    }
+
+    @Test
+    fun scratchSpeedReadResetsPositionAndClearsWithoutTouchingLibrary() = runTest {
+        val stored = mutableListOf<Book>()
+        val positions = mutableMapOf(ScratchSpeedReadBookId to 4)
+        val wordOffsets = mutableMapOf(ScratchSpeedReadBookId to 12)
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(stored),
+            readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
+        )
+        viewModel.upsertImportedBook(
+            ImportedBook(id = "keep", title = "Keep.txt", content = "alpha"),
+        )
+        viewModel.selectBook("keep")
+
+        assertTrue(viewModel.startScratchSpeedRead("one two three"))
+        assertEquals(0, positions[ScratchSpeedReadBookId])
+        assertEquals(ReadingPosition.UNSET, wordOffsets[ScratchSpeedReadBookId])
+        assertEquals(ScratchSpeedReadBookId, viewModel.uiState.value.speedReadBook?.id)
+
+        viewModel.clearScratchBook()
+        assertNull(viewModel.uiState.value.scratchBook)
+        assertEquals("keep", viewModel.uiState.value.speedReadBook?.id)
+        assertEquals("keep", viewModel.uiState.value.selectedBookId)
+        assertEquals(1, stored.size)
+
+        viewModel.startScratchSpeedRead("fresh text")
+        viewModel.selectBook("keep")
+        assertNull(viewModel.uiState.value.scratchBook)
+        assertEquals("keep", viewModel.uiState.value.currentBook?.id)
     }
 }

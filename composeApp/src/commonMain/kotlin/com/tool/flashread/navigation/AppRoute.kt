@@ -12,6 +12,7 @@ sealed interface AppRoute : NavKey {
     data object PrivacyPolicy : AppRoute
     data object Terms : AppRoute
     data object BookEditor : AppRoute
+    data object QuickSpeedRead : AppRoute
 }
 
 val AppRoute.isTopLevel: Boolean
@@ -23,6 +24,7 @@ val AppRoute.isTopLevel: Boolean
         AppRoute.PrivacyPolicy,
         AppRoute.Terms,
         AppRoute.BookEditor,
+        AppRoute.QuickSpeedRead,
         -> false
     }
 
@@ -42,4 +44,5 @@ val AppRoute.title: String
         AppRoute.PrivacyPolicy -> "Privacy Policy"
         AppRoute.Terms -> "Terms & Conditions"
         AppRoute.BookEditor -> "Редактор"
+        AppRoute.QuickSpeedRead -> "Скорочтение"
     }

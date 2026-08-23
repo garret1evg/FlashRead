@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayCircle
@@ -73,6 +74,7 @@ fun LibraryScreen(
     progressPercent: (Book) -> Int,
     onImportBook: () -> Unit,
     onCreateBook: () -> Unit,
+    onSpeedReadText: () -> Unit,
     onAddYouTubeVideo: (title: String, url: String) -> Unit,
     onRenameBook: (bookId: String, newTitle: String) -> Unit,
     onDeleteBook: (String) -> Unit,
@@ -166,6 +168,10 @@ fun LibraryScreen(
                 showAddSheet = false
                 onCreateBook()
             },
+            onSpeedReadText = {
+                showAddSheet = false
+                onSpeedReadText()
+            },
             onAddYouTube = {
                 showAddSheet = false
                 showYouTubeDialog = true
@@ -247,7 +253,7 @@ private fun LibraryEmptyState(
         )
         Spacer(Modifier.height(FlashReadDimens.space8))
         Text(
-            text = "Импортируйте книгу, создайте свою или добавьте YouTube-видео, чтобы начать читать в обычном режиме или скорочтении.",
+            text = "Импортируйте книгу, создайте свою, вставьте текст для скорочтения или добавьте YouTube-видео.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -413,6 +419,7 @@ private fun AddMaterialBottomSheet(
     onDismiss: () -> Unit,
     onImportBook: () -> Unit,
     onCreateBook: () -> Unit,
+    onSpeedReadText: () -> Unit,
     onAddYouTube: () -> Unit,
 ) {
     ModalBottomSheet(
@@ -445,6 +452,12 @@ private fun AddMaterialBottomSheet(
                 icon = Icons.Filled.Edit,
                 label = "Создать книгу",
                 onClick = onCreateBook,
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            AddMaterialSheetAction(
+                icon = Icons.Filled.Bolt,
+                label = "Скорочтение текста",
+                onClick = onSpeedReadText,
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             AddMaterialSheetAction(
@@ -618,6 +631,7 @@ private fun LibraryScreenPreview() {
             progressPercent = { book -> if (book.id == "2") 64 else 12 },
             onImportBook = {},
             onCreateBook = {},
+            onSpeedReadText = {},
             onAddYouTubeVideo = { _, _ -> },
             onRenameBook = { _, _ -> },
             onDeleteBook = {},
@@ -636,6 +650,7 @@ private fun LibraryEmptyPreview() {
             progressPercent = { 0 },
             onImportBook = {},
             onCreateBook = {},
+            onSpeedReadText = {},
             onAddYouTubeVideo = { _, _ -> },
             onRenameBook = { _, _ -> },
             onDeleteBook = {},

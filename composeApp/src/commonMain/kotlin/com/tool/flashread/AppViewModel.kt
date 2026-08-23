@@ -3,6 +3,7 @@ package com.tool.flashread
 import androidx.lifecycle.ViewModel
 import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.MaterialSourceType
+import com.tool.flashread.core.model.ReadingPosition
 import com.tool.flashread.core.reading.bookProgressPercent
 import com.tool.flashread.core.reading.withReadingStats
 import com.tool.flashread.data.repository.BookRepository
@@ -19,15 +20,21 @@ import kotlinx.coroutines.flow.update
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
+internal const val ScratchSpeedReadBookId = "scratch:speed-read"
+
 data class AppUiState(
     val books: List<Book> = emptyList(),
     val selectedBookId: String? = null,
     val editorBookId: String? = null,
+    val scratchBook: Book? = null,
     val isImportingExternalBook: Boolean = false,
     val pendingReaderBookId: String? = null,
 ) {
     val currentBook: Book?
         get() = books.firstOrNull { it.id == selectedBookId }
+
+    val speedReadBook: Book?
+        get() = scratchBook ?: currentBook
 }
 
 class AppViewModel(
@@ -51,7 +58,7 @@ class AppViewModel(
     }
 
     fun selectBook(bookId: String) {
-        _uiState.update { it.copy(selectedBookId = bookId) }
+        _uiState.update { it.copy(selectedBookId = bookId, scratchBook = null) }
     }
 
     fun onExternalBookOpenStarted() {
@@ -103,7 +110,32 @@ class AppViewModel(
     }
 
     fun startBookEditor(bookId: String?) {
-        _uiState.update { it.copy(editorBookId = bookId) }
+        _uiState.update { it.copy(editorBookId = bookId, scratchBook = null) }
+    }
+
+    fun startScratchSpeedRead(content: String): Boolean {
+        val trimmedContent = content.trim()
+        if (trimmedContent.isBlank()) return false
+        val book = Book(
+            id = ScratchSpeedReadBookId,
+            title = "Скорочтение",
+            content = trimmedContent,
+            sourceType = MaterialSourceType.Book,
+        ).withReadingStats()
+        readingSessionRepository.savePosition(
+            ReadingPosition(
+                bookId = ScratchSpeedReadBookId,
+                paragraphIndex = 0,
+                wordOffset = ReadingPosition.UNSET,
+            ),
+        )
+        _uiState.update { it.copy(scratchBook = book) }
+        return true
+    }
+
+    fun clearScratchBook() {
+        if (_uiState.value.scratchBook == null) return
+        _uiState.update { it.copy(scratchBook = null) }
     }
 
     @OptIn(ExperimentalUuidApi::class)
