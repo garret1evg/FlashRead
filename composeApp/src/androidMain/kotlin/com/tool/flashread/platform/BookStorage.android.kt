@@ -11,60 +11,55 @@ actual object BookStorage {
     private const val KEY_BOOK_IDS = "book_ids"
     private const val KEY_ID_PREFIX = "book_id_"
     private const val KEY_TITLE_PREFIX = "book_title_"
-    private const val KEY_CONTENT_PREFIX = "book_content_"
     private const val KEY_TYPE_PREFIX = "book_type_"
     private const val KEY_WORD_COUNT_PREFIX = "book_word_count_"
     private const val KEY_PARAGRAPH_COUNT_PREFIX = "book_paragraph_count_"
-    private const val KEY_COVER_PREFIX = "book_cover_"
 
     actual fun saveBooks(books: List<Book>) {
         val preferences = prefs()
         val oldKeys = preferences.getStringSet(KEY_BOOK_IDS, emptySet()).orEmpty()
-        preferences.edit {
-            oldKeys.forEach { storageKey ->
-                remove(KEY_ID_PREFIX + storageKey)
-                remove(KEY_TITLE_PREFIX + storageKey)
-                remove(KEY_CONTENT_PREFIX + storageKey)
-                remove(KEY_TYPE_PREFIX + storageKey)
-                remove(KEY_WORD_COUNT_PREFIX + storageKey)
-                remove(KEY_PARAGRAPH_COUNT_PREFIX + storageKey)
-                remove(KEY_COVER_PREFIX + storageKey)
-            }
+        val contentFiles = BookContentFiles.create()
+        val newKeys = books.map { storageKey(it.id) }.toSet()
 
-            val newKeys = books.map { storageKey(it.id) }.toSet()
+        books.forEach { book ->
+            contentFiles.write(storageKey(book.id), book.content)
+        }
+
+        preferences.edit {
+            oldKeys.forEach { key ->
+                remove(KEY_ID_PREFIX + key)
+                remove(KEY_TITLE_PREFIX + key)
+                remove(KEY_TYPE_PREFIX + key)
+                remove(KEY_WORD_COUNT_PREFIX + key)
+                remove(KEY_PARAGRAPH_COUNT_PREFIX + key)
+            }
             putStringSet(KEY_BOOK_IDS, newKeys)
             books.forEach { book ->
                 val key = storageKey(book.id)
                 putString(KEY_ID_PREFIX + key, book.id)
                 putString(KEY_TITLE_PREFIX + key, book.title)
-                putString(KEY_CONTENT_PREFIX + key, book.content)
                 putString(KEY_TYPE_PREFIX + key, book.sourceType.name)
                 putInt(KEY_WORD_COUNT_PREFIX + key, book.wordCount)
                 putInt(KEY_PARAGRAPH_COUNT_PREFIX + key, book.paragraphCount)
-                val coverFileName = book.coverFileName?.trim().orEmpty()
-                if (coverFileName.isNotEmpty()) {
-                    putString(KEY_COVER_PREFIX + key, coverFileName)
-                }
             }
         }
+
+        contentFiles.deleteOrphans(newKeys)
     }
 
     actual fun loadBooks(): List<Book> {
         val preferences = prefs()
         val storageKeys = preferences.getStringSet(KEY_BOOK_IDS, emptySet()).orEmpty()
-        var migrated = false
-        val books = storageKeys.mapNotNull { key ->
+        val contentFiles = BookContentFiles.create()
+        return storageKeys.mapNotNull { key ->
             val id = preferences.getString(KEY_ID_PREFIX + key, null) ?: return@mapNotNull null
             val title = preferences.getString(KEY_TITLE_PREFIX + key, null) ?: return@mapNotNull null
-            val content = preferences.getString(KEY_CONTENT_PREFIX + key, null) ?: return@mapNotNull null
+            val content = contentFiles.read(key) ?: return@mapNotNull null
             val sourceType = preferences.getString(KEY_TYPE_PREFIX + key, null)
                 ?.let { runCatching { MaterialSourceType.valueOf(it) }.getOrNull() }
                 ?: MaterialSourceType.Book
             val hasWordCount = preferences.contains(KEY_WORD_COUNT_PREFIX + key)
             val hasParagraphCount = preferences.contains(KEY_PARAGRAPH_COUNT_PREFIX + key)
-            if (!hasWordCount || !hasParagraphCount) {
-                migrated = true
-            }
             Book(
                 id = id,
                 title = title,
@@ -80,18 +75,12 @@ actual object BookStorage {
                 } else {
                     countParagraphs(content)
                 },
-                coverFileName = preferences.getString(KEY_COVER_PREFIX + key, null)
-                    ?.trim()
-                    ?.ifEmpty { null },
+                coverFileName = CoverStorage.findCoverFileName(id),
             )
         }
-        if (migrated) {
-            saveBooks(books)
-        }
-        return books
     }
 
-    private fun storageKey(bookId: String): String = bookId.hashCode().toString()
+    private fun storageKey(bookId: String): String = BookContentFiles.storageKey(bookId)
 
     private fun prefs() = AndroidAppContext.applicationContext.getSharedPreferences(PREFS_NAME, 0)
 }

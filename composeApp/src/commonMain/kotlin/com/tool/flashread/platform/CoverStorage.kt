@@ -16,7 +16,8 @@ internal fun coverFileExtension(mimeType: String): String {
     }
 }
 
+internal fun coverHashHex(bookId: String): String = bookId.hashCode().toUInt().toString(16)
+
 internal fun coverFileNameFor(bookId: String, mimeType: String): String {
-    val key = bookId.hashCode().toUInt().toString(16)
-    return "$key.${coverFileExtension(mimeType)}"
+    return "${coverHashHex(bookId)}.${coverFileExtension(mimeType)}"
 }
