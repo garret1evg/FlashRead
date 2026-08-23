@@ -29,8 +29,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import com.tool.flashread.resources.Res
+import com.tool.flashread.resources.*
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadTheme
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +44,8 @@ fun QuickSpeedReadScreen(
 ) {
     var content by remember { mutableStateOf("") }
     val canContinue = content.isNotBlank()
+    val backLabel = stringResource(Res.string.action_back)
+    val nextLabel = stringResource(Res.string.action_next)
 
     Column(
         modifier = modifier
@@ -50,7 +55,7 @@ fun QuickSpeedReadScreen(
         TopAppBar(
             title = {
                 Text(
-                    text = "Скорочтение",
+                    text = stringResource(Res.string.screen_speed_read),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -60,11 +65,11 @@ fun QuickSpeedReadScreen(
                     onClick = onBack,
                     modifier = Modifier
                         .size(FlashReadDimens.minTouchTarget)
-                        .semantics { contentDescription = "Назад" },
+                        .semantics { contentDescription = backLabel },
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Назад",
+                        contentDescription = backLabel,
                     )
                 }
             },
@@ -74,10 +79,10 @@ fun QuickSpeedReadScreen(
                     enabled = canContinue,
                     modifier = Modifier
                         .heightIn(min = FlashReadDimens.minTouchTarget)
-                        .semantics { contentDescription = "Далее" },
+                        .semantics { contentDescription = nextLabel },
                 ) {
                     Text(
-                        text = "Далее",
+                        text = nextLabel,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -100,8 +105,8 @@ fun QuickSpeedReadScreen(
                 .weight(1f)
                 .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
                 .padding(top = FlashReadDimens.space8, bottom = FlashReadDimens.space16),
-            label = { Text("Текст") },
-            placeholder = { Text("Вставьте текст — он не сохранится в библиотеке") },
+            label = { Text(stringResource(Res.string.quick_speed_read_text_label)) },
+            placeholder = { Text(stringResource(Res.string.quick_speed_read_placeholder)) },
         )
     }
 }

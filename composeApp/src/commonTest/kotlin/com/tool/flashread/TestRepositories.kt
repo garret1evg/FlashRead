@@ -1,9 +1,11 @@
 package com.tool.flashread
 
+import com.tool.flashread.core.locale.AppLanguage
 import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.ReadingPosition
 import com.tool.flashread.core.reading.ReaderTextSettings
 import com.tool.flashread.core.speedread.SpeedReadSettings
+import com.tool.flashread.data.repository.AppLanguageRepository
 import com.tool.flashread.data.repository.BookRepository
 import com.tool.flashread.data.repository.CoverRepository
 import com.tool.flashread.data.repository.ReaderTextSettingsRepository
@@ -67,6 +69,15 @@ internal fun memoryRecentBookRepository(
     return RecentBookRepository(
         onLoad = { recentBookId[0] },
         onSave = { recentBookId[0] = it },
+    )
+}
+
+internal fun memoryAppLanguageRepository(
+    language: Array<AppLanguage> = arrayOf(AppLanguage.System),
+): AppLanguageRepository {
+    return AppLanguageRepository(
+        onLoad = { language[0] },
+        onSave = { language[0] = it },
     )
 }
 

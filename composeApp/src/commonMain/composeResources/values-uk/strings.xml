@@ -1,0 +1,161 @@
+<resources>
+    <string name="app_name">FlashRead</string>
+
+    <string name="action_back">Назад</string>
+    <string name="action_save">Зберегти</string>
+    <string name="action_cancel">Скасувати</string>
+    <string name="action_add">Додати</string>
+    <string name="action_continue">Продовжити</string>
+    <string name="action_next">Далі</string>
+    <string name="action_close">Закрити</string>
+    <string name="action_more">Ще</string>
+    <string name="action_rename">Перейменувати</string>
+    <string name="action_delete">Видалити</string>
+    <string name="action_edit">Редагувати</string>
+    <string name="action_pause">Пауза</string>
+    <string name="action_play">Відтворення</string>
+    <string name="action_restart">Почати спочатку</string>
+    <string name="action_previous">Попереднє</string>
+    <string name="action_next_item">Наступне</string>
+    <string name="action_import_book">Імпортувати книгу</string>
+    <string name="action_create_book">Створити книгу</string>
+    <string name="action_speed_read_text">Швидкочитання тексту</string>
+
+    <string name="screen_home">Головна</string>
+    <string name="screen_library">Бібліотека</string>
+    <string name="screen_settings">Налаштування</string>
+    <string name="screen_reader">Читання</string>
+    <string name="screen_speed_read">Швидкочитання</string>
+    <string name="screen_speed_read_player">SpeedRead</string>
+    <string name="screen_privacy_policy">Політика конфіденційності</string>
+    <string name="screen_terms">Умови використання</string>
+    <string name="screen_editor">Редактор</string>
+
+    <string name="nav_home">Головна</string>
+    <string name="nav_library">Бібліотека</string>
+    <string name="nav_settings">Налаштування</string>
+
+    <string name="home_continue_reading">Продовжити читання</string>
+    <string name="home_progress">Прогрес: %1$d%</string>
+    <string name="home_open_reader">Відкрити читалку</string>
+    <string name="home_empty_title">Книгу не вибрано</string>
+    <string name="home_empty_body">Імпортуйте файл .txt, .fb2 або .epub, напишіть власну книгу, вставте текст для швидкочитання або оберіть книгу в Бібліотеці.</string>
+
+    <string name="library_opening_book">Відкриваємо книгу…</string>
+    <string name="library_add_material">Додати матеріал</string>
+    <string name="library_empty_title">Бібліотека порожня</string>
+    <string name="library_empty_body">Імпортуйте книгу, створіть свою, вставте текст для швидкочитання або додайте відео з YouTube.</string>
+    <string name="library_add_first_material">Додати перший матеріал</string>
+    <string name="library_add_youtube">Додати відео з YouTube</string>
+    <string name="library_field_title">Назва</string>
+    <string name="library_field_url">Посилання</string>
+    <string name="library_rename_title">Перейменувати</string>
+    <string name="percent_value">%1$d%</string>
+
+    <string name="default_new_book_title">Нова книга</string>
+    <string name="editor_title_label">Назва</string>
+    <string name="editor_text_label">Текст</string>
+    <string name="editor_text_placeholder">Кожен непорожній рядок — абзац</string>
+
+    <string name="default_speed_read_title">Швидкочитання</string>
+    <string name="quick_speed_read_text_label">Текст</string>
+    <string name="quick_speed_read_placeholder">Вставте текст — його не буде збережено в бібліотеці</string>
+
+    <string name="cd_cover">Обкладинка</string>
+    <string name="cd_book">Книга</string>
+    <string name="source_youtube_video">Відео з YouTube</string>
+
+    <string name="reader_text_settings">Налаштування тексту</string>
+    <string name="reader_open_speed_read">Перейти до швидкочитання</string>
+    <string name="reader_progress_cd">Прогрес читання %1$d відсотків</string>
+    <string name="reader_font_size">Розмір шрифту</string>
+    <string name="reader_font_size_cd">Розмір шрифту %1$d пунктів</string>
+    <string name="reader_line_height">Міжрядковий інтервал</string>
+    <string name="reader_line_height_cd">Міжрядковий інтервал %1$s</string>
+    <string name="reader_theme">Тема</string>
+    <string name="reader_theme_cd">Тема: %1$s</string>
+    <string name="reader_theme_light">Світла</string>
+    <string name="reader_theme_sepia">Сепія</string>
+    <string name="reader_theme_dark">Темна</string>
+    <string name="reader_alignment">Вирівнювання</string>
+    <string name="reader_alignment_start">За лівим краєм</string>
+    <string name="reader_alignment_center">По центру</string>
+    <string name="reader_alignment_justify">За шириною</string>
+
+    <string name="wpm_label">слів на хвилину</string>
+    <string name="wpm_value">%1$d сл/хв</string>
+    <string name="wpm_value_cd">%1$d слів на хвилину</string>
+    <string name="wpm_slider_cd">Швидкість читання, слів на хвилину</string>
+    <string name="wpm_preset_cd">Предустановлення %1$d слів на хвилину</string>
+    <string name="words_per_flash">Слів за показ</string>
+    <string name="spritz">Spritz</string>
+    <string name="spritz_subtitle_setup">Підсвічувати оптимальну точку розпізнавання в слові</string>
+    <string name="spritz_subtitle_player">Підсвічувати опорну літеру</string>
+    <string name="loop">Повтор</string>
+    <string name="loop_subtitle_setup">Безперервно повторювати текст з початку після закінчення</string>
+    <string name="loop_subtitle_player">Починати текст знову після закінчення</string>
+    <string name="start_speed_read">Почати швидкочитання</string>
+
+    <string name="player_progress_cd">Прогрес %1$s із %2$s</string>
+    <string name="player_settings">Налаштування</string>
+
+    <string name="settings_legal">Правова інформація</string>
+    <string name="settings_privacy_policy">Політика конфіденційності</string>
+    <string name="settings_terms">Умови використання</string>
+    <string name="settings_version">Версія %1$s</string>
+    <string name="settings_version_cd">Версія %1$s</string>
+    <string name="settings_language">Мова</string>
+    <string name="settings_language_system">Системна</string>
+    <string name="language_en">English</string>
+    <string name="language_es">Español</string>
+    <string name="language_pt">Português</string>
+    <string name="language_fr">Français</string>
+    <string name="language_de">Deutsch</string>
+    <string name="language_ru">Русский</string>
+    <string name="language_uk">Українська</string>
+    <string name="language_hi">हिन्दी</string>
+    <string name="language_ar">العربية</string>
+
+    <string name="legal_last_updated">Оновлено %1$s</string>
+
+    <string name="snackbar_imported">Імпортовано: %1$s</string>
+    <string name="snackbar_added">Додано: %1$s</string>
+    <string name="snackbar_deleted">Видалено: %1$s</string>
+
+    <string name="import_file_empty">Вибраний файл порожній.</string>
+    <string name="import_failed">Не вдалося імпортувати книгу.</string>
+    <string name="import_fallback_title">Імпортована книга</string>
+    <string name="import_ios_unsupported">Імпорт книг поки доступний лише на Android.</string>
+    <string name="import_unsupported_format">Цей формат не підтримується. Імпортуйте .txt, .fb2 або .epub.</string>
+    <string name="import_damaged_file">Не вдалося прочитати книгу. Можливо, файл пошкоджено.</string>
+    <string name="import_unable_to_read">Не вдалося прочитати вибраний файл.</string>
+
+    <string name="remaining_time_unknown">Залишилось близько …</string>
+    <string name="remaining_time_less_than_minute">Залишилось менше хвилини</string>
+    <string name="remaining_time_hours_minutes">Залишилось близько %1$d год %2$d хв</string>
+
+    <plurals name="word_count">
+        <item quantity="one">%1$d слово</item>
+        <item quantity="few">%1$d слова</item>
+        <item quantity="many">%1$d слів</item>
+        <item quantity="other">%1$d слова</item>
+    </plurals>
+    <plurals name="words_per_flash_cd">
+        <item quantity="one">%1$d слово за показ</item>
+        <item quantity="few">%1$d слова за показ</item>
+        <item quantity="many">%1$d слів за показ</item>
+        <item quantity="other">%1$d слова за показ</item>
+    </plurals>
+    <plurals name="remaining_time_minutes">
+        <item quantity="one">Залишилось близько %1$d хв</item>
+        <item quantity="few">Залишилось близько %1$d хв</item>
+        <item quantity="many">Залишилось близько %1$d хв</item>
+        <item quantity="other">Залишилось близько %1$d хв</item>
+    </plurals>
+    <plurals name="remaining_time_hours">
+        <item quantity="one">Залишилось близько %1$d год</item>
+        <item quantity="few">Залишилось близько %1$d год</item>
+        <item quantity="many">Залишилось близько %1$d год</item>
+        <item quantity="other">Залишилось близько %1$d год</item>
+    </plurals>
+</resources>

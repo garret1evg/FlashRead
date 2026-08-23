@@ -61,11 +61,15 @@ import androidx.compose.ui.unit.dp
 import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.MaterialSourceType
 import com.tool.flashread.core.reading.withReadingStats
+import com.tool.flashread.resources.Res
+import com.tool.flashread.resources.*
 import com.tool.flashread.ui.components.AppLogo
 import com.tool.flashread.ui.components.ScreenTitle
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadShapes
 import com.tool.flashread.ui.theme.FlashReadTheme
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,13 +98,13 @@ fun LibraryScreen(
             .padding(horizontal = FlashReadDimens.screenHorizontalPadding),
     ) {
         Spacer(Modifier.height(FlashReadDimens.space8))
-        ScreenTitle(title = "Библиотека")
+        ScreenTitle(title = stringResource(Res.string.screen_library))
         if (isImporting) {
             Spacer(Modifier.height(FlashReadDimens.space12))
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(FlashReadDimens.space8))
             Text(
-                text = "Открываем книгу…",
+                text = stringResource(Res.string.library_opening_book),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -109,7 +113,7 @@ fun LibraryScreen(
         }
         Spacer(Modifier.height(FlashReadDimens.space12))
         AddMaterialButton(
-            label = "Добавить материал",
+            label = stringResource(Res.string.library_add_material),
             onClick = { showAddSheet = true },
             modifier = Modifier.fillMaxWidth(),
         )
@@ -243,7 +247,7 @@ private fun LibraryEmptyState(
         AppLogo(size = 80.dp)
         Spacer(Modifier.height(FlashReadDimens.space16))
         Text(
-            text = "Библиотека пуста",
+            text = stringResource(Res.string.library_empty_title),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
@@ -253,7 +257,7 @@ private fun LibraryEmptyState(
         )
         Spacer(Modifier.height(FlashReadDimens.space8))
         Text(
-            text = "Импортируйте книгу, создайте свою, вставьте текст для скорочтения или добавьте YouTube-видео.",
+            text = stringResource(Res.string.library_empty_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -261,7 +265,7 @@ private fun LibraryEmptyState(
         )
         Spacer(Modifier.height(FlashReadDimens.space24))
         AddMaterialButton(
-            label = "Добавить первый материал",
+            label = stringResource(Res.string.library_add_first_material),
             onClick = onAddMaterial,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -282,9 +286,7 @@ private fun LibraryMaterialCard(
     modifier: Modifier = Modifier,
 ) {
     val displayTitle = remember(title) { MaterialTitleFormatter.displayTitle(title) }
-    val secondary = remember(sourceType, wordCount) {
-        materialSecondaryLabel(sourceType, wordCount)
-    }
+    val secondary = materialSecondaryLabel(sourceType, wordCount)
     var menuExpanded by remember { mutableStateOf(false) }
 
     Card(
@@ -334,7 +336,7 @@ private fun LibraryMaterialCard(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.MoreVert,
-                            contentDescription = "Ещё",
+                            contentDescription = stringResource(Res.string.action_more),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -344,7 +346,7 @@ private fun LibraryMaterialCard(
                     ) {
                         if (onEdit != null) {
                             DropdownMenuItem(
-                                text = { Text("Редактировать") },
+                                text = { Text(stringResource(Res.string.action_edit)) },
                                 onClick = {
                                     menuExpanded = false
                                     onEdit()
@@ -352,14 +354,14 @@ private fun LibraryMaterialCard(
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text("Rename") },
+                            text = { Text(stringResource(Res.string.action_rename)) },
                             onClick = {
                                 menuExpanded = false
                                 onRename()
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Delete") },
+                            text = { Text(stringResource(Res.string.action_delete)) },
                             onClick = {
                                 menuExpanded = false
                                 onDelete()
@@ -377,7 +379,7 @@ private fun LibraryMaterialCard(
                 horizontalArrangement = Arrangement.spacedBy(FlashReadDimens.space12),
             ) {
                 Text(
-                    text = "$progressPercent%",
+                    text = stringResource(Res.string.percent_value, progressPercent),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     maxLines = 1,
@@ -404,7 +406,7 @@ private fun LibraryMaterialCard(
                 contentPadding = PaddingValues(horizontal = FlashReadDimens.space16),
             ) {
                 Text(
-                    text = "Продолжить",
+                    text = stringResource(Res.string.action_continue),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -435,7 +437,7 @@ private fun AddMaterialBottomSheet(
                 .padding(bottom = FlashReadDimens.space24),
         ) {
             Text(
-                text = "Добавить материал",
+                text = stringResource(Res.string.library_add_material),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(horizontal = FlashReadDimens.space16),
                 maxLines = 1,
@@ -444,25 +446,25 @@ private fun AddMaterialBottomSheet(
             Spacer(Modifier.height(FlashReadDimens.space8))
             AddMaterialSheetAction(
                 icon = Icons.AutoMirrored.Filled.MenuBook,
-                label = "Импортировать книгу",
+                label = stringResource(Res.string.action_import_book),
                 onClick = onImportBook,
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             AddMaterialSheetAction(
                 icon = Icons.Filled.Edit,
-                label = "Создать книгу",
+                label = stringResource(Res.string.action_create_book),
                 onClick = onCreateBook,
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             AddMaterialSheetAction(
                 icon = Icons.Filled.Bolt,
-                label = "Скорочтение текста",
+                label = stringResource(Res.string.action_speed_read_text),
                 onClick = onSpeedReadText,
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             AddMaterialSheetAction(
                 icon = Icons.Filled.PlayCircle,
-                label = "Добавить YouTube-видео",
+                label = stringResource(Res.string.library_add_youtube),
                 onClick = onAddYouTube,
             )
         }
@@ -498,26 +500,15 @@ private fun AddMaterialSheetAction(
     )
 }
 
+@Composable
 private fun materialSecondaryLabel(
     sourceType: MaterialSourceType,
     wordCount: Int,
 ): String {
     return when (sourceType) {
-        MaterialSourceType.YouTube -> "YouTube-видео"
-        MaterialSourceType.Book -> formatWordCount(wordCount)
+        MaterialSourceType.YouTube -> stringResource(Res.string.source_youtube_video)
+        MaterialSourceType.Book -> pluralStringResource(Res.plurals.word_count, wordCount, wordCount)
     }
-}
-
-private fun formatWordCount(count: Int): String {
-    val n = count % 100
-    val n1 = count % 10
-    val word = when {
-        n in 11..14 -> "слов"
-        n1 == 1 -> "слово"
-        n1 in 2..4 -> "слова"
-        else -> "слов"
-    }
-    return "$count $word"
 }
 
 @Composable
@@ -532,7 +523,7 @@ private fun AddYouTubeDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Добавить YouTube-видео",
+                text = stringResource(Res.string.library_add_youtube),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -543,14 +534,14 @@ private fun AddYouTubeDialog(
                     value = title,
                     onValueChange = { title = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Название") },
+                    label = { Text(stringResource(Res.string.library_field_title)) },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Ссылка") },
+                    label = { Text(stringResource(Res.string.library_field_url)) },
                     singleLine = true,
                 )
             }
@@ -561,7 +552,7 @@ private fun AddYouTubeDialog(
                 enabled = url.isNotBlank(),
                 modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
             ) {
-                Text("Добавить")
+                Text(stringResource(Res.string.action_add))
             }
         },
         dismissButton = {
@@ -569,7 +560,7 @@ private fun AddYouTubeDialog(
                 onClick = onDismiss,
                 modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
             ) {
-                Text("Отмена")
+                Text(stringResource(Res.string.action_cancel))
             }
         },
         containerColor = MaterialTheme.colorScheme.surface,
@@ -587,13 +578,13 @@ private fun RenameMaterialDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename") },
+        title = { Text(stringResource(Res.string.library_rename_title)) },
         text = {
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Title") },
+                label = { Text(stringResource(Res.string.library_field_title)) },
                 singleLine = true,
             )
         },
@@ -603,7 +594,7 @@ private fun RenameMaterialDialog(
                 enabled = title.isNotBlank(),
                 modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
             ) {
-                Text("Save")
+                Text(stringResource(Res.string.action_save))
             }
         },
         dismissButton = {
@@ -611,7 +602,7 @@ private fun RenameMaterialDialog(
                 onClick = onDismiss,
                 modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
             ) {
-                Text("Cancel")
+                Text(stringResource(Res.string.action_cancel))
             }
         },
         containerColor = MaterialTheme.colorScheme.surface,

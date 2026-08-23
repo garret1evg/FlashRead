@@ -32,17 +32,3 @@ val AppRoute.showsScaffoldTopBar: Boolean
     get() = this is AppRoute.SpeedRead ||
         this is AppRoute.PrivacyPolicy ||
         this is AppRoute.Terms
-
-val AppRoute.title: String
-    get() = when (this) {
-        AppRoute.Home -> "Home"
-        AppRoute.Library -> "Library"
-        AppRoute.Reader -> "Reader"
-        AppRoute.SpeedRead -> "Скорочтение"
-        AppRoute.SpeedReadPlayer -> "SpeedRead"
-        AppRoute.Settings -> "Settings"
-        AppRoute.PrivacyPolicy -> "Privacy Policy"
-        AppRoute.Terms -> "Terms & Conditions"
-        AppRoute.BookEditor -> "Редактор"
-        AppRoute.QuickSpeedRead -> "Скорочтение"
-    }

@@ -1,0 +1,153 @@
+<resources>
+    <string name="app_name">FlashRead</string>
+
+    <string name="action_back">Atrás</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_add">Añadir</string>
+    <string name="action_continue">Continuar</string>
+    <string name="action_next">Siguiente</string>
+    <string name="action_close">Cerrar</string>
+    <string name="action_more">Más</string>
+    <string name="action_rename">Renombrar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_edit">Editar</string>
+    <string name="action_pause">Pausa</string>
+    <string name="action_play">Reproducir</string>
+    <string name="action_restart">Reiniciar</string>
+    <string name="action_previous">Anterior</string>
+    <string name="action_next_item">Siguiente</string>
+    <string name="action_import_book">Importar libro</string>
+    <string name="action_create_book">Crear libro</string>
+    <string name="action_speed_read_text">Lectura rápida de texto</string>
+
+    <string name="screen_home">Inicio</string>
+    <string name="screen_library">Biblioteca</string>
+    <string name="screen_settings">Ajustes</string>
+    <string name="screen_reader">Lector</string>
+    <string name="screen_speed_read">Lectura rápida</string>
+    <string name="screen_speed_read_player">SpeedRead</string>
+    <string name="screen_privacy_policy">Política de privacidad</string>
+    <string name="screen_terms">Términos y condiciones</string>
+    <string name="screen_editor">Editor</string>
+
+    <string name="nav_home">Inicio</string>
+    <string name="nav_library">Biblioteca</string>
+    <string name="nav_settings">Ajustes</string>
+
+    <string name="home_continue_reading">Seguir leyendo</string>
+    <string name="home_progress">Progreso: %1$d%</string>
+    <string name="home_open_reader">Abrir lector</string>
+    <string name="home_empty_title">Ningún libro seleccionado</string>
+    <string name="home_empty_body">Importa un archivo .txt, .fb2 o .epub, escribe tu propio libro, pega texto para lectura rápida o elige uno en la Biblioteca.</string>
+
+    <string name="library_opening_book">Abriendo el libro…</string>
+    <string name="library_add_material">Añadir material</string>
+    <string name="library_empty_title">La biblioteca está vacía</string>
+    <string name="library_empty_body">Importa un libro, escribe el tuyo, pega texto para lectura rápida o añade un vídeo de YouTube.</string>
+    <string name="library_add_first_material">Añade tu primer material</string>
+    <string name="library_add_youtube">Añadir vídeo de YouTube</string>
+    <string name="library_field_title">Título</string>
+    <string name="library_field_url">Enlace</string>
+    <string name="library_rename_title">Renombrar</string>
+    <string name="percent_value">%1$d%</string>
+
+    <string name="default_new_book_title">Libro nuevo</string>
+    <string name="editor_title_label">Título</string>
+    <string name="editor_text_label">Texto</string>
+    <string name="editor_text_placeholder">Cada línea no vacía es un párrafo</string>
+
+    <string name="default_speed_read_title">Lectura rápida</string>
+    <string name="quick_speed_read_text_label">Texto</string>
+    <string name="quick_speed_read_placeholder">Pega el texto; no se guardará en la biblioteca</string>
+
+    <string name="cd_cover">Portada</string>
+    <string name="cd_book">Libro</string>
+    <string name="source_youtube_video">Vídeo de YouTube</string>
+
+    <string name="reader_text_settings">Ajustes de texto</string>
+    <string name="reader_open_speed_read">Ir a la lectura rápida</string>
+    <string name="reader_progress_cd">Progreso de lectura: %1$d por ciento</string>
+    <string name="reader_font_size">Tamaño de fuente</string>
+    <string name="reader_font_size_cd">Tamaño de fuente: %1$d puntos</string>
+    <string name="reader_line_height">Interlineado</string>
+    <string name="reader_line_height_cd">Interlineado %1$s</string>
+    <string name="reader_theme">Tema</string>
+    <string name="reader_theme_cd">Tema: %1$s</string>
+    <string name="reader_theme_light">Claro</string>
+    <string name="reader_theme_sepia">Sepia</string>
+    <string name="reader_theme_dark">Oscuro</string>
+    <string name="reader_alignment">Alineación</string>
+    <string name="reader_alignment_start">Izquierda</string>
+    <string name="reader_alignment_center">Centro</string>
+    <string name="reader_alignment_justify">Justificado</string>
+
+    <string name="wpm_label">palabras por minuto</string>
+    <string name="wpm_value">%1$d PPM</string>
+    <string name="wpm_value_cd">%1$d palabras por minuto</string>
+    <string name="wpm_slider_cd">Velocidad de lectura, palabras por minuto</string>
+    <string name="wpm_preset_cd">Preajuste de %1$d palabras por minuto</string>
+    <string name="words_per_flash">Palabras por destello</string>
+    <string name="spritz">Spritz</string>
+    <string name="spritz_subtitle_setup">Resaltar el punto óptimo de reconocimiento de cada palabra</string>
+    <string name="spritz_subtitle_player">Resaltar la letra de apoyo</string>
+    <string name="loop">Bucle</string>
+    <string name="loop_subtitle_setup">Repetir el texto desde el principio al terminar</string>
+    <string name="loop_subtitle_player">Reiniciar el texto al terminar</string>
+    <string name="start_speed_read">Empezar lectura rápida</string>
+
+    <string name="player_progress_cd">Progreso %1$s de %2$s</string>
+    <string name="player_settings">Ajustes</string>
+
+    <string name="settings_legal">Legal</string>
+    <string name="settings_privacy_policy">Política de privacidad</string>
+    <string name="settings_terms">Términos y condiciones</string>
+    <string name="settings_version">Versión %1$s</string>
+    <string name="settings_version_cd">Versión %1$s</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_language_system">Sistema</string>
+    <string name="language_en">English</string>
+    <string name="language_es">Español</string>
+    <string name="language_pt">Português</string>
+    <string name="language_fr">Français</string>
+    <string name="language_de">Deutsch</string>
+    <string name="language_ru">Русский</string>
+    <string name="language_uk">Українська</string>
+    <string name="language_hi">हिन्दी</string>
+    <string name="language_ar">العربية</string>
+
+    <string name="legal_last_updated">Última actualización: %1$s</string>
+
+    <string name="snackbar_imported">Importado: %1$s</string>
+    <string name="snackbar_added">Añadido: %1$s</string>
+    <string name="snackbar_deleted">Eliminado: %1$s</string>
+
+    <string name="import_file_empty">El archivo seleccionado está vacío.</string>
+    <string name="import_failed">No se pudo importar el libro.</string>
+    <string name="import_fallback_title">Libro importado</string>
+    <string name="import_ios_unsupported">La importación de libros solo está disponible en Android por ahora.</string>
+    <string name="import_unsupported_format">Este formato no es compatible. Importa .txt, .fb2 o .epub.</string>
+    <string name="import_damaged_file">No se pudo leer este libro. El archivo puede estar dañado.</string>
+    <string name="import_unable_to_read">No se puede leer el archivo seleccionado.</string>
+
+    <string name="remaining_time_unknown">Queda unos …</string>
+    <string name="remaining_time_less_than_minute">Queda menos de un minuto</string>
+    <string name="remaining_time_hours_minutes">Queda unos %1$d h %2$d min</string>
+
+    <plurals name="word_count">
+        <item quantity="one">%1$d palabra</item>
+        <item quantity="other">%1$d palabras</item>
+    </plurals>
+    <plurals name="words_per_flash_cd">
+        <item quantity="one">%1$d palabra por destello</item>
+        <item quantity="other">%1$d palabras por destello</item>
+    </plurals>
+    <plurals name="remaining_time_minutes">
+        <item quantity="one">Queda unos %1$d min</item>
+        <item quantity="other">Queda unos %1$d min</item>
+    </plurals>
+    <plurals name="remaining_time_hours">
+        <item quantity="one">Queda unas %1$d h</item>
+        <item quantity="other">Queda unas %1$d h</item>
+    </plurals>
+</resources>

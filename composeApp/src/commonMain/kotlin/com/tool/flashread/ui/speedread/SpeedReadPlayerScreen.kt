@@ -85,10 +85,13 @@ import com.tool.flashread.core.speedread.SpeedReadPlayerViewState
 import com.tool.flashread.core.speedread.SpeedReadPosition
 import com.tool.flashread.core.speedread.SpeedReadSettings
 import com.tool.flashread.core.speedread.orpParts
+import com.tool.flashread.resources.Res
+import com.tool.flashread.resources.*
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadShapes
 import com.tool.flashread.ui.theme.FlashReadTheme
 import kotlin.math.roundToInt
+import org.jetbrains.compose.resources.stringResource
 
 private val OrpFrameHeight = 168.dp
 private val PlayerWordSize = 34.sp
@@ -146,6 +149,7 @@ internal fun SpeedReadPlayerPane(
     var showWpmSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     val enabled = !state.isEmpty
+    val playPauseCd = playPauseLabel(state)
 
     Box(
         modifier = modifier
@@ -173,7 +177,7 @@ internal fun SpeedReadPlayerPane(
                         indication = null,
                         onClick = onTogglePlayPause,
                     )
-                    .semantics { contentDescription = playPauseLabel(state) },
+                    .semantics { contentDescription = playPauseCd },
                 contentAlignment = Alignment.Center,
             ) {
                 OrpWordFrame(
@@ -185,6 +189,7 @@ internal fun SpeedReadPlayerPane(
             PlayerBottomBar(
                 state = state,
                 enabled = enabled,
+                playPauseLabel = playPauseCd,
                 onPrevious = onPrevious,
                 onTogglePlayPause = onTogglePlayPause,
                 onNext = onNext,
@@ -226,19 +231,19 @@ private fun PlayerTopBar(
         PlayerIconButton(
             onClick = onClose,
             imageVector = Icons.Filled.Close,
-            contentDescription = "Закрыть",
+            contentDescription = stringResource(Res.string.action_close),
         )
         Spacer(Modifier.weight(1f))
         PlayerIconButton(
             onClick = onRestart,
             imageVector = Icons.Filled.Replay,
-            contentDescription = "Начать сначала",
+            contentDescription = stringResource(Res.string.action_restart),
             enabled = restartEnabled,
         )
         PlayerIconButton(
             onClick = onSettings,
             imageVector = Icons.Filled.Settings,
-            contentDescription = "Настройки",
+            contentDescription = stringResource(Res.string.player_settings),
         )
     }
 }
@@ -247,12 +252,18 @@ private fun PlayerTopBar(
 private fun PlayerBottomBar(
     state: SpeedReadPlayerViewState,
     enabled: Boolean,
+    playPauseLabel: String,
     onPrevious: () -> Unit,
     onTogglePlayPause: () -> Unit,
     onNext: () -> Unit,
     onOpenWpm: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val elapsedClock = formatPlayerClock(state.elapsedMs)
+    val remainingClock = formatPlayerClock(state.remainingMs)
+    val totalClock = formatPlayerClock(state.elapsedMs + state.remainingMs)
+    val progressCd = stringResource(Res.string.player_progress_cd, elapsedClock, totalClock)
+    val wpmCd = stringResource(Res.string.wpm_value_cd, state.settings.wpm)
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -264,13 +275,12 @@ private fun PlayerBottomBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .semantics {
-                    contentDescription = "Прогресс ${formatPlayerClock(state.elapsedMs)} из " +
-                        formatPlayerClock(state.elapsedMs + state.remainingMs)
+                    contentDescription = progressCd
                 },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = formatPlayerClock(state.elapsedMs),
+                text = elapsedClock,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -287,7 +297,7 @@ private fun PlayerBottomBar(
                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
             )
             Text(
-                text = formatPlayerClock(state.remainingMs),
+                text = remainingClock,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -303,7 +313,7 @@ private fun PlayerBottomBar(
             PlayerIconButton(
                 onClick = onPrevious,
                 imageVector = Icons.Filled.SkipPrevious,
-                contentDescription = "Предыдущее",
+                contentDescription = stringResource(Res.string.action_previous),
                 enabled = enabled,
                 size = 56.dp,
                 iconSize = 32.dp,
@@ -311,7 +321,7 @@ private fun PlayerBottomBar(
             PlayerIconButton(
                 onClick = onTogglePlayPause,
                 imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = playPauseLabel(state),
+                contentDescription = playPauseLabel,
                 enabled = enabled,
                 size = 64.dp,
                 iconSize = 36.dp,
@@ -319,7 +329,7 @@ private fun PlayerBottomBar(
             PlayerIconButton(
                 onClick = onNext,
                 imageVector = Icons.Filled.SkipNext,
-                contentDescription = "Следующее",
+                contentDescription = stringResource(Res.string.action_next_item),
                 enabled = enabled,
                 size = 56.dp,
                 iconSize = 32.dp,
@@ -330,10 +340,10 @@ private fun PlayerBottomBar(
             enabled = enabled,
             modifier = Modifier
                 .heightIn(min = FlashReadDimens.minTouchTarget)
-                .semantics { contentDescription = "${state.settings.wpm} слов в минуту" },
+                .semantics { contentDescription = wpmCd },
         ) {
             Text(
-                text = "${state.settings.wpm} WPM",
+                text = stringResource(Res.string.wpm_value, state.settings.wpm),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
@@ -473,16 +483,17 @@ private fun PlayerWpmSheet(
                 .padding(bottom = FlashReadDimens.space24),
         ) {
             Text(
-                text = "$wpm WPM",
+                text = stringResource(Res.string.wpm_value, wpm),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
             Text(
-                text = "Слов в минуту",
+                text = stringResource(Res.string.wpm_label),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(FlashReadDimens.space12))
+            val wpmSliderCd = stringResource(Res.string.wpm_slider_cd)
             Slider(
                 value = wpm.toFloat(),
                 onValueChange = { value -> onWpmChange(SpeedReadDefaults.snapWpm(value.roundToInt())) },
@@ -491,7 +502,7 @@ private fun PlayerWpmSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = FlashReadDimens.minTouchTarget)
-                    .semantics { contentDescription = "Скорость чтения, слов в минуту" },
+                    .semantics { contentDescription = wpmSliderCd },
             )
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -499,12 +510,13 @@ private fun PlayerWpmSheet(
                 verticalArrangement = Arrangement.spacedBy(FlashReadDimens.space8),
             ) {
                 SpeedReadDefaults.WPM_PRESETS.forEach { preset ->
+                    val presetCd = stringResource(Res.string.wpm_preset_cd, preset)
                     FilterChip(
                         selected = wpm == preset,
                         onClick = { onWpmChange(preset) },
                         label = { Text("$preset") },
                         modifier = Modifier.semantics {
-                            contentDescription = "Пресет $preset слов в минуту"
+                            contentDescription = presetCd
                         },
                     )
                 }
@@ -534,13 +546,13 @@ private fun PlayerSettingsSheet(
                 .padding(bottom = FlashReadDimens.space24),
         ) {
             Text(
-                text = "Настройки",
+                text = stringResource(Res.string.player_settings),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(Modifier.height(FlashReadDimens.space16))
             Text(
-                text = "Слов за показ",
+                text = stringResource(Res.string.words_per_flash),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -562,14 +574,14 @@ private fun PlayerSettingsSheet(
             }
             Spacer(Modifier.height(FlashReadDimens.space8))
             PlayerSwitchRow(
-                title = "Spritz",
-                subtitle = "Подсвечивать опорную букву",
+                title = stringResource(Res.string.spritz),
+                subtitle = stringResource(Res.string.spritz_subtitle_player),
                 checked = settings.spritzEnabled,
                 onCheckedChange = { onSettingsChange(settings.copy(spritzEnabled = it)) },
             )
             PlayerSwitchRow(
-                title = "Повтор",
-                subtitle = "Начинать текст заново после окончания",
+                title = stringResource(Res.string.loop),
+                subtitle = stringResource(Res.string.loop_subtitle_player),
                 checked = settings.loopEnabled,
                 onCheckedChange = { onSettingsChange(settings.copy(loopEnabled = it)) },
             )
@@ -617,11 +629,12 @@ private fun PlayerSwitchRow(
     }
 }
 
+@Composable
 private fun playPauseLabel(state: SpeedReadPlayerViewState): String {
     return when (state.status) {
-        SpeedReadPlayerStatus.Playing -> "Пауза"
-        SpeedReadPlayerStatus.Finished -> "Начать сначала"
-        SpeedReadPlayerStatus.Paused -> "Воспроизведение"
+        SpeedReadPlayerStatus.Playing -> stringResource(Res.string.action_pause)
+        SpeedReadPlayerStatus.Finished -> stringResource(Res.string.action_restart)
+        SpeedReadPlayerStatus.Paused -> stringResource(Res.string.action_play)
     }
 }
 

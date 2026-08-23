@@ -82,6 +82,8 @@ import com.tool.flashread.core.reading.ReaderTextDefaults
 import com.tool.flashread.core.reading.ReaderTextSettings
 import com.tool.flashread.core.reading.ReaderTheme
 import com.tool.flashread.core.reading.bookProgressPercent
+import com.tool.flashread.resources.Res
+import com.tool.flashread.resources.*
 import com.tool.flashread.ui.library.MaterialTitleFormatter
 import com.tool.flashread.ui.theme.FlashReadColors
 import com.tool.flashread.ui.theme.FlashReadDimens
@@ -90,6 +92,7 @@ import com.tool.flashread.ui.theme.FlashReadTheme
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import org.jetbrains.compose.resources.stringResource
 
 private val ReaderContentMaxWidth = 680.dp
 
@@ -128,6 +131,9 @@ fun ReaderScreen(
     }
     val palette = remember(settings.theme) { settings.theme.palette() }
     val displayTitle = remember(book.title) { MaterialTitleFormatter.displayTitle(book.title) }
+    val backLabel = stringResource(Res.string.action_back)
+    val textSettingsLabel = stringResource(Res.string.reader_text_settings)
+    val openSpeedReadLabel = stringResource(Res.string.reader_open_speed_read)
 
     LaunchedEffect(isActiveRoute) {
         if (isActiveRoute) {
@@ -171,11 +177,11 @@ fun ReaderScreen(
                     onClick = onBack,
                     modifier = Modifier
                         .size(FlashReadDimens.minTouchTarget)
-                        .semantics { contentDescription = "Назад" },
+                        .semantics { contentDescription = backLabel },
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Назад",
+                        contentDescription = backLabel,
                         tint = palette.onBackground,
                     )
                 }
@@ -185,11 +191,11 @@ fun ReaderScreen(
                     onClick = { showTextSettings = true },
                     modifier = Modifier
                         .size(FlashReadDimens.minTouchTarget)
-                        .semantics { contentDescription = "Настройки текста" },
+                        .semantics { contentDescription = textSettingsLabel },
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.TextFields,
-                        contentDescription = "Настройки текста",
+                        contentDescription = textSettingsLabel,
                         tint = palette.onBackground,
                     )
                 }
@@ -254,7 +260,7 @@ fun ReaderScreen(
                 .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
                 .padding(top = FlashReadDimens.space12, bottom = FlashReadDimens.space16)
                 .heightIn(min = FlashReadDimens.minTouchTarget)
-                .semantics { contentDescription = "Перейти к скорочтению" },
+                .semantics { contentDescription = openSpeedReadLabel },
             shape = FlashReadShapes.button,
             colors = ButtonDefaults.buttonColors(
                 containerColor = FlashReadColors.primary,
@@ -263,7 +269,7 @@ fun ReaderScreen(
             contentPadding = PaddingValues(horizontal = FlashReadDimens.space16),
         ) {
             Text(
-                text = "Перейти к скорочтению",
+                text = openSpeedReadLabel,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -285,10 +291,11 @@ private fun ReadingProgressRow(
     palette: ReaderPalette,
     modifier: Modifier = Modifier,
 ) {
+    val progressCd = stringResource(Res.string.reader_progress_cd, progressPercent)
     Row(
         modifier = modifier
             .heightIn(min = FlashReadDimens.minTouchTarget)
-            .semantics { contentDescription = "Прогресс чтения $progressPercent процентов" },
+            .semantics { contentDescription = progressCd },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(FlashReadDimens.space12),
     ) {
@@ -302,7 +309,7 @@ private fun ReadingProgressRow(
             trackColor = palette.progressTrack,
         )
         Text(
-            text = "$progressPercent%",
+            text = stringResource(Res.string.percent_value, progressPercent),
             style = MaterialTheme.typography.labelLarge,
             color = FlashReadColors.primary,
             maxLines = 1,
@@ -331,7 +338,7 @@ private fun ReaderTextSettingsSheet(
                 .padding(bottom = FlashReadDimens.space24),
         ) {
             Text(
-                text = "Настройки текста",
+                text = stringResource(Res.string.reader_text_settings),
                 style = MaterialTheme.typography.titleLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -339,25 +346,31 @@ private fun ReaderTextSettingsSheet(
             Spacer(Modifier.height(FlashReadDimens.space20))
 
             SettingsSlider(
-                title = "Размер шрифта",
+                title = stringResource(Res.string.reader_font_size),
                 valueLabel = "${settings.fontSizeSp} sp",
                 value = settings.fontSizeSp.toFloat(),
                 valueRange = ReaderTextDefaults.MIN_FONT_SIZE_SP.toFloat()..
                     ReaderTextDefaults.MAX_FONT_SIZE_SP.toFloat(),
                 steps = ReaderTextDefaults.FONT_SIZE_SLIDER_STEPS,
-                contentDescription = "Размер шрифта ${settings.fontSizeSp} пунктов",
+                contentDescription = stringResource(
+                    Res.string.reader_font_size_cd,
+                    settings.fontSizeSp,
+                ),
                 onValueChange = { onSettingsChange(settings.copy(fontSizeSp = it.toInt())) },
             )
 
             Spacer(Modifier.height(FlashReadDimens.space16))
 
             SettingsSlider(
-                title = "Межстрочный интервал",
+                title = stringResource(Res.string.reader_line_height),
                 valueLabel = formatLineHeight(settings.lineHeightMultiplier),
                 value = settings.lineHeightMultiplier,
                 valueRange = ReaderTextDefaults.MIN_LINE_HEIGHT..ReaderTextDefaults.MAX_LINE_HEIGHT,
                 steps = ReaderTextDefaults.LINE_HEIGHT_SLIDER_STEPS,
-                contentDescription = "Межстрочный интервал ${settings.lineHeightMultiplier}",
+                contentDescription = stringResource(
+                    Res.string.reader_line_height_cd,
+                    formatLineHeight(settings.lineHeightMultiplier),
+                ),
                 onValueChange = {
                     onSettingsChange(
                         settings.copy(
@@ -369,7 +382,7 @@ private fun ReaderTextSettingsSheet(
 
             Spacer(Modifier.height(FlashReadDimens.space20))
             Text(
-                text = "Тема",
+                text = stringResource(Res.string.reader_theme),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -382,26 +395,28 @@ private fun ReaderTextSettingsSheet(
                 verticalArrangement = Arrangement.spacedBy(FlashReadDimens.space8),
             ) {
                 ReaderTheme.entries.forEach { theme ->
+                    val themeLabel = theme.label()
+                    val themeCd = stringResource(Res.string.reader_theme_cd, themeLabel)
                     FilterChip(
                         selected = settings.theme == theme,
                         onClick = { onSettingsChange(settings.copy(theme = theme)) },
                         label = {
                             Text(
-                                text = theme.label(),
+                                text = themeLabel,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
                         },
                         modifier = Modifier
                             .heightIn(min = FlashReadDimens.minTouchTarget)
-                            .semantics { contentDescription = "Тема: ${theme.label()}" },
+                            .semantics { contentDescription = themeCd },
                     )
                 }
             }
 
             Spacer(Modifier.height(FlashReadDimens.space20))
             Text(
-                text = "Выравнивание",
+                text = stringResource(Res.string.reader_alignment),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -569,10 +584,11 @@ private fun ReaderTheme.palette(): ReaderPalette = when (this) {
     )
 }
 
+@Composable
 private fun ReaderTheme.label(): String = when (this) {
-    ReaderTheme.Light -> "Светлая"
-    ReaderTheme.Sepia -> "Сепия"
-    ReaderTheme.Dark -> "Тёмная"
+    ReaderTheme.Light -> stringResource(Res.string.reader_theme_light)
+    ReaderTheme.Sepia -> stringResource(Res.string.reader_theme_sepia)
+    ReaderTheme.Dark -> stringResource(Res.string.reader_theme_dark)
 }
 
 private fun ReaderAlignment.toTextAlign(): TextAlign = when (this) {
@@ -581,10 +597,11 @@ private fun ReaderAlignment.toTextAlign(): TextAlign = when (this) {
     ReaderAlignment.Justify -> TextAlign.Justify
 }
 
+@Composable
 private fun ReaderAlignment.label(): String = when (this) {
-    ReaderAlignment.Start -> "По левому краю"
-    ReaderAlignment.Center -> "По центру"
-    ReaderAlignment.Justify -> "По ширине"
+    ReaderAlignment.Start -> stringResource(Res.string.reader_alignment_start)
+    ReaderAlignment.Center -> stringResource(Res.string.reader_alignment_center)
+    ReaderAlignment.Justify -> stringResource(Res.string.reader_alignment_justify)
 }
 
 private fun ReaderAlignment.icon(): ImageVector = when (this) {

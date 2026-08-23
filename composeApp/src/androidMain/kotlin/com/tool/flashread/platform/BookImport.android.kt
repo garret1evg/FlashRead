@@ -15,10 +15,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tool.flashread.core.importdoc.BookTextExtractor
 import com.tool.flashread.core.importdoc.CoverThumbnail
+import com.tool.flashread.resources.Res
+import com.tool.flashread.resources.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.stringResource
 import java.io.File
 
 private val BOOK_IMPORT_MIME_TYPES = arrayOf(
@@ -41,23 +45,25 @@ actual fun rememberBookImportLauncher(
     val contentResolver = context.contentResolver
     val cacheDir = context.cacheDir
     val scope = rememberCoroutineScope()
+    val emptyFileMessage = stringResource(Res.string.import_file_empty)
+    val fallbackTitle = stringResource(Res.string.import_fallback_title)
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             try {
                 val imported = withContext(Dispatchers.IO) {
-                    importBookFromUri(contentResolver, uri, cacheDir)
+                    importBookFromUri(contentResolver, uri, cacheDir, fallbackTitle)
                 }
                 if (imported.content.isBlank()) {
-                    onError("Selected file is empty.")
+                    onError(emptyFileMessage)
                 } else {
                     onImported(imported)
                 }
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
-                onError(error.message?.trim()?.takeIf { it.isNotEmpty() } ?: "Failed to import book.")
+                onError(localizedImportError(error.message))
             }
         }
     }
@@ -85,7 +91,7 @@ actual fun ObserveExternalBookOpens(
                 ExternalBookImporter.consume(state.sessionId)
             }
             ExternalBookImportState.Phase.Error -> {
-                onErrorState(state.error ?: "Failed to import book.")
+                onErrorState(state.error ?: getString(Res.string.import_failed))
                 ExternalBookImporter.consume(state.sessionId)
             }
         }
@@ -96,6 +102,7 @@ internal fun importBookFromUri(
     contentResolver: ContentResolver,
     uri: Uri,
     cacheDir: File,
+    fallbackTitle: String,
 ): ImportedBook {
     val displayName = readDisplayName(contentResolver.query(uri, null, null, null, null))
     val extracted = BookTextExtractor.extract(
@@ -108,11 +115,20 @@ internal fun importBookFromUri(
     val cover = extracted.coverBytes?.let { CoverThumbnail.prepare(it, extracted.coverMimeType) }
     return ImportedBook(
         id = uri.toString(),
-        title = extracted.title?.trim()?.takeIf { it.isNotEmpty() } ?: displayName ?: "Imported Book",
+        title = extracted.title?.trim()?.takeIf { it.isNotEmpty() } ?: displayName ?: fallbackTitle,
         content = extracted.content,
         coverBytes = cover?.first,
         coverMimeType = cover?.second,
     )
+}
+
+internal suspend fun localizedImportError(rawMessage: String?): String {
+    return when (rawMessage) {
+        BookTextExtractor.UNSUPPORTED_FORMAT_MESSAGE -> getString(Res.string.import_unsupported_format)
+        BookTextExtractor.DAMAGED_FILE_MESSAGE -> getString(Res.string.import_damaged_file)
+        BookTextExtractor.UNABLE_TO_READ_MESSAGE -> getString(Res.string.import_unable_to_read)
+        else -> rawMessage?.trim()?.takeIf { it.isNotEmpty() } ?: getString(Res.string.import_failed)
+    }
 }
 
 private fun readDisplayName(cursor: Cursor?): String? {

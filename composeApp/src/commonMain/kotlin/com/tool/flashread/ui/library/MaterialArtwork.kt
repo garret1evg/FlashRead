@@ -21,7 +21,10 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import com.tool.flashread.core.model.MaterialSourceType
 import com.tool.flashread.platform.CoverStorage
+import com.tool.flashread.resources.Res
+import com.tool.flashread.resources.*
 import com.tool.flashread.ui.theme.FlashReadDimens
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MaterialArtwork(
@@ -45,7 +48,7 @@ fun MaterialArtwork(
         if (imageModel != null) {
             SubcomposeAsyncImage(
                 model = imageModel,
-                contentDescription = "Обложка",
+                contentDescription = stringResource(Res.string.cd_cover),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
                 error = { MaterialArtworkPlaceholder(sourceType) },
@@ -65,8 +68,8 @@ private fun MaterialArtworkPlaceholder(sourceType: MaterialSourceType) {
     Icon(
         imageVector = icon,
         contentDescription = when (sourceType) {
-            MaterialSourceType.Book -> "Книга"
-            MaterialSourceType.YouTube -> "YouTube-видео"
+            MaterialSourceType.Book -> stringResource(Res.string.cd_book)
+            MaterialSourceType.YouTube -> stringResource(Res.string.source_youtube_video)
         },
         tint = MaterialTheme.colorScheme.primary,
         modifier = Modifier.size(22.dp),

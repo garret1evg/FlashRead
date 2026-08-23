@@ -49,12 +49,16 @@ import com.tool.flashread.core.model.Book
 import com.tool.flashread.core.model.MaterialSourceType
 import com.tool.flashread.core.speedread.SpeedReadDefaults
 import com.tool.flashread.core.speedread.SpeedReadSettings
+import com.tool.flashread.resources.Res
+import com.tool.flashread.resources.*
 import com.tool.flashread.ui.library.MaterialArtwork
 import com.tool.flashread.ui.library.MaterialTitleFormatter
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadShapes
 import com.tool.flashread.ui.theme.FlashReadTheme
 import kotlin.math.roundToInt
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,6 +73,10 @@ fun SpeedReadSetupScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val settings = uiState.settings
     val remainingMinutes = uiState.remainingMinutes
+    val remainingTimeLabel = remainingTimeLabel(remainingMinutes)
+    val wpmValueCd = stringResource(Res.string.wpm_value_cd, settings.wpm)
+    val wpmSliderCd = stringResource(Res.string.wpm_slider_cd)
+    val startLabel = stringResource(Res.string.start_speed_read)
 
     Column(
         modifier = modifier
@@ -95,21 +103,21 @@ fun SpeedReadSetupScreen(
                 ),
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.semantics {
-                    contentDescription = "${settings.wpm} слов в минуту"
+                    contentDescription = wpmValueCd
                 },
             )
             Text(
-                text = "слов в минуту",
+                text = stringResource(Res.string.wpm_label),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(FlashReadDimens.space8))
             Text(
-                text = formatRemainingTime(remainingMinutes),
+                text = remainingTimeLabel,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.semantics {
-                    contentDescription = formatRemainingTime(remainingMinutes)
+                    contentDescription = remainingTimeLabel
                 },
             )
 
@@ -124,7 +132,7 @@ fun SpeedReadSetupScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = FlashReadDimens.minTouchTarget)
-                    .semantics { contentDescription = "Скорость чтения, слов в минуту" },
+                    .semantics { contentDescription = wpmSliderCd },
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -149,26 +157,32 @@ fun SpeedReadSetupScreen(
                 verticalArrangement = Arrangement.spacedBy(FlashReadDimens.space8),
             ) {
                 SpeedReadDefaults.WPM_PRESETS.forEach { preset ->
+                    val presetCd = stringResource(Res.string.wpm_preset_cd, preset)
                     FilterChip(
                         selected = settings.wpm == preset,
                         onClick = { viewModel.updateSettings(settings.copy(wpm = preset)) },
                         label = { Text("$preset") },
                         modifier = Modifier
                             .heightIn(min = FlashReadDimens.minTouchTarget)
-                            .semantics { contentDescription = "Пресет $preset слов в минуту" },
+                            .semantics { contentDescription = presetCd },
                     )
                 }
             }
 
             Spacer(Modifier.height(FlashReadDimens.space24))
             Text(
-                text = "Слов за показ",
+                text = stringResource(Res.string.words_per_flash),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(Modifier.height(FlashReadDimens.space8))
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 SpeedReadDefaults.CHUNK_SIZES.forEachIndexed { index, size ->
+                    val chunkCd = pluralStringResource(
+                        Res.plurals.words_per_flash_cd,
+                        size,
+                        size,
+                    )
                     SegmentedButton(
                         selected = settings.chunkSize == size,
                         onClick = { viewModel.updateSettings(settings.copy(chunkSize = size)) },
@@ -179,7 +193,7 @@ fun SpeedReadSetupScreen(
                         modifier = Modifier
                             .heightIn(min = FlashReadDimens.minTouchTarget)
                             .semantics {
-                                contentDescription = chunkSizeContentDescription(size)
+                                contentDescription = chunkCd
                             },
                     ) {
                         Text(text = size.toString())
@@ -189,14 +203,14 @@ fun SpeedReadSetupScreen(
 
             Spacer(Modifier.height(FlashReadDimens.space16))
             SettingsSwitchRow(
-                title = "Spritz",
-                subtitle = "Подсвечивать оптимальную точку распознавания в слове",
+                title = stringResource(Res.string.spritz),
+                subtitle = stringResource(Res.string.spritz_subtitle_setup),
                 checked = settings.spritzEnabled,
                 onCheckedChange = { viewModel.updateSettings(settings.copy(spritzEnabled = it)) },
             )
             SettingsSwitchRow(
-                title = "Повтор",
-                subtitle = "Непрерывно повторять текст с начала после окончания",
+                title = stringResource(Res.string.loop),
+                subtitle = stringResource(Res.string.loop_subtitle_setup),
                 checked = settings.loopEnabled,
                 onCheckedChange = { viewModel.updateSettings(settings.copy(loopEnabled = it)) },
             )
@@ -215,7 +229,7 @@ fun SpeedReadSetupScreen(
                 .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
                 .padding(top = FlashReadDimens.space12, bottom = FlashReadDimens.space16)
                 .heightIn(min = FlashReadDimens.minTouchTarget)
-                .semantics { contentDescription = "Начать скорочтение" },
+                .semantics { contentDescription = startLabel },
             shape = FlashReadShapes.button,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -223,7 +237,7 @@ fun SpeedReadSetupScreen(
             ),
         ) {
             Text(
-                text = "Начать скорочтение",
+                text = startLabel,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -238,7 +252,7 @@ private fun MaterialSummaryCard(
 ) {
     val displayTitle = remember(book.title) { MaterialTitleFormatter.displayTitle(book.title) }
     val preview = remember(book.content) { previewBookContent(book.content) }
-    val secondary = remember(book) { materialSecondaryLabel(book) }
+    val secondary = materialSecondaryLabel(book)
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -298,6 +312,7 @@ private fun SettingsSwitchRow(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val switchCd = "$title. $subtitle"
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -308,7 +323,7 @@ private fun SettingsSwitchRow(
                 role = Role.Switch,
             )
             .padding(vertical = FlashReadDimens.space12)
-            .semantics { contentDescription = "$title. $subtitle" },
+            .semantics { contentDescription = switchCd },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -341,47 +356,33 @@ private fun previewBookContent(content: String): String {
     return trimmed.take(BOOK_PREVIEW_MAX_CHARS).trimEnd() + "…"
 }
 
+@Composable
 private fun materialSecondaryLabel(book: Book): String {
     return when (book.sourceType) {
-        MaterialSourceType.YouTube -> "YouTube-видео"
-        MaterialSourceType.Book -> formatWordCount(book.wordCount)
+        MaterialSourceType.YouTube -> stringResource(Res.string.source_youtube_video)
+        MaterialSourceType.Book -> pluralStringResource(
+            Res.plurals.word_count,
+            book.wordCount,
+            book.wordCount,
+        )
     }
 }
 
-private fun formatWordCount(count: Int): String {
-    val n = count % 100
-    val n1 = count % 10
-    val word = when {
-        n in 11..14 -> "слов"
-        n1 == 1 -> "слово"
-        n1 in 2..4 -> "слова"
-        else -> "слов"
-    }
-    return "$count $word"
-}
-
-internal fun formatRemainingTime(minutes: Int?): String {
-    if (minutes == null) return "Осталось около …"
+@Composable
+internal fun remainingTimeLabel(minutes: Int?): String {
+    if (minutes == null) return stringResource(Res.string.remaining_time_unknown)
     return when {
-        minutes <= 0 -> "Осталось меньше минуты"
-        minutes < 60 -> "Осталось около $minutes мин"
+        minutes <= 0 -> stringResource(Res.string.remaining_time_less_than_minute)
+        minutes < 60 -> pluralStringResource(Res.plurals.remaining_time_minutes, minutes, minutes)
         else -> {
             val hours = minutes / 60
             val mins = minutes % 60
             if (mins == 0) {
-                "Осталось около $hours ч"
+                pluralStringResource(Res.plurals.remaining_time_hours, hours, hours)
             } else {
-                "Осталось около $hours ч $mins мин"
+                stringResource(Res.string.remaining_time_hours_minutes, hours, mins)
             }
         }
-    }
-}
-
-private fun chunkSizeContentDescription(chunkSize: Int): String {
-    return if (chunkSize == 1) {
-        "1 слово за показ"
-    } else {
-        "$chunkSize слова за показ"
     }
 }
 

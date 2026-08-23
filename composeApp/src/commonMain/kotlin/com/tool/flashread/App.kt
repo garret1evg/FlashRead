@@ -44,7 +44,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -58,7 +60,10 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.tool.flashread.core.locale.resolveLocaleOverride
 import com.tool.flashread.core.model.Book
+import com.tool.flashread.data.repository.AppLanguageRepository
+import com.tool.flashread.locale.AppEnvironment
 import com.tool.flashread.navigation.AppRoute
 import com.tool.flashread.navigation.AppScreen
 import com.tool.flashread.navigation.isTopLevel
@@ -67,10 +72,12 @@ import com.tool.flashread.navigation.openReaderFromLibrary
 import com.tool.flashread.navigation.popBack
 import com.tool.flashread.navigation.pushIfNeeded
 import com.tool.flashread.navigation.showsScaffoldTopBar
-import com.tool.flashread.navigation.title
 import com.tool.flashread.platform.ObserveExternalBookOpens
+import com.tool.flashread.platform.currentSystemLanguageTag
 import com.tool.flashread.platform.launchRouteForExternalBookOpen
 import com.tool.flashread.platform.rememberBookImportLauncher
+import com.tool.flashread.resources.Res
+import com.tool.flashread.resources.*
 import com.tool.flashread.ui.components.AppLogo
 import com.tool.flashread.ui.components.ScreenTitle
 import com.tool.flashread.ui.library.BookEditorScreen
@@ -86,20 +93,34 @@ import com.tool.flashread.ui.speedread.SpeedReadSetupScreen
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadShapes
 import com.tool.flashread.ui.theme.FlashReadTheme
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 @Preview
 @OptIn(ExperimentalMaterial3Api::class)
 fun App() {
-    FlashReadTheme {
+    val languageRepository = remember { AppLanguageRepository() }
+    var appLanguage by remember { mutableStateOf(languageRepository.load()) }
+    val systemLanguageTag = remember { currentSystemLanguageTag() }
+    val localeOverride = resolveLocaleOverride(appLanguage, systemLanguageTag)
+    val backStack = remember {
+        mutableStateListOf(launchRouteForExternalBookOpen() ?: AppRoute.Home)
+    }
+
+    AppEnvironment(localeOverride) {
+        FlashReadTheme {
         val appViewModel: AppViewModel = viewModel { AppViewModel() }
         val uiState by appViewModel.uiState.collectAsStateWithLifecycle()
         val currentBook = uiState.currentBook
         val snackbarHostState = remember { SnackbarHostState() }
+        val defaultNewBookTitle = stringResource(Res.string.default_new_book_title)
+        val defaultSpeedReadTitle = stringResource(Res.string.default_speed_read_title)
+        val backLabel = stringResource(Res.string.action_back)
 
         LaunchedEffect(appViewModel) {
             appViewModel.messages.collect { message ->
-                snackbarHostState.showSnackbar(message)
+                snackbarHostState.showSnackbar(message.toSnackbarText())
             }
         }
 
@@ -108,9 +129,6 @@ fun App() {
             onError = appViewModel::onImportError,
         )
 
-        val backStack = remember {
-            mutableStateListOf(launchRouteForExternalBookOpen() ?: AppRoute.Home)
-        }
         val currentRoute = backStack.lastOrNull() ?: AppRoute.Home
         val currentScreen = AppScreen.fromRoute(currentRoute)
         val showBottomBar = currentRoute.isTopLevel
@@ -131,7 +149,7 @@ fun App() {
         }
 
         fun startScratchSpeedRead(content: String) {
-            if (!appViewModel.startScratchSpeedRead(content)) return
+            if (!appViewModel.startScratchSpeedRead(content, defaultSpeedReadTitle)) return
             backStack.pushIfNeeded(AppRoute.SpeedRead)
         }
 
@@ -167,7 +185,7 @@ fun App() {
                     TopAppBar(
                         title = {
                             Text(
-                                text = currentRoute.title,
+                                text = currentRoute.screenTitle(),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -177,7 +195,7 @@ fun App() {
                                 IconButton(onClick = { backStack.popBack() }) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Back",
+                                        contentDescription = backLabel,
                                     )
                                 }
                             }
@@ -198,6 +216,7 @@ fun App() {
                     ) {
                         AppScreen.entries.forEach { screen ->
                             val selected = currentScreen == screen
+                            val label = screen.label()
                             NavigationBarItem(
                                 selected = selected,
                                 onClick = {
@@ -205,7 +224,7 @@ fun App() {
                                 },
                                 label = {
                                     Text(
-                                        text = screen.title,
+                                        text = label,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
@@ -213,7 +232,7 @@ fun App() {
                                 icon = {
                                     Icon(
                                         imageVector = screen.icon(selected),
-                                        contentDescription = screen.title,
+                                        contentDescription = label,
                                     )
                                 },
                                 colors = NavigationBarItemDefaults.colors(
@@ -321,6 +340,11 @@ fun App() {
                     }
                     entry<AppRoute.Settings> {
                         SettingsScreen(
+                            selectedLanguage = appLanguage,
+                            onLanguageSelected = { language ->
+                                languageRepository.save(language)
+                                appLanguage = language
+                            },
                             onOpenPrivacyPolicy = { backStack.pushIfNeeded(AppRoute.PrivacyPolicy) },
                             onOpenTerms = { backStack.pushIfNeeded(AppRoute.Terms) },
                         )
@@ -340,9 +364,14 @@ fun App() {
                             onBack = { backStack.popBack() },
                             onSave = { title, content ->
                                 if (editorBookId == null) {
-                                    appViewModel.createBook(title, content)
+                                    appViewModel.createBook(title, content, defaultNewBookTitle)
                                 } else {
-                                    appViewModel.updateCreatedBook(editorBookId, title, content)
+                                    appViewModel.updateCreatedBook(
+                                        editorBookId,
+                                        title,
+                                        content,
+                                        defaultNewBookTitle,
+                                    )
                                 }
                                 backStack.popBack()
                             },
@@ -359,6 +388,7 @@ fun App() {
                     }
                 },
             )
+        }
         }
     }
 }
@@ -416,7 +446,7 @@ private fun HomeScreen(
             .padding(top = FlashReadDimens.space8)
             .padding(bottom = FlashReadDimens.space24),
     ) {
-        ScreenTitle(title = "Home")
+        ScreenTitle(title = stringResource(Res.string.screen_home))
         Spacer(Modifier.height(FlashReadDimens.space16))
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -431,7 +461,7 @@ private fun HomeScreen(
                     .padding(FlashReadDimens.space16),
             ) {
                 Text(
-                    text = "Continue reading",
+                    text = stringResource(Res.string.home_continue_reading),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -447,7 +477,7 @@ private fun HomeScreen(
                 )
                 Spacer(Modifier.height(FlashReadDimens.space8))
                 Text(
-                    text = "Progress: $progressPercent%",
+                    text = stringResource(Res.string.home_progress, progressPercent),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -462,7 +492,7 @@ private fun HomeScreen(
                     shape = FlashReadShapes.button,
                 ) {
                     Text(
-                        text = "Open Reader",
+                        text = stringResource(Res.string.home_open_reader),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -495,7 +525,7 @@ private fun EmptyBookState(
         AppLogo(size = 80.dp)
         Spacer(Modifier.height(FlashReadDimens.space16))
         Text(
-            text = "No book selected",
+            text = stringResource(Res.string.home_empty_title),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
@@ -505,7 +535,7 @@ private fun EmptyBookState(
         )
         Spacer(Modifier.height(FlashReadDimens.space8))
         Text(
-            text = "Import a .txt, .fb2, or .epub file, write your own book, paste text for speed reading, or pick one in Library.",
+            text = stringResource(Res.string.home_empty_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -526,11 +556,11 @@ private fun HomeActionButtons(
     onCreateBook: () -> Unit,
     onSpeedReadText: () -> Unit,
 ) {
-    HomeActionButton(text = "Import book", onClick = onImportBook)
+    HomeActionButton(text = stringResource(Res.string.action_import_book), onClick = onImportBook)
     Spacer(Modifier.height(FlashReadDimens.space12))
-    HomeActionButton(text = "Создать книгу", onClick = onCreateBook)
+    HomeActionButton(text = stringResource(Res.string.action_create_book), onClick = onCreateBook)
     Spacer(Modifier.height(FlashReadDimens.space12))
-    HomeActionButton(text = "Скорочтение текста", onClick = onSpeedReadText)
+    HomeActionButton(text = stringResource(Res.string.action_speed_read_text), onClick = onSpeedReadText)
 }
 
 @Composable
@@ -551,4 +581,31 @@ private fun HomeActionButton(
             overflow = TextOverflow.Ellipsis,
         )
     }
+}
+
+@Composable
+private fun AppRoute.screenTitle(): String = when (this) {
+    AppRoute.Home -> stringResource(Res.string.screen_home)
+    AppRoute.Library -> stringResource(Res.string.screen_library)
+    AppRoute.Reader -> stringResource(Res.string.screen_reader)
+    AppRoute.SpeedRead, AppRoute.QuickSpeedRead -> stringResource(Res.string.screen_speed_read)
+    AppRoute.SpeedReadPlayer -> stringResource(Res.string.screen_speed_read_player)
+    AppRoute.Settings -> stringResource(Res.string.screen_settings)
+    AppRoute.PrivacyPolicy -> stringResource(Res.string.screen_privacy_policy)
+    AppRoute.Terms -> stringResource(Res.string.screen_terms)
+    AppRoute.BookEditor -> stringResource(Res.string.screen_editor)
+}
+
+@Composable
+private fun AppScreen.label(): String = when (this) {
+    AppScreen.Home -> stringResource(Res.string.nav_home)
+    AppScreen.Library -> stringResource(Res.string.nav_library)
+    AppScreen.Settings -> stringResource(Res.string.nav_settings)
+}
+
+private suspend fun AppMessage.toSnackbarText(): String = when (this) {
+    is AppMessage.Imported -> getString(Res.string.snackbar_imported, title)
+    is AppMessage.Added -> getString(Res.string.snackbar_added, title)
+    is AppMessage.Deleted -> getString(Res.string.snackbar_deleted, title)
+    is AppMessage.Error -> text
 }

@@ -17,15 +17,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tool.flashread.resources.Res
-import com.tool.flashread.resources.app_logo
+import com.tool.flashread.resources.*
 import com.tool.flashread.ui.theme.FlashReadDimens
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AppLogo(
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
-    contentDescription: String? = "FlashRead",
+    contentDescription: String? = stringResource(Res.string.app_name),
 ) {
     Image(
         painter = painterResource(Res.drawable.app_logo),

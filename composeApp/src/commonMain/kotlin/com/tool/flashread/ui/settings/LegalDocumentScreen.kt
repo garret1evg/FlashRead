@@ -13,8 +13,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.tool.flashread.resources.Res
+import com.tool.flashread.resources.*
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadTheme
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun LegalDocumentScreen(
@@ -29,7 +32,7 @@ fun LegalDocumentScreen(
             .padding(top = FlashReadDimens.space8, bottom = FlashReadDimens.space24),
     ) {
         Text(
-            text = "Last updated ${document.lastUpdated}",
+            text = stringResource(Res.string.legal_last_updated, document.lastUpdated),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),

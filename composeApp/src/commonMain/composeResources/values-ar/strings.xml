@@ -1,0 +1,169 @@
+<resources>
+    <string name="app_name">FlashRead</string>
+
+    <string name="action_back">رجوع</string>
+    <string name="action_save">حفظ</string>
+    <string name="action_cancel">إلغاء</string>
+    <string name="action_add">إضافة</string>
+    <string name="action_continue">متابعة</string>
+    <string name="action_next">التالي</string>
+    <string name="action_close">إغلاق</string>
+    <string name="action_more">المزيد</string>
+    <string name="action_rename">إعادة تسمية</string>
+    <string name="action_delete">حذف</string>
+    <string name="action_edit">تعديل</string>
+    <string name="action_pause">إيقاف مؤقت</string>
+    <string name="action_play">تشغيل</string>
+    <string name="action_restart">إعادة من البداية</string>
+    <string name="action_previous">السابق</string>
+    <string name="action_next_item">التالي</string>
+    <string name="action_import_book">استيراد كتاب</string>
+    <string name="action_create_book">إنشاء كتاب</string>
+    <string name="action_speed_read_text">قراءة سريعة للنص</string>
+
+    <string name="screen_home">الرئيسية</string>
+    <string name="screen_library">المكتبة</string>
+    <string name="screen_settings">الإعدادات</string>
+    <string name="screen_reader">القارئ</string>
+    <string name="screen_speed_read">القراءة السريعة</string>
+    <string name="screen_speed_read_player">SpeedRead</string>
+    <string name="screen_privacy_policy">سياسة الخصوصية</string>
+    <string name="screen_terms">الشروط والأحكام</string>
+    <string name="screen_editor">المحرر</string>
+
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_library">المكتبة</string>
+    <string name="nav_settings">الإعدادات</string>
+
+    <string name="home_continue_reading">متابعة القراءة</string>
+    <string name="home_progress">التقدم: %1$d%</string>
+    <string name="home_open_reader">فتح القارئ</string>
+    <string name="home_empty_title">لم يُحدد كتاب</string>
+    <string name="home_empty_body">استورد ملف .txt أو .fb2 أو .epub، أو اكتب كتابك، أو الصق نصًا للقراءة السريعة، أو اختر كتابًا من المكتبة.</string>
+
+    <string name="library_opening_book">جارٍ فتح الكتاب…</string>
+    <string name="library_add_material">إضافة مادة</string>
+    <string name="library_empty_title">المكتبة فارغة</string>
+    <string name="library_empty_body">استورد كتابًا، أو أنشئ كتابك، أو الصق نصًا للقراءة السريعة، أو أضف فيديو من YouTube.</string>
+    <string name="library_add_first_material">أضف مادتك الأولى</string>
+    <string name="library_add_youtube">إضافة فيديو YouTube</string>
+    <string name="library_field_title">العنوان</string>
+    <string name="library_field_url">الرابط</string>
+    <string name="library_rename_title">إعادة تسمية</string>
+    <string name="percent_value">%1$d%</string>
+
+    <string name="default_new_book_title">كتاب جديد</string>
+    <string name="editor_title_label">العنوان</string>
+    <string name="editor_text_label">النص</string>
+    <string name="editor_text_placeholder">كل سطر غير فارغ فقرة</string>
+
+    <string name="default_speed_read_title">القراءة السريعة</string>
+    <string name="quick_speed_read_text_label">النص</string>
+    <string name="quick_speed_read_placeholder">الصق النص — لن يُحفظ في المكتبة</string>
+
+    <string name="cd_cover">الغلاف</string>
+    <string name="cd_book">كتاب</string>
+    <string name="source_youtube_video">فيديو YouTube</string>
+
+    <string name="reader_text_settings">إعدادات النص</string>
+    <string name="reader_open_speed_read">الانتقال إلى القراءة السريعة</string>
+    <string name="reader_progress_cd">تقدم القراءة %1$d بالمئة</string>
+    <string name="reader_font_size">حجم الخط</string>
+    <string name="reader_font_size_cd">حجم الخط %1$d نقطة</string>
+    <string name="reader_line_height">تباعد الأسطر</string>
+    <string name="reader_line_height_cd">تباعد الأسطر %1$s</string>
+    <string name="reader_theme">السمة</string>
+    <string name="reader_theme_cd">السمة: %1$s</string>
+    <string name="reader_theme_light">فاتحة</string>
+    <string name="reader_theme_sepia">سيبيا</string>
+    <string name="reader_theme_dark">داكنة</string>
+    <string name="reader_alignment">المحاذاة</string>
+    <string name="reader_alignment_start">يسار</string>
+    <string name="reader_alignment_center">وسط</string>
+    <string name="reader_alignment_justify">ضبط</string>
+
+    <string name="wpm_label">كلمة في الدقيقة</string>
+    <string name="wpm_value">%1$d ك/د</string>
+    <string name="wpm_value_cd">%1$d كلمة في الدقيقة</string>
+    <string name="wpm_slider_cd">سرعة القراءة، كلمات في الدقيقة</string>
+    <string name="wpm_preset_cd">إعداد مسبق %1$d كلمة في الدقيقة</string>
+    <string name="words_per_flash">كلمات في كل عرض</string>
+    <string name="spritz">Spritz</string>
+    <string name="spritz_subtitle_setup">إبراز نقطة التعرف المثلى في الكلمة</string>
+    <string name="spritz_subtitle_player">إبراز الحرف المحوري</string>
+    <string name="loop">تكرار</string>
+    <string name="loop_subtitle_setup">تكرار النص من البداية بعد انتهائه</string>
+    <string name="loop_subtitle_player">إعادة النص من البداية بعد انتهائه</string>
+    <string name="start_speed_read">بدء القراءة السريعة</string>
+
+    <string name="player_progress_cd">التقدم %1$s من %2$s</string>
+    <string name="player_settings">الإعدادات</string>
+
+    <string name="settings_legal">قانوني</string>
+    <string name="settings_privacy_policy">سياسة الخصوصية</string>
+    <string name="settings_terms">الشروط والأحكام</string>
+    <string name="settings_version">الإصدار %1$s</string>
+    <string name="settings_version_cd">الإصدار %1$s</string>
+    <string name="settings_language">اللغة</string>
+    <string name="settings_language_system">النظام</string>
+    <string name="language_en">English</string>
+    <string name="language_es">Español</string>
+    <string name="language_pt">Português</string>
+    <string name="language_fr">Français</string>
+    <string name="language_de">Deutsch</string>
+    <string name="language_ru">Русский</string>
+    <string name="language_uk">Українська</string>
+    <string name="language_hi">हिन्दी</string>
+    <string name="language_ar">العربية</string>
+
+    <string name="legal_last_updated">آخر تحديث %1$s</string>
+
+    <string name="snackbar_imported">تم الاستيراد: %1$s</string>
+    <string name="snackbar_added">تمت الإضافة: %1$s</string>
+    <string name="snackbar_deleted">تم الحذف: %1$s</string>
+
+    <string name="import_file_empty">الملف المحدد فارغ.</string>
+    <string name="import_failed">تعذّر استيراد الكتاب.</string>
+    <string name="import_fallback_title">كتاب مستورد</string>
+    <string name="import_ios_unsupported">استيراد الكتب متاح حاليًا على Android فقط.</string>
+    <string name="import_unsupported_format">هذا التنسيق غير مدعوم. استورد ملف .txt أو .fb2 أو .epub.</string>
+    <string name="import_damaged_file">تعذّر قراءة هذا الكتاب. قد يكون الملف تالفًا.</string>
+    <string name="import_unable_to_read">تعذّر قراءة الملف المحدد.</string>
+
+    <string name="remaining_time_unknown">المتبقي نحو …</string>
+    <string name="remaining_time_less_than_minute">المتبقي أقل من دقيقة</string>
+    <string name="remaining_time_hours_minutes">المتبقي نحو %1$d س %2$d د</string>
+
+    <plurals name="word_count">
+        <item quantity="zero">%1$d كلمة</item>
+        <item quantity="one">كلمة واحدة</item>
+        <item quantity="two">كلمتان</item>
+        <item quantity="few">%1$d كلمات</item>
+        <item quantity="many">%1$d كلمة</item>
+        <item quantity="other">%1$d كلمة</item>
+    </plurals>
+    <plurals name="words_per_flash_cd">
+        <item quantity="zero">%1$d كلمة في كل عرض</item>
+        <item quantity="one">كلمة واحدة في كل عرض</item>
+        <item quantity="two">كلمتان في كل عرض</item>
+        <item quantity="few">%1$d كلمات في كل عرض</item>
+        <item quantity="many">%1$d كلمة في كل عرض</item>
+        <item quantity="other">%1$d كلمة في كل عرض</item>
+    </plurals>
+    <plurals name="remaining_time_minutes">
+        <item quantity="zero">المتبقي نحو %1$d د</item>
+        <item quantity="one">المتبقي نحو دقيقة</item>
+        <item quantity="two">المتبقي نحو دقيقتين</item>
+        <item quantity="few">المتبقي نحو %1$d د</item>
+        <item quantity="many">المتبقي نحو %1$d د</item>
+        <item quantity="other">المتبقي نحو %1$d د</item>
+    </plurals>
+    <plurals name="remaining_time_hours">
+        <item quantity="zero">المتبقي نحو %1$d س</item>
+        <item quantity="one">المتبقي نحو ساعة</item>
+        <item quantity="two">المتبقي نحو ساعتين</item>
+        <item quantity="few">المتبقي نحو %1$d س</item>
+        <item quantity="many">المتبقي نحو %1$d س</item>
+        <item quantity="other">المتبقي نحو %1$d س</item>
+    </plurals>
+</resources>

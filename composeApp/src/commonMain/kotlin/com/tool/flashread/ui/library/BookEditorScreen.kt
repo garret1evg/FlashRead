@@ -30,8 +30,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import com.tool.flashread.resources.Res
+import com.tool.flashread.resources.*
 import com.tool.flashread.ui.theme.FlashReadDimens
 import com.tool.flashread.ui.theme.FlashReadTheme
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +48,10 @@ fun BookEditorScreen(
     var title by remember { mutableStateOf(initialTitle) }
     var content by remember { mutableStateOf(initialContent) }
     val canSave = content.isNotBlank()
-    val barTitle = title.trim().ifBlank { "Новая книга" }
+    val defaultTitle = stringResource(Res.string.default_new_book_title)
+    val backLabel = stringResource(Res.string.action_back)
+    val saveLabel = stringResource(Res.string.action_save)
+    val barTitle = title.trim().ifBlank { defaultTitle }
 
     Column(
         modifier = modifier
@@ -65,11 +71,11 @@ fun BookEditorScreen(
                     onClick = onBack,
                     modifier = Modifier
                         .size(FlashReadDimens.minTouchTarget)
-                        .semantics { contentDescription = "Назад" },
+                        .semantics { contentDescription = backLabel },
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Назад",
+                        contentDescription = backLabel,
                     )
                 }
             },
@@ -79,10 +85,10 @@ fun BookEditorScreen(
                     enabled = canSave,
                     modifier = Modifier
                         .heightIn(min = FlashReadDimens.minTouchTarget)
-                        .semantics { contentDescription = "Сохранить" },
+                        .semantics { contentDescription = saveLabel },
                 ) {
                     Text(
-                        text = "Сохранить",
+                        text = saveLabel,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -109,7 +115,7 @@ fun BookEditorScreen(
                 value = title,
                 onValueChange = { title = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Название") },
+                label = { Text(stringResource(Res.string.editor_title_label)) },
                 singleLine = true,
             )
             OutlinedTextField(
@@ -118,8 +124,8 @@ fun BookEditorScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                label = { Text("Текст") },
-                placeholder = { Text("Каждая непустая строка — абзац") },
+                label = { Text(stringResource(Res.string.editor_text_label)) },
+                placeholder = { Text(stringResource(Res.string.editor_text_placeholder)) },
             )
         }
     }

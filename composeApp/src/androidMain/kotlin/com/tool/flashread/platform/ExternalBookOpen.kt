@@ -5,6 +5,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import com.tool.flashread.navigation.AppRoute
+import com.tool.flashread.resources.Res
+import com.tool.flashread.resources.*
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.getString
 
 data class ExternalBookImportState(
     val sessionId: Long = 0,
@@ -53,14 +56,15 @@ object ExternalBookImporter {
         _state.value = ExternalBookImportState(sessionId = sessionId, phase = ExternalBookImportState.Phase.Importing)
         importJob = scope.launch {
             try {
+                val fallbackTitle = getString(Res.string.import_fallback_title)
                 val imported = withContext(Dispatchers.IO) {
-                    importBookFromUri(contentResolver, uri, cacheDir)
+                    importBookFromUri(contentResolver, uri, cacheDir, fallbackTitle)
                 }
                 if (imported.content.isBlank()) {
                     _state.value = ExternalBookImportState(
                         sessionId = sessionId,
                         phase = ExternalBookImportState.Phase.Error,
-                        error = "Selected file is empty.",
+                        error = getString(Res.string.import_file_empty),
                     )
                 } else {
                     _state.value = ExternalBookImportState(
@@ -75,7 +79,7 @@ object ExternalBookImporter {
                 _state.value = ExternalBookImportState(
                     sessionId = sessionId,
                     phase = ExternalBookImportState.Phase.Error,
-                    error = error.message?.trim()?.takeIf { it.isNotEmpty() } ?: "Failed to import book.",
+                    error = localizedImportError(error.message),
                 )
             }
         }

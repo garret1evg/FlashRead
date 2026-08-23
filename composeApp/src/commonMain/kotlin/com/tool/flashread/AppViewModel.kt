@@ -22,6 +22,15 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 internal const val ScratchSpeedReadBookId = "scratch:speed-read"
+internal const val DefaultNewBookTitle = "New book"
+internal const val DefaultSpeedReadTitle = "Speed read"
+
+sealed interface AppMessage {
+    data class Imported(val title: String) : AppMessage
+    data class Added(val title: String) : AppMessage
+    data class Deleted(val title: String) : AppMessage
+    data class Error(val text: String) : AppMessage
+}
 
 data class AppUiState(
     val books: List<Book> = emptyList(),
@@ -47,7 +56,7 @@ class AppViewModel(
     private val _uiState = MutableStateFlow(loadInitialState())
     val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
+    private val _messages = Channel<AppMessage>(Channel.BUFFERED)
     val messages = _messages.receiveAsFlow()
 
     fun progressPercent(book: Book): Int {
@@ -84,7 +93,7 @@ class AppViewModel(
             )
         }
         persistRecentBookId(book.id)
-        showMessage("Imported ${MaterialTitleFormatter.displayTitle(importedBook.title)}")
+        showMessage(AppMessage.Imported(MaterialTitleFormatter.displayTitle(importedBook.title)))
     }
 
     fun consumePendingReaderNavigation() {
@@ -93,7 +102,7 @@ class AppViewModel(
 
     fun onImportError(message: String) {
         _uiState.update { it.copy(isImportingExternalBook = false, pendingReaderBookId = null) }
-        showMessage(message)
+        showMessage(AppMessage.Error(message))
     }
 
     fun addYouTubeVideo(title: String, url: String) {
@@ -108,19 +117,22 @@ class AppViewModel(
         ).withReadingStats()
         upsert(book)
         selectBook(book.id)
-        showMessage("Added ${MaterialTitleFormatter.displayTitle(resolvedTitle)}")
+        showMessage(AppMessage.Added(MaterialTitleFormatter.displayTitle(resolvedTitle)))
     }
 
     fun startBookEditor(bookId: String?) {
         _uiState.update { it.copy(editorBookId = bookId, scratchBook = null) }
     }
 
-    fun startScratchSpeedRead(content: String): Boolean {
+    fun startScratchSpeedRead(
+        content: String,
+        title: String = DefaultSpeedReadTitle,
+    ): Boolean {
         val trimmedContent = content.trim()
         if (trimmedContent.isBlank()) return false
         val book = Book(
             id = ScratchSpeedReadBookId,
-            title = "Скорочтение",
+            title = title.trim().ifBlank { DefaultSpeedReadTitle },
             content = trimmedContent,
             sourceType = MaterialSourceType.Book,
         ).withReadingStats()
@@ -141,12 +153,16 @@ class AppViewModel(
     }
 
     @OptIn(ExperimentalUuidApi::class)
-    fun createBook(title: String, content: String) {
+    fun createBook(
+        title: String,
+        content: String,
+        defaultTitle: String = DefaultNewBookTitle,
+    ) {
         val trimmedContent = content.trim()
         if (trimmedContent.isBlank()) return
         val book = Book(
             id = "created:${Uuid.random()}",
-            title = authoredBookTitle(title),
+            title = authoredBookTitle(title, defaultTitle),
             content = trimmedContent,
             sourceType = MaterialSourceType.Book,
         ).withReadingStats()
@@ -154,14 +170,19 @@ class AppViewModel(
         selectBook(book.id)
     }
 
-    fun updateCreatedBook(bookId: String, title: String, content: String) {
+    fun updateCreatedBook(
+        bookId: String,
+        title: String,
+        content: String,
+        defaultTitle: String = DefaultNewBookTitle,
+    ) {
         if (!bookId.startsWith("created:")) return
         val trimmedContent = content.trim()
         if (trimmedContent.isBlank()) return
         val existing = _uiState.value.books.firstOrNull { it.id == bookId } ?: return
         upsert(
             existing.copy(
-                title = authoredBookTitle(title),
+                title = authoredBookTitle(title, defaultTitle),
                 content = trimmedContent,
             ).withReadingStats(),
         )
@@ -193,7 +214,7 @@ class AppViewModel(
         if (selectedBookId != current.selectedBookId) {
             persistRecentBookId(selectedBookId)
         }
-        showMessage("Deleted ${MaterialTitleFormatter.displayTitle(deleted.title)}")
+        showMessage(AppMessage.Deleted(MaterialTitleFormatter.displayTitle(deleted.title)))
     }
 
     private fun upsert(book: Book) {
@@ -245,11 +266,11 @@ class AppViewModel(
         return AppUiState(books = books, selectedBookId = selectedBookId)
     }
 
-    private fun authoredBookTitle(title: String): String {
-        return title.trim().ifBlank { "Новая книга" }
+    private fun authoredBookTitle(title: String, defaultTitle: String): String {
+        return title.trim().ifBlank { defaultTitle.trim().ifBlank { DefaultNewBookTitle } }
     }
 
-    private fun showMessage(message: String) {
+    private fun showMessage(message: AppMessage) {
         _messages.trySend(message)
     }
 }

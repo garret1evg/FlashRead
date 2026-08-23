@@ -38,7 +38,7 @@ class AppViewModelTest {
         assertEquals("notes.txt", state.books.single().title)
         assertEquals(MaterialSourceType.Book, state.books.single().sourceType)
         assertEquals(1, stored.size)
-        assertEquals("Imported notes", message.await())
+        assertEquals(AppMessage.Imported("notes"), message.await())
     }
 
     @Test
@@ -60,7 +60,7 @@ class AppViewModelTest {
         assertEquals("youtube:https://youtu.be/abc", book?.id)
         assertEquals("https://youtu.be/abc", book?.title)
         assertEquals(MaterialSourceType.YouTube, book?.sourceType)
-        assertEquals("Added https://youtu.be/abc", message.await())
+        assertEquals(AppMessage.Added("https://youtu.be/abc"), message.await())
     }
 
     @Test
@@ -70,6 +70,8 @@ class AppViewModelTest {
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(),
         )
+        val deleted = async { viewModel.messages.first { it is AppMessage.Deleted } }
+        testScheduler.runCurrent()
         viewModel.upsertImportedBook(
             ImportedBook(id = "keep", title = "Keep.txt", content = "alpha"),
         )
@@ -86,6 +88,7 @@ class AppViewModelTest {
         assertNull(viewModel.uiState.value.books.firstOrNull { it.id == "gone" })
         assertNull(viewModel.uiState.value.selectedBookId)
         assertEquals("keep", viewModel.uiState.value.books.single().id)
+        assertEquals(AppMessage.Deleted("Gone"), deleted.await())
 
         viewModel.selectBook("keep")
         viewModel.deleteBook("keep")
@@ -149,7 +152,7 @@ class AppViewModelTest {
         assertEquals("content://books/war.epub", state.selectedBookId)
         assertEquals("content://books/war.epub", state.pendingReaderBookId)
         assertFalse(state.isImportingExternalBook)
-        assertEquals("Imported War", message.await())
+        assertEquals(AppMessage.Imported("War"), message.await())
 
         viewModel.consumePendingReaderNavigation()
         assertNull(viewModel.uiState.value.pendingReaderBookId)
@@ -183,7 +186,7 @@ class AppViewModelTest {
 
         assertFalse(viewModel.uiState.value.isImportingExternalBook)
         assertNull(viewModel.uiState.value.pendingReaderBookId)
-        assertEquals("Failed to import book.", message.await())
+        assertEquals(AppMessage.Error("Failed to import book."), message.await())
     }
 
     @Test
@@ -238,10 +241,21 @@ class AppViewModelTest {
         viewModel.createBook(title = "  ", content = "hello")
         val book = viewModel.uiState.value.currentBook
         assertNotNull(book)
-        assertEquals("Новая книга", book.title)
+        assertEquals(DefaultNewBookTitle, book.title)
+        assertEquals("New book", book.title)
         assertEquals("hello", book.content)
         assertTrue(book.id.startsWith("created:"))
         assertEquals(MaterialSourceType.Book, book.sourceType)
+
+        viewModel.createBook(
+            title = "  ",
+            content = "bonjour",
+            defaultTitle = "Nouveau livre",
+        )
+        assertEquals("Nouveau livre", viewModel.uiState.value.currentBook?.title)
+
+        viewModel.createBook(title = "  ", content = "fallback", defaultTitle = "   ")
+        assertEquals("New book", viewModel.uiState.value.currentBook?.title)
     }
 
     @Test
@@ -275,6 +289,21 @@ class AppViewModelTest {
         val imported = viewModel.uiState.value.books.first { it.id == "imported-1" }
         assertEquals("novel.epub", imported.title)
         assertEquals("chapter one", imported.content)
+
+        viewModel.updateCreatedBook(
+            bookId = createdId,
+            title = "  ",
+            content = "one two three four five",
+        )
+        assertEquals("New book", viewModel.uiState.value.books.first { it.id == createdId }.title)
+
+        viewModel.updateCreatedBook(
+            bookId = createdId,
+            title = "  ",
+            content = "one two three four five",
+            defaultTitle = "Новая книга",
+        )
+        assertEquals("Новая книга", viewModel.uiState.value.books.first { it.id == createdId }.title)
     }
 
     @Test
@@ -301,7 +330,8 @@ class AppViewModelTest {
         assertTrue(viewModel.startScratchSpeedRead("  paste this  \n\nnow  "))
         val state = viewModel.uiState.value
         assertEquals(ScratchSpeedReadBookId, state.scratchBook?.id)
-        assertEquals("Скорочтение", state.scratchBook?.title)
+        assertEquals(DefaultSpeedReadTitle, state.scratchBook?.title)
+        assertEquals("Speed read", state.scratchBook?.title)
         assertEquals("paste this  \n\nnow", state.scratchBook?.content)
         assertEquals(MaterialSourceType.Book, state.scratchBook?.sourceType)
         assertEquals(ScratchSpeedReadBookId, state.speedReadBook?.id)
@@ -344,6 +374,11 @@ class AppViewModelTest {
         viewModel.selectBook("keep")
         assertNull(viewModel.uiState.value.scratchBook)
         assertEquals("keep", viewModel.uiState.value.currentBook?.id)
+
+        assertTrue(viewModel.startScratchSpeedRead("localized", title = "Скорочтение"))
+        assertEquals("Скорочтение", viewModel.uiState.value.scratchBook?.title)
+        assertTrue(viewModel.startScratchSpeedRead("english fallback", title = "  "))
+        assertEquals("Speed read", viewModel.uiState.value.scratchBook?.title)
     }
 
     @Test
