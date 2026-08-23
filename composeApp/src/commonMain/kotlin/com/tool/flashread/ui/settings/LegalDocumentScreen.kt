@@ -1,5 +1,6 @@
 package com.tool.flashread.ui.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +28,7 @@ fun LegalDocumentScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
             .padding(top = FlashReadDimens.space8, bottom = FlashReadDimens.space24),

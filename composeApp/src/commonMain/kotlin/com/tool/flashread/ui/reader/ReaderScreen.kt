@@ -19,8 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,6 +52,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -115,10 +116,12 @@ fun ReaderScreen(
     isActiveRoute: Boolean = true,
     viewModel: ReaderViewModel = viewModel(key = book.id) { ReaderViewModel(book) },
 ) {
-    val paragraphs = viewModel.paragraphs
-    val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = viewModel.initialParagraphIndex,
-    )
+    val document by viewModel.document.collectAsStateWithLifecycle()
+    val paragraphs = document?.paragraphs.orEmpty()
+    val restoredParagraphIndex = document?.initialParagraphIndex
+    val listState = rememberSaveable(restoredParagraphIndex, saver = LazyListState.Saver) {
+        LazyListState(firstVisibleItemIndex = restoredParagraphIndex ?: 0)
+    }
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val startWord by viewModel.startWord.collectAsStateWithLifecycle()
     val scrollToParagraph by viewModel.scrollToParagraph.collectAsStateWithLifecycle()
@@ -135,21 +138,22 @@ fun ReaderScreen(
     val textSettingsLabel = stringResource(Res.string.reader_text_settings)
     val openSpeedReadLabel = stringResource(Res.string.reader_open_speed_read)
 
-    LaunchedEffect(isActiveRoute) {
-        if (isActiveRoute) {
+    LaunchedEffect(isActiveRoute, document) {
+        if (isActiveRoute && document != null) {
             viewModel.refreshPosition()
         }
     }
 
-    LaunchedEffect(scrollToParagraph) {
+    LaunchedEffect(scrollToParagraph, document) {
         val targetParagraph = scrollToParagraph
-        if (targetParagraph != null) {
-            listState.animateScrollToItem(targetParagraph)
+        if (document != null && targetParagraph != null) {
+            listState.scrollToItem(targetParagraph)
             viewModel.onScrollHandled()
         }
     }
 
-    LaunchedEffect(book.id, listState) {
+    LaunchedEffect(book.id, listState, document) {
+        if (document == null) return@LaunchedEffect
         snapshotFlow { listState.firstVisibleItemIndex }
             .map { it.coerceAtLeast(0) }
             .distinctUntilChanged()

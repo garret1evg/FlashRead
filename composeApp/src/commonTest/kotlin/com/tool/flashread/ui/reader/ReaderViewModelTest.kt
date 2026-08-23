@@ -7,25 +7,40 @@ import com.tool.flashread.core.reading.ReaderTextSettings
 import com.tool.flashread.core.reading.ReaderTheme
 import com.tool.flashread.memoryReaderTextSettingsRepository
 import com.tool.flashread.memoryReadingSessionRepository
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ReaderViewModelTest {
+
+    private val dispatcher = UnconfinedTestDispatcher()
+
+    @BeforeTest
+    fun setUp() {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    @AfterTest
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun loadsParagraphsAndClampsInitialPosition() {
         val positions = mutableMapOf("book-1" to 80)
-        val viewModel = ReaderViewModel(
-            book = Book(
-                id = "book-1",
-                title = "Sample",
-                content = "First paragraph.\n\nSecond paragraph.",
-            ),
-            readingSessionRepository = memoryReadingSessionRepository(positions),
-            textSettingsRepository = memoryReaderTextSettingsRepository(),
+        val viewModel = readerViewModel(
+            content = "First paragraph.\n\nSecond paragraph.",
+            positions = positions,
         )
 
         assertEquals(listOf("First paragraph.", "Second paragraph."), viewModel.paragraphs)
@@ -36,10 +51,10 @@ class ReaderViewModelTest {
     fun saveParagraphIndexAndSettingsPersist() {
         val positions = mutableMapOf("book-1" to 0)
         val storedSettings = arrayOf(ReaderTextSettings())
-        val viewModel = ReaderViewModel(
-            book = Book(id = "book-1", title = "Sample", content = "Hello world."),
-            readingSessionRepository = memoryReadingSessionRepository(positions),
-            textSettingsRepository = memoryReaderTextSettingsRepository(storedSettings),
+        val viewModel = readerViewModel(
+            content = "Hello world.",
+            positions = positions,
+            storedSettings = storedSettings,
         )
 
         viewModel.saveParagraphIndex(4)
@@ -57,14 +72,10 @@ class ReaderViewModelTest {
     fun scrollWithoutPinChangesHighlightedWord() {
         val positions = mutableMapOf<String, Int>()
         val wordOffsets = mutableMapOf<String, Int>()
-        val viewModel = ReaderViewModel(
-            book = Book(
-                id = "book-1",
-                title = "Sample",
-                content = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph.",
-            ),
-            readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
-            textSettingsRepository = memoryReaderTextSettingsRepository(),
+        val viewModel = readerViewModel(
+            content = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph.",
+            positions = positions,
+            wordOffsets = wordOffsets,
         )
 
         val initial = viewModel.startWord.value
@@ -85,14 +96,10 @@ class ReaderViewModelTest {
     fun selectWordFixesOffsetAndBlocksScrollUpdates() {
         val positions = mutableMapOf<String, Int>()
         val wordOffsets = mutableMapOf<String, Int>()
-        val viewModel = ReaderViewModel(
-            book = Book(
-                id = "book-1",
-                title = "Sample",
-                content = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph.",
-            ),
-            readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
-            textSettingsRepository = memoryReaderTextSettingsRepository(),
+        val viewModel = readerViewModel(
+            content = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph.",
+            positions = positions,
+            wordOffsets = wordOffsets,
         )
 
         viewModel.selectWord(1, 0)
@@ -115,14 +122,10 @@ class ReaderViewModelTest {
     fun restoresSavedWordOffsetAsPinned() {
         val positions = mutableMapOf("book-1" to 1)
         val wordOffsets = mutableMapOf("book-1" to 18)
-        val viewModel = ReaderViewModel(
-            book = Book(
-                id = "book-1",
-                title = "Sample",
-                content = "First paragraph.\n\nSecond paragraph.",
-            ),
-            readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
-            textSettingsRepository = memoryReaderTextSettingsRepository(),
+        val viewModel = readerViewModel(
+            content = "First paragraph.\n\nSecond paragraph.",
+            positions = positions,
+            wordOffsets = wordOffsets,
         )
 
         val restored = viewModel.startWord.value
@@ -136,14 +139,10 @@ class ReaderViewModelTest {
     fun refreshPositionUpdatesStartWordAfterExternalChange() {
         val positions = mutableMapOf("book-1" to 0)
         val wordOffsets = mutableMapOf<String, Int>()
-        val viewModel = ReaderViewModel(
-            book = Book(
-                id = "book-1",
-                title = "Sample",
-                content = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph.",
-            ),
-            readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
-            textSettingsRepository = memoryReaderTextSettingsRepository(),
+        val viewModel = readerViewModel(
+            content = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph.",
+            positions = positions,
+            wordOffsets = wordOffsets,
         )
 
         val initial = viewModel.startWord.value
@@ -169,14 +168,10 @@ class ReaderViewModelTest {
     fun refreshPositionDoesNothingIfPositionUnchanged() {
         val positions = mutableMapOf("book-1" to 0)
         val wordOffsets = mutableMapOf<String, Int>()
-        val viewModel = ReaderViewModel(
-            book = Book(
-                id = "book-1",
-                title = "Sample",
-                content = "First paragraph.\n\nSecond paragraph.",
-            ),
-            readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
-            textSettingsRepository = memoryReaderTextSettingsRepository(),
+        val viewModel = readerViewModel(
+            content = "First paragraph.\n\nSecond paragraph.",
+            positions = positions,
+            wordOffsets = wordOffsets,
         )
 
         val initial = viewModel.startWord.value
@@ -193,14 +188,10 @@ class ReaderViewModelTest {
         val content = "First paragraph.\n\nSecond word here.\n\nThird paragraph."
         val positions = mutableMapOf("book-1" to 1)
         val wordOffsets = mutableMapOf<String, Int>()
-        val viewModel = ReaderViewModel(
-            book = Book(
-                id = "book-1",
-                title = "Sample",
-                content = content,
-            ),
-            readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
-            textSettingsRepository = memoryReaderTextSettingsRepository(),
+        val viewModel = readerViewModel(
+            content = content,
+            positions = positions,
+            wordOffsets = wordOffsets,
         )
 
         val initial = viewModel.startWord.value
@@ -222,5 +213,19 @@ class ReaderViewModelTest {
         assertTrue(updated.pinned)
         // Should not scroll since same paragraph
         assertEquals(null, viewModel.scrollToParagraph.value)
+    }
+
+    private fun readerViewModel(
+        content: String,
+        positions: MutableMap<String, Int> = mutableMapOf(),
+        wordOffsets: MutableMap<String, Int> = mutableMapOf(),
+        storedSettings: Array<ReaderTextSettings> = arrayOf(ReaderTextSettings()),
+    ): ReaderViewModel {
+        return ReaderViewModel(
+            book = Book(id = "book-1", title = "Sample", content = content),
+            readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
+            textSettingsRepository = memoryReaderTextSettingsRepository(storedSettings),
+            computationDispatcher = dispatcher,
+        )
     }
 }

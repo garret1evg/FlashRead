@@ -1,10 +1,9 @@
 package com.tool.flashread
 
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -49,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,6 +66,7 @@ import com.tool.flashread.data.repository.AppLanguageRepository
 import com.tool.flashread.locale.AppEnvironment
 import com.tool.flashread.navigation.AppRoute
 import com.tool.flashread.navigation.AppScreen
+import com.tool.flashread.navigation.instantNavContentTransform
 import com.tool.flashread.navigation.isTopLevel
 import com.tool.flashread.navigation.navigateToTopLevel
 import com.tool.flashread.navigation.openReaderFromLibrary
@@ -251,6 +252,8 @@ fun App() {
             NavDisplay(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .clipToBounds()
                     .then(
                         if (currentRoute is AppRoute.SpeedReadPlayer) {
                             Modifier
@@ -269,11 +272,10 @@ fun App() {
                     rememberSaveableStateHolderNavEntryDecorator(),
                     rememberViewModelStoreNavEntryDecorator(),
                 ),
-                transitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
-                popTransitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
-                predictivePopTransitionSpec = { _ ->
-                    EnterTransition.None togetherWith ExitTransition.None
-                },
+                sizeTransform = null,
+                transitionSpec = { instantNavContentTransform() },
+                popTransitionSpec = { instantNavContentTransform() },
+                predictivePopTransitionSpec = { _ -> instantNavContentTransform() },
                 entryProvider = entryProvider {
                     entry<AppRoute.Home> {
                         HomeScreen(
@@ -413,6 +415,11 @@ private fun SelectedBookRoute(
         LaunchedEffect(Unit) {
             onMissingBook()
         }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+        )
         return
     }
     content(book)
@@ -441,6 +448,7 @@ private fun HomeScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
             .padding(top = FlashReadDimens.space8)
@@ -518,6 +526,7 @@ private fun EmptyBookState(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = FlashReadDimens.screenHorizontalPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
