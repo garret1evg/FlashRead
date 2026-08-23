@@ -9,13 +9,25 @@ sealed interface AppRoute : NavKey {
     data object SpeedRead : AppRoute
     data object SpeedReadPlayer : AppRoute
     data object Settings : AppRoute
+    data object PrivacyPolicy : AppRoute
+    data object Terms : AppRoute
 }
 
 val AppRoute.isTopLevel: Boolean
     get() = when (this) {
         AppRoute.Home, AppRoute.Library, AppRoute.Settings -> true
-        AppRoute.Reader, AppRoute.SpeedRead, AppRoute.SpeedReadPlayer -> false
+        AppRoute.Reader,
+        AppRoute.SpeedRead,
+        AppRoute.SpeedReadPlayer,
+        AppRoute.PrivacyPolicy,
+        AppRoute.Terms,
+        -> false
     }
+
+val AppRoute.showsScaffoldTopBar: Boolean
+    get() = this is AppRoute.SpeedRead ||
+        this is AppRoute.PrivacyPolicy ||
+        this is AppRoute.Terms
 
 val AppRoute.title: String
     get() = when (this) {
@@ -25,4 +37,6 @@ val AppRoute.title: String
         AppRoute.SpeedRead -> "Скорочтение"
         AppRoute.SpeedReadPlayer -> "SpeedRead"
         AppRoute.Settings -> "Settings"
+        AppRoute.PrivacyPolicy -> "Privacy Policy"
+        AppRoute.Terms -> "Terms & Conditions"
     }

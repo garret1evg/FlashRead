@@ -64,6 +64,7 @@ import com.tool.flashread.navigation.navigateToTopLevel
 import com.tool.flashread.navigation.openReaderFromLibrary
 import com.tool.flashread.navigation.popBack
 import com.tool.flashread.navigation.pushIfNeeded
+import com.tool.flashread.navigation.showsScaffoldTopBar
 import com.tool.flashread.navigation.title
 import com.tool.flashread.platform.ObserveExternalBookOpens
 import com.tool.flashread.platform.launchRouteForExternalBookOpen
@@ -73,6 +74,9 @@ import com.tool.flashread.ui.components.ScreenTitle
 import com.tool.flashread.ui.library.LibraryScreen
 import com.tool.flashread.ui.library.MaterialTitleFormatter
 import com.tool.flashread.ui.reader.ReaderScreen
+import com.tool.flashread.ui.settings.LegalDocumentScreen
+import com.tool.flashread.ui.settings.LegalDocuments
+import com.tool.flashread.ui.settings.SettingsScreen
 import com.tool.flashread.ui.speedread.SpeedReadPlayerScreen
 import com.tool.flashread.ui.speedread.SpeedReadSetupScreen
 import com.tool.flashread.ui.theme.FlashReadDimens
@@ -106,7 +110,7 @@ fun App() {
         val currentRoute = backStack.lastOrNull() ?: AppRoute.Home
         val currentScreen = AppScreen.fromRoute(currentRoute)
         val showBottomBar = currentRoute.isTopLevel
-        val showTopBar = currentRoute is AppRoute.SpeedRead
+        val showTopBar = currentRoute.showsScaffoldTopBar
 
         fun openReader(bookId: String) {
             appViewModel.selectBook(bookId)
@@ -285,7 +289,16 @@ fun App() {
                         }
                     }
                     entry<AppRoute.Settings> {
-                        SettingsScreen()
+                        SettingsScreen(
+                            onOpenPrivacyPolicy = { backStack.pushIfNeeded(AppRoute.PrivacyPolicy) },
+                            onOpenTerms = { backStack.pushIfNeeded(AppRoute.Terms) },
+                        )
+                    }
+                    entry<AppRoute.PrivacyPolicy> {
+                        LegalDocumentScreen(document = LegalDocuments.privacyPolicy)
+                    }
+                    entry<AppRoute.Terms> {
+                        LegalDocumentScreen(document = LegalDocuments.termsAndConditions)
                     }
                 },
             )
@@ -441,25 +454,5 @@ private fun EmptyBookState(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-    }
-}
-
-@Composable
-private fun SettingsScreen(
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
-            .padding(top = FlashReadDimens.space8),
-    ) {
-        ScreenTitle(title = "Settings")
-        Spacer(Modifier.height(FlashReadDimens.space12))
-        Text(
-            text = "Reading preferences will appear here.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }

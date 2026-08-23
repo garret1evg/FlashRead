@@ -10,7 +10,12 @@ enum class AppScreen(val title: String, val route: AppRoute) {
             AppRoute.Home -> Home
             AppRoute.Library -> Library
             AppRoute.Settings -> Settings
-            AppRoute.Reader, AppRoute.SpeedRead, AppRoute.SpeedReadPlayer -> null
+            AppRoute.Reader,
+            AppRoute.SpeedRead,
+            AppRoute.SpeedReadPlayer,
+            AppRoute.PrivacyPolicy,
+            AppRoute.Terms,
+            -> null
         }
     }
 }

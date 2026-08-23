@@ -16,6 +16,8 @@ class AppNavigationTest {
         assertFalse(AppRoute.Reader.isTopLevel)
         assertFalse(AppRoute.SpeedRead.isTopLevel)
         assertFalse(AppRoute.SpeedReadPlayer.isTopLevel)
+        assertFalse(AppRoute.PrivacyPolicy.isTopLevel)
+        assertFalse(AppRoute.Terms.isTopLevel)
     }
 
     @Test
@@ -26,6 +28,8 @@ class AppNavigationTest {
         assertNull(AppScreen.fromRoute(AppRoute.Reader))
         assertNull(AppScreen.fromRoute(AppRoute.SpeedRead))
         assertNull(AppScreen.fromRoute(AppRoute.SpeedReadPlayer))
+        assertNull(AppScreen.fromRoute(AppRoute.PrivacyPolicy))
+        assertNull(AppScreen.fromRoute(AppRoute.Terms))
     }
 
     @Test
@@ -110,5 +114,21 @@ class AppNavigationTest {
         assertEquals(listOf(AppRoute.Library), backStack.toList())
         backStack.openReaderFromLibrary()
         assertEquals(listOf(AppRoute.Library, AppRoute.Reader), backStack.toList())
+    }
+
+    @Test
+    fun settingsLegalScreens_useScaffoldTopBarAndReturnToSettings() {
+        assertTrue(AppRoute.PrivacyPolicy.showsScaffoldTopBar)
+        assertTrue(AppRoute.Terms.showsScaffoldTopBar)
+        assertFalse(AppRoute.Settings.showsScaffoldTopBar)
+
+        val backStack = mutableListOf<AppRoute>(AppRoute.Settings)
+        backStack.pushIfNeeded(AppRoute.PrivacyPolicy)
+        assertEquals(listOf(AppRoute.Settings, AppRoute.PrivacyPolicy), backStack.toList())
+        assertTrue(backStack.popBack())
+        backStack.pushIfNeeded(AppRoute.Terms)
+        assertEquals(listOf(AppRoute.Settings, AppRoute.Terms), backStack.toList())
+        assertTrue(backStack.popBack())
+        assertEquals(listOf(AppRoute.Settings), backStack.toList())
     }
 }
