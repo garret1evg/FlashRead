@@ -105,6 +105,8 @@ class InnertubeYouTubeTranscriptFetcher(
         consentCookie: String?,
         jsonBody: JsonObject? = null,
     ): String {
+        val method = if (jsonBody == null) "GET" else "POST"
+        logYouTubeHttp("$method $url")
         val response = if (jsonBody == null) {
             httpClient.get(url) {
                 consentCookie?.let { header(HttpHeaders.Cookie, "CONSENT=$it") }
@@ -117,12 +119,18 @@ class InnertubeYouTubeTranscriptFetcher(
             }
         }
         if (response.status == HttpStatusCode.TooManyRequests) {
+            logYouTubeHttp("HTTP ${response.status.value} Too Many Requests for $url")
             throw YouTubeTranscriptException(videoId, YouTubeTranscriptFailureKind.BlockedOrUnavailable)
         }
         if (!response.status.isSuccess()) {
+            logYouTubeHttp("HTTP ${response.status.value} ${response.status.description} for $url")
             throw YouTubeTranscriptException(videoId, YouTubeTranscriptFailureKind.Generic)
         }
-        return response.bodyAsText()
+        val body = response.bodyAsText()
+        logYouTubeHttp(
+            "HTTP ${response.status.value} ${response.status.description} ${body.length} bytes for $url",
+        )
+        return body
     }
 }
 

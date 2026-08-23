@@ -38,6 +38,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.kxml2)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.timber)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -60,6 +61,7 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.jetbrains.navigation3.runtime)
             implementation(libs.jetbrains.navigation3.ui)
