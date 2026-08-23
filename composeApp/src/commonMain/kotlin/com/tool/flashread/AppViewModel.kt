@@ -9,6 +9,7 @@ import com.tool.flashread.core.reading.withReadingStats
 import com.tool.flashread.data.repository.BookRepository
 import com.tool.flashread.data.repository.CoverRepository
 import com.tool.flashread.data.repository.ReadingSessionRepository
+import com.tool.flashread.data.repository.RecentBookRepository
 import com.tool.flashread.platform.ImportedBook
 import com.tool.flashread.ui.library.MaterialTitleFormatter
 import kotlinx.coroutines.channels.Channel
@@ -41,10 +42,9 @@ class AppViewModel(
     private val bookRepository: BookRepository = BookRepository(),
     private val readingSessionRepository: ReadingSessionRepository = ReadingSessionRepository(),
     private val coverRepository: CoverRepository = CoverRepository(),
+    private val recentBookRepository: RecentBookRepository = RecentBookRepository(),
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(
-        AppUiState(books = bookRepository.loadBooks()),
-    )
+    private val _uiState = MutableStateFlow(loadInitialState())
     val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
 
     private val _messages = Channel<String>(Channel.BUFFERED)
@@ -59,6 +59,7 @@ class AppViewModel(
 
     fun selectBook(bookId: String) {
         _uiState.update { it.copy(selectedBookId = bookId, scratchBook = null) }
+        persistRecentBookId(bookId)
     }
 
     fun onExternalBookOpenStarted() {
@@ -82,6 +83,7 @@ class AppViewModel(
                 pendingReaderBookId = if (openInReader) book.id else null,
             )
         }
+        persistRecentBookId(book.id)
         showMessage("Imported ${MaterialTitleFormatter.displayTitle(importedBook.title)}")
     }
 
@@ -183,10 +185,14 @@ class AppViewModel(
         deleted.coverFileName?.let { coverRepository.deleteCover(it) }
         val updatedBooks = current.books.filterNot { it.id == bookId }
         persist(updatedBooks)
+        val selectedBookId = if (current.selectedBookId == bookId) null else current.selectedBookId
         _uiState.value = current.copy(
             books = updatedBooks,
-            selectedBookId = if (current.selectedBookId == bookId) null else current.selectedBookId,
+            selectedBookId = selectedBookId,
         )
+        if (selectedBookId != current.selectedBookId) {
+            persistRecentBookId(selectedBookId)
+        }
         showMessage("Deleted ${MaterialTitleFormatter.displayTitle(deleted.title)}")
     }
 
@@ -223,6 +229,20 @@ class AppViewModel(
 
     private fun persist(books: List<Book>) {
         bookRepository.saveBooks(books)
+    }
+
+    private fun persistRecentBookId(bookId: String?) {
+        recentBookRepository.save(bookId)
+    }
+
+    private fun loadInitialState(): AppUiState {
+        val books = bookRepository.loadBooks()
+        val savedId = recentBookRepository.load()
+        val selectedBookId = savedId?.takeIf { id -> books.any { it.id == id } }
+        if (savedId != null && selectedBookId == null) {
+            persistRecentBookId(null)
+        }
+        return AppUiState(books = books, selectedBookId = selectedBookId)
     }
 
     private fun authoredBookTitle(title: String): String {

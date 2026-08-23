@@ -23,6 +23,7 @@ class AppViewModelTest {
         val viewModel = AppViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(),
+            recentBookRepository = memoryRecentBookRepository(),
         )
         val message = async { viewModel.messages.first() }
         testScheduler.runCurrent()
@@ -45,6 +46,7 @@ class AppViewModelTest {
         val viewModel = AppViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
+            recentBookRepository = memoryRecentBookRepository(),
         )
 
         viewModel.addYouTubeVideo(title = "Ignored", url = "   ")
@@ -66,6 +68,7 @@ class AppViewModelTest {
         val viewModel = AppViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
+            recentBookRepository = memoryRecentBookRepository(),
         )
         viewModel.upsertImportedBook(
             ImportedBook(id = "keep", title = "Keep.txt", content = "alpha"),
@@ -98,6 +101,7 @@ class AppViewModelTest {
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(),
             coverRepository = memoryCoverRepository(covers),
+            recentBookRepository = memoryRecentBookRepository(),
         )
         val cover = byteArrayOf(1, 2, 3, 4)
 
@@ -127,6 +131,7 @@ class AppViewModelTest {
         val viewModel = AppViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
+            recentBookRepository = memoryRecentBookRepository(),
         )
 
         viewModel.onExternalBookOpenStarted()
@@ -156,6 +161,7 @@ class AppViewModelTest {
         val viewModel = AppViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
+            recentBookRepository = memoryRecentBookRepository(),
         )
         viewModel.upsertImportedBook(
             ImportedBook(id = "book-1", title = "notes.txt", content = "one"),
@@ -168,6 +174,7 @@ class AppViewModelTest {
         val viewModel = AppViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
+            recentBookRepository = memoryRecentBookRepository(),
         )
         viewModel.onExternalBookOpenStarted()
         val message = async { viewModel.messages.first() }
@@ -184,6 +191,7 @@ class AppViewModelTest {
         val viewModel = AppViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
+            recentBookRepository = memoryRecentBookRepository(),
         )
         assertNull(viewModel.uiState.value.editorBookId)
 
@@ -200,6 +208,7 @@ class AppViewModelTest {
         val viewModel = AppViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(),
+            recentBookRepository = memoryRecentBookRepository(),
         )
 
         viewModel.createBook(title = "  My notes  ", content = "one two\n\nthree")
@@ -219,6 +228,7 @@ class AppViewModelTest {
         val viewModel = AppViewModel(
             bookRepository = memoryBookRepository(),
             readingSessionRepository = memoryReadingSessionRepository(),
+            recentBookRepository = memoryRecentBookRepository(),
         )
 
         viewModel.createBook(title = "Ignored", content = "   \n  ")
@@ -240,6 +250,7 @@ class AppViewModelTest {
         val viewModel = AppViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(),
+            recentBookRepository = memoryRecentBookRepository(),
         )
         viewModel.createBook(title = "Draft", content = "one two")
         val createdId = viewModel.uiState.value.books.single().id
@@ -274,6 +285,7 @@ class AppViewModelTest {
         val viewModel = AppViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
+            recentBookRepository = memoryRecentBookRepository(),
         )
         viewModel.upsertImportedBook(
             ImportedBook(id = "book-1", title = "notes.txt", content = "library text"),
@@ -310,6 +322,7 @@ class AppViewModelTest {
         val viewModel = AppViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
+            recentBookRepository = memoryRecentBookRepository(),
         )
         viewModel.upsertImportedBook(
             ImportedBook(id = "keep", title = "Keep.txt", content = "alpha"),
@@ -331,5 +344,70 @@ class AppViewModelTest {
         viewModel.selectBook("keep")
         assertNull(viewModel.uiState.value.scratchBook)
         assertEquals("keep", viewModel.uiState.value.currentBook?.id)
+    }
+
+    @Test
+    fun restoresPersistedRecentBookWhenItStillExists() = runTest {
+        val stored = mutableListOf<Book>()
+        val recentBookId = arrayOf<String?>(null)
+        val first = AppViewModel(
+            bookRepository = memoryBookRepository(stored),
+            readingSessionRepository = memoryReadingSessionRepository(),
+            recentBookRepository = memoryRecentBookRepository(recentBookId),
+        )
+
+        first.upsertImportedBook(
+            ImportedBook(id = "book-1", title = "notes.txt", content = "one two"),
+        )
+        assertEquals("book-1", recentBookId[0])
+
+        val restored = AppViewModel(
+            bookRepository = memoryBookRepository(stored),
+            readingSessionRepository = memoryReadingSessionRepository(),
+            recentBookRepository = memoryRecentBookRepository(recentBookId),
+        )
+        assertEquals("book-1", restored.uiState.value.selectedBookId)
+        assertEquals("notes.txt", restored.uiState.value.currentBook?.title)
+    }
+
+    @Test
+    fun selectBookPersistsRecentBookAndDeleteClearsIt() = runTest {
+        val recentBookId = arrayOf<String?>(null)
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(),
+            readingSessionRepository = memoryReadingSessionRepository(),
+            recentBookRepository = memoryRecentBookRepository(recentBookId),
+        )
+        viewModel.upsertImportedBook(
+            ImportedBook(id = "keep", title = "Keep.txt", content = "alpha"),
+        )
+        viewModel.upsertImportedBook(
+            ImportedBook(id = "gone", title = "Gone.txt", content = "beta"),
+        )
+        assertEquals("gone", recentBookId[0])
+
+        viewModel.selectBook("keep")
+        assertEquals("keep", recentBookId[0])
+
+        viewModel.deleteBook("gone")
+        assertEquals("keep", recentBookId[0])
+
+        viewModel.deleteBook("keep")
+        assertNull(recentBookId[0])
+        assertNull(viewModel.uiState.value.selectedBookId)
+    }
+
+    @Test
+    fun ignoresStaleRecentBookIdOnLoad() = runTest {
+        val recentBookId = arrayOf<String?>("missing")
+        val viewModel = AppViewModel(
+            bookRepository = memoryBookRepository(),
+            readingSessionRepository = memoryReadingSessionRepository(),
+            recentBookRepository = memoryRecentBookRepository(recentBookId),
+        )
+
+        assertNull(viewModel.uiState.value.selectedBookId)
+        assertNull(viewModel.uiState.value.currentBook)
+        assertNull(recentBookId[0])
     }
 }

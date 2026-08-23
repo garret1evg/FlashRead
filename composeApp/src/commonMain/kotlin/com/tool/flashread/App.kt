@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
@@ -409,8 +411,10 @@ private fun HomeScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
-            .padding(top = FlashReadDimens.space8),
+            .padding(top = FlashReadDimens.space8)
+            .padding(bottom = FlashReadDimens.space24),
     ) {
         ScreenTitle(title = "Home")
         Spacer(Modifier.height(FlashReadDimens.space16))
@@ -465,20 +469,12 @@ private fun HomeScreen(
                 }
             }
         }
-        Spacer(Modifier.height(FlashReadDimens.space12))
-        Button(
-            onClick = onSpeedReadText,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = FlashReadDimens.minTouchTarget),
-            shape = FlashReadShapes.button,
-        ) {
-            Text(
-                text = "Скорочтение текста",
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        Spacer(Modifier.height(FlashReadDimens.space16))
+        HomeActionButtons(
+            onImportBook = onImportBook,
+            onCreateBook = onCreateBook,
+            onSpeedReadText = onSpeedReadText,
+        )
     }
 }
 
@@ -516,46 +512,43 @@ private fun EmptyBookState(
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(FlashReadDimens.space16))
-        Button(
-            onClick = onImportBook,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = FlashReadDimens.minTouchTarget),
-            shape = FlashReadShapes.button,
-        ) {
-            Text(
-                text = "Import book",
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Spacer(Modifier.height(FlashReadDimens.space12))
-        Button(
-            onClick = onCreateBook,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = FlashReadDimens.minTouchTarget),
-            shape = FlashReadShapes.button,
-        ) {
-            Text(
-                text = "Создать книгу",
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Spacer(Modifier.height(FlashReadDimens.space12))
-        Button(
-            onClick = onSpeedReadText,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = FlashReadDimens.minTouchTarget),
-            shape = FlashReadShapes.button,
-        ) {
-            Text(
-                text = "Скорочтение текста",
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        HomeActionButtons(
+            onImportBook = onImportBook,
+            onCreateBook = onCreateBook,
+            onSpeedReadText = onSpeedReadText,
+        )
+    }
+}
+
+@Composable
+private fun HomeActionButtons(
+    onImportBook: () -> Unit,
+    onCreateBook: () -> Unit,
+    onSpeedReadText: () -> Unit,
+) {
+    HomeActionButton(text = "Import book", onClick = onImportBook)
+    Spacer(Modifier.height(FlashReadDimens.space12))
+    HomeActionButton(text = "Создать книгу", onClick = onCreateBook)
+    Spacer(Modifier.height(FlashReadDimens.space12))
+    HomeActionButton(text = "Скорочтение текста", onClick = onSpeedReadText)
+}
+
+@Composable
+private fun HomeActionButton(
+    text: String,
+    onClick: () -> Unit,
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = FlashReadDimens.minTouchTarget),
+        shape = FlashReadShapes.button,
+    ) {
+        Text(
+            text = text,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }

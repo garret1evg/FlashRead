@@ -8,6 +8,7 @@ import com.tool.flashread.data.repository.BookRepository
 import com.tool.flashread.data.repository.CoverRepository
 import com.tool.flashread.data.repository.ReaderTextSettingsRepository
 import com.tool.flashread.data.repository.ReadingSessionRepository
+import com.tool.flashread.data.repository.RecentBookRepository
 import com.tool.flashread.data.repository.SpeedReadSettingsRepository
 import com.tool.flashread.platform.coverFileNameFor
 
@@ -57,6 +58,15 @@ internal fun memoryReaderTextSettingsRepository(
     return ReaderTextSettingsRepository(
         onLoad = { settings[0] },
         onSave = { settings[0] = it },
+    )
+}
+
+internal fun memoryRecentBookRepository(
+    recentBookId: Array<String?> = arrayOf(null),
+): RecentBookRepository {
+    return RecentBookRepository(
+        onLoad = { recentBookId[0] },
+        onSave = { recentBookId[0] = it },
     )
 }
 
