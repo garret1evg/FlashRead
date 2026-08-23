@@ -126,7 +126,7 @@ fun ReaderScreen(
     val startWord by viewModel.startWord.collectAsStateWithLifecycle()
     val scrollToParagraph by viewModel.scrollToParagraph.collectAsStateWithLifecycle()
     var showTextSettings by remember { mutableStateOf(false) }
-    val visibleParagraphIndex by remember {
+    val visibleParagraphIndex by remember(listState) {
         derivedStateOf { listState.firstVisibleItemIndex.coerceAtLeast(0) }
     }
     val progressPercent = remember(paragraphs.size, visibleParagraphIndex) {
@@ -153,7 +153,11 @@ fun ReaderScreen(
     }
 
     LaunchedEffect(book.id, listState, document) {
-        if (document == null) return@LaunchedEffect
+        val currentDocument = document ?: return@LaunchedEffect
+        val restoredIndex = currentDocument.initialParagraphIndex
+        if (restoredIndex > 0 && listState.firstVisibleItemIndex == 0) {
+            listState.scrollToItem(restoredIndex)
+        }
         snapshotFlow { listState.firstVisibleItemIndex }
             .map { it.coerceAtLeast(0) }
             .distinctUntilChanged()
