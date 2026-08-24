@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.tool.flashread"
+    namespace = "com.evgeniich.flashread"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.tool.flashread"
+        applicationId = "com.evgeniich.flashread"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1

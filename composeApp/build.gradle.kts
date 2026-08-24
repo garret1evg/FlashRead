@@ -10,7 +10,7 @@ plugins {
 
 kotlin {
     android {
-        namespace = "com.tool.flashread.shared"
+        namespace = "com.evgeniich.flashread.shared"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions {
@@ -76,6 +76,6 @@ kotlin {
 
 compose.resources {
     publicResClass = true
-    packageOfResClass = "com.tool.flashread.resources"
+    packageOfResClass = "com.evgeniich.flashread.resources"
 }
 

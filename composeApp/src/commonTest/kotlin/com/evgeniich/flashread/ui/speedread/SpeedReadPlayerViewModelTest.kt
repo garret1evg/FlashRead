@@ -1,0 +1,123 @@
+package com.evgeniich.flashread.ui.speedread
+
+import com.evgeniich.flashread.core.model.Book
+import com.evgeniich.flashread.core.speedread.SpeedReadPlayerStatus
+import com.evgeniich.flashread.core.speedread.SpeedReadSettings
+import com.evgeniich.flashread.memoryReadingSessionRepository
+import com.evgeniich.flashread.memorySpeedReadSettingsRepository
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class SpeedReadPlayerViewModelTest {
+
+    private val dispatcher = UnconfinedTestDispatcher()
+
+    @BeforeTest
+    fun setUp() {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    @AfterTest
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun preparesPausedSessionAndAdvancesOnStep() {
+        val positions = mutableMapOf("book-1" to 0)
+        val viewModel = playerViewModel(
+            content = "one two three",
+            positions = positions,
+        )
+        val state = viewModel.viewState.value
+        assertEquals("one", state.text)
+        assertEquals(SpeedReadPlayerStatus.Paused, state.status)
+
+        viewModel.stepForward()
+        assertEquals("two", viewModel.viewState.value.text)
+
+        viewModel.togglePlayPause()
+        assertEquals(SpeedReadPlayerStatus.Playing, viewModel.viewState.value.status)
+
+        viewModel.onHostStop()
+        assertEquals(SpeedReadPlayerStatus.Paused, viewModel.viewState.value.status)
+        assertEquals(0, positions["book-1"])
+    }
+
+    @Test
+    fun changingChunkSizeRebuildsTheSession() {
+        val viewModel = playerViewModel(content = "one two three four")
+        assertEquals("one", viewModel.viewState.value.text)
+
+        viewModel.updateSettings(SpeedReadSettings(wpm = 300, chunkSize = 3))
+        val rebuilt = viewModel.viewState.value
+        assertEquals("one two three", rebuilt.text)
+        assertEquals(3, rebuilt.settings.chunkSize)
+        assertEquals(SpeedReadPlayerStatus.Paused, rebuilt.status)
+    }
+
+    @Test
+    fun emptyContentFinishesImmediately() {
+        val viewModel = playerViewModel(content = "   ")
+        val state = viewModel.viewState.value
+        assertTrue(state.isEmpty)
+        assertEquals(SpeedReadPlayerStatus.Finished, state.status)
+    }
+
+    @Test
+    fun remainingClockUsesSessionTotals() {
+        val viewModel = playerViewModel(content = "one two three")
+        assertTrue(viewModel.viewState.value.remainingMs > 0L)
+        assertTrue(viewModel.viewState.value.progress >= 0f)
+    }
+
+    @Test
+    fun startsFromWordOffsetWhenSet() {
+        val content = "first second third fourth"
+        val wordOffsets = mutableMapOf("book-1" to 6) // offset of "second"
+        val viewModel = playerViewModel(
+            content = content,
+            wordOffsets = wordOffsets,
+        )
+        assertEquals("second", viewModel.viewState.value.text)
+    }
+
+    @Test
+    fun persistsWordOffsetOnPositionChange() {
+        val content = "one two three"
+        val wordOffsets = mutableMapOf<String, Int>()
+        val viewModel = playerViewModel(
+            content = content,
+            wordOffsets = wordOffsets,
+        )
+        assertEquals("one", viewModel.viewState.value.text)
+
+        viewModel.stepForward()
+        assertEquals("two", viewModel.viewState.value.text)
+        viewModel.persistNow()
+        assertEquals(4, wordOffsets["book-1"])
+    }
+
+    private fun playerViewModel(
+        content: String,
+        positions: MutableMap<String, Int> = mutableMapOf(),
+        wordOffsets: MutableMap<String, Int> = mutableMapOf(),
+        settings: SpeedReadSettings = SpeedReadSettings(wpm = 300, chunkSize = 1),
+    ): SpeedReadPlayerViewModel {
+        return SpeedReadPlayerViewModel(
+            book = Book(id = "book-1", title = "Sample", content = content),
+            readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
+            settingsRepository = memorySpeedReadSettingsRepository(arrayOf(settings)),
+            computationDispatcher = dispatcher,
+        )
+    }
+}
