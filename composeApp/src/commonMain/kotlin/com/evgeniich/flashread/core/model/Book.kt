@@ -12,5 +12,4 @@ data class Book(
 
 enum class MaterialSourceType {
     Book,
-    YouTube,
 }

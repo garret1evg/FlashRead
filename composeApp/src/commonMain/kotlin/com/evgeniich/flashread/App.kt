@@ -62,7 +62,6 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.evgeniich.flashread.core.locale.resolveLocaleOverride
 import com.evgeniich.flashread.core.model.Book
-import com.evgeniich.flashread.core.youtube.YouTubeTranscriptFailureKind
 import com.evgeniich.flashread.data.repository.AppLanguageRepository
 import com.evgeniich.flashread.locale.AppEnvironment
 import com.evgeniich.flashread.navigation.AppRoute
@@ -119,10 +118,10 @@ fun App() {
         val defaultNewBookTitle = stringResource(Res.string.default_new_book_title)
         val defaultSpeedReadTitle = stringResource(Res.string.default_speed_read_title)
         val backLabel = stringResource(Res.string.action_back)
-        val libraryBusyMessage = when {
-            uiState.isFetchingYouTubeTranscript -> stringResource(Res.string.library_fetching_transcript)
-            uiState.isImportingExternalBook -> stringResource(Res.string.library_opening_book)
-            else -> null
+        val libraryBusyMessage = if (uiState.isImportingExternalBook) {
+            stringResource(Res.string.library_opening_book)
+        } else {
+            null
         }
 
         LaunchedEffect(appViewModel) {
@@ -300,7 +299,6 @@ fun App() {
                             onImportBook = launchBookImport,
                             onCreateBook = { openBookEditor(null) },
                             onSpeedReadText = ::openQuickSpeedRead,
-                            onAddYouTubeVideo = appViewModel::addYouTubeVideo,
                             onRenameBook = appViewModel::renameBook,
                             onDeleteBook = appViewModel::deleteBook,
                             onContinueReading = { bookId -> openReader(bookId) },
@@ -620,16 +618,6 @@ private fun AppScreen.label(): String = when (this) {
 
 private suspend fun AppMessage.toSnackbarText(): String = when (this) {
     is AppMessage.Imported -> getString(Res.string.snackbar_imported, title)
-    is AppMessage.Added -> getString(Res.string.snackbar_added, title)
     is AppMessage.Deleted -> getString(Res.string.snackbar_deleted, title)
     is AppMessage.Error -> text
-    is AppMessage.YouTubeTranscriptFailed -> getString(
-        when (kind) {
-            YouTubeTranscriptFailureKind.InvalidLink -> Res.string.youtube_error_invalid_link
-            YouTubeTranscriptFailureKind.NoTranscript -> Res.string.youtube_error_no_transcript
-            YouTubeTranscriptFailureKind.AgeRestrictedOrUnplayable,
-            YouTubeTranscriptFailureKind.BlockedOrUnavailable -> Res.string.youtube_error_unavailable
-            YouTubeTranscriptFailureKind.Generic -> Res.string.youtube_error_generic
-        },
-    )
 }

@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -79,7 +78,6 @@ fun LibraryScreen(
     onImportBook: () -> Unit,
     onCreateBook: () -> Unit,
     onSpeedReadText: () -> Unit,
-    onAddYouTubeVideo: (title: String, url: String) -> Unit,
     onRenameBook: (bookId: String, newTitle: String) -> Unit,
     onDeleteBook: (String) -> Unit,
     onContinueReading: (String) -> Unit,
@@ -88,7 +86,6 @@ fun LibraryScreen(
     busyMessage: String? = null,
 ) {
     var showAddSheet by remember { mutableStateOf(false) }
-    var showYouTubeDialog by remember { mutableStateOf(false) }
     var bookPendingRename by remember { mutableStateOf<Book?>(null) }
 
     Column(
@@ -142,7 +139,6 @@ fun LibraryScreen(
                     items(books, key = { it.id }) { book ->
                         LibraryMaterialCard(
                             title = book.title,
-                            sourceType = book.sourceType,
                             coverFileName = book.coverFileName,
                             wordCount = book.wordCount,
                             progressPercent = progressPercent(book),
@@ -175,20 +171,6 @@ fun LibraryScreen(
             onSpeedReadText = {
                 showAddSheet = false
                 onSpeedReadText()
-            },
-            onAddYouTube = {
-                showAddSheet = false
-                showYouTubeDialog = true
-            },
-        )
-    }
-
-    if (showYouTubeDialog) {
-        AddYouTubeDialog(
-            onDismiss = { showYouTubeDialog = false },
-            onConfirm = { title, url ->
-                showYouTubeDialog = false
-                onAddYouTubeVideo(title, url)
             },
         )
     }
@@ -275,7 +257,6 @@ private fun LibraryEmptyState(
 @Composable
 private fun LibraryMaterialCard(
     title: String,
-    sourceType: MaterialSourceType,
     coverFileName: String?,
     wordCount: Int,
     progressPercent: Int,
@@ -286,7 +267,7 @@ private fun LibraryMaterialCard(
     modifier: Modifier = Modifier,
 ) {
     val displayTitle = remember(title) { MaterialTitleFormatter.displayTitle(title) }
-    val secondary = materialSecondaryLabel(sourceType, wordCount)
+    val secondary = materialSecondaryLabel(wordCount)
     var menuExpanded by remember { mutableStateOf(false) }
 
     Card(
@@ -306,7 +287,7 @@ private fun LibraryMaterialCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top,
             ) {
-                MaterialArtwork(sourceType = sourceType, coverFileName = coverFileName)
+                MaterialArtwork(coverFileName = coverFileName)
                 Spacer(Modifier.width(FlashReadDimens.space12))
                 Column(
                     modifier = Modifier
@@ -422,7 +403,6 @@ private fun AddMaterialBottomSheet(
     onImportBook: () -> Unit,
     onCreateBook: () -> Unit,
     onSpeedReadText: () -> Unit,
-    onAddYouTube: () -> Unit,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -461,12 +441,6 @@ private fun AddMaterialBottomSheet(
                 label = stringResource(Res.string.action_speed_read_text),
                 onClick = onSpeedReadText,
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-            AddMaterialSheetAction(
-                icon = Icons.Filled.PlayCircle,
-                label = stringResource(Res.string.library_add_youtube),
-                onClick = onAddYouTube,
-            )
         }
     }
 }
@@ -501,71 +475,8 @@ private fun AddMaterialSheetAction(
 }
 
 @Composable
-private fun materialSecondaryLabel(
-    sourceType: MaterialSourceType,
-    wordCount: Int,
-): String {
-    return when (sourceType) {
-        MaterialSourceType.YouTube -> stringResource(Res.string.source_youtube_video)
-        MaterialSourceType.Book -> pluralStringResource(Res.plurals.word_count, wordCount, wordCount)
-    }
-}
-
-@Composable
-private fun AddYouTubeDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (title: String, url: String) -> Unit,
-) {
-    var title by remember { mutableStateOf("") }
-    var url by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = stringResource(Res.string.library_add_youtube),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(FlashReadDimens.space12)) {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(Res.string.library_field_title)) },
-                    singleLine = true,
-                )
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = { url = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(Res.string.library_field_url)) },
-                    singleLine = true,
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onConfirm(title, url) },
-                enabled = url.isNotBlank(),
-                modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
-            ) {
-                Text(stringResource(Res.string.action_add))
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
-            ) {
-                Text(stringResource(Res.string.action_cancel))
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = FlashReadShapes.card,
-    )
+private fun materialSecondaryLabel(wordCount: Int): String {
+    return pluralStringResource(Res.plurals.word_count, wordCount, wordCount)
 }
 
 @Composable
@@ -623,7 +534,6 @@ private fun LibraryScreenPreview() {
             onImportBook = {},
             onCreateBook = {},
             onSpeedReadText = {},
-            onAddYouTubeVideo = { _, _ -> },
             onRenameBook = { _, _ -> },
             onDeleteBook = {},
             onContinueReading = {},
@@ -642,7 +552,6 @@ private fun LibraryEmptyPreview() {
             onImportBook = {},
             onCreateBook = {},
             onSpeedReadText = {},
-            onAddYouTubeVideo = { _, _ -> },
             onRenameBook = { _, _ -> },
             onDeleteBook = {},
             onContinueReading = {},
@@ -661,8 +570,8 @@ private fun previewBooks(): List<Book> = listOf(
     Book(
         id = "2",
         title = "Speed reading lecture",
-        content = "https://youtu.be/dQw4w9wg",
-        sourceType = MaterialSourceType.YouTube,
+        content = "one two three four five six seven eight nine ten eleven twelve",
+        sourceType = MaterialSourceType.Book,
     ).withReadingStats(),
     Book(
         id = "created:preview",

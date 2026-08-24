@@ -4,7 +4,6 @@
     <string name="action_back">Retour</string>
     <string name="action_save">Enregistrer</string>
     <string name="action_cancel">Annuler</string>
-    <string name="action_add">Ajouter</string>
     <string name="action_continue">Continuer</string>
     <string name="action_next">Suivant</string>
     <string name="action_close">Fermer</string>
@@ -42,14 +41,11 @@
     <string name="home_empty_body">Importez un fichier .txt, .fb2 ou .epub, écrivez votre propre livre, collez du texte pour la lecture rapide, ou choisissez-en un dans la Bibliothèque.</string>
 
     <string name="library_opening_book">Ouverture du livre…</string>
-    <string name="library_fetching_transcript">Récupération de la transcription…</string>
     <string name="library_add_material">Ajouter un document</string>
     <string name="library_empty_title">La bibliothèque est vide</string>
-    <string name="library_empty_body">Importez un livre, créez le vôtre, collez du texte pour la lecture rapide ou ajoutez une vidéo YouTube.</string>
+    <string name="library_empty_body">Importez un livre, créez le vôtre ou collez du texte pour la lecture rapide.</string>
     <string name="library_add_first_material">Ajouter votre premier document</string>
-    <string name="library_add_youtube">Ajouter une vidéo YouTube</string>
     <string name="library_field_title">Titre</string>
-    <string name="library_field_url">Lien</string>
     <string name="library_rename_title">Renommer</string>
     <string name="percent_value">%1$d%</string>
 
@@ -64,7 +60,6 @@
 
     <string name="cd_cover">Couverture</string>
     <string name="cd_book">Livre</string>
-    <string name="source_youtube_video">Vidéo YouTube</string>
 
     <string name="reader_text_settings">Réglages du texte</string>
     <string name="reader_open_speed_read">Passer à la lecture rapide</string>
@@ -120,12 +115,7 @@
     <string name="legal_last_updated">Dernière mise à jour : %1$s</string>
 
     <string name="snackbar_imported">Importé : %1$s</string>
-    <string name="snackbar_added">Ajouté : %1$s</string>
     <string name="snackbar_deleted">Supprimé : %1$s</string>
-    <string name="youtube_error_invalid_link">Ce lien YouTube n\'est pas valide.</string>
-    <string name="youtube_error_no_transcript">Aucune transcription n\'est disponible pour cette vidéo.</string>
-    <string name="youtube_error_unavailable">Cette vidéo n\'est pas disponible.</string>
-    <string name="youtube_error_generic">Impossible de récupérer la transcription YouTube.</string>
 
     <string name="import_file_empty">Le fichier sélectionné est vide.</string>
     <string name="import_failed">Impossible d\'importer le livre.</string>

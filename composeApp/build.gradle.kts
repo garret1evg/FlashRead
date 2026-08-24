@@ -5,7 +5,6 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.kotlinxSerialization)
 }
 
 kotlin {
@@ -37,11 +36,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.kxml2)
-            implementation(libs.ktor.client.okhttp)
             implementation(libs.timber)
-        }
-        iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
         }
         getByName("androidHostTest").dependencies {
             implementation(libs.kotlin.test)
@@ -58,11 +53,6 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelNavigation3)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.kotlinx.serialization.json)
-            implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.client.logging)
-            implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.jetbrains.navigation3.runtime)
             implementation(libs.jetbrains.navigation3.ui)
             implementation(libs.coil.compose)

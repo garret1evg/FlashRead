@@ -5,8 +5,6 @@ import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.core.model.ReadingPosition
 import com.evgeniich.flashread.core.reading.ReaderTextSettings
 import com.evgeniich.flashread.core.speedread.SpeedReadSettings
-import com.evgeniich.flashread.core.youtube.YouTubeTranscript
-import com.evgeniich.flashread.core.youtube.YouTubeTranscriptFetcher
 import com.evgeniich.flashread.data.repository.AppLanguageRepository
 import com.evgeniich.flashread.data.repository.BookRepository
 import com.evgeniich.flashread.data.repository.CoverRepository
@@ -94,23 +92,4 @@ internal fun memoryCoverRepository(
         },
         onDelete = { files.remove(it) },
     )
-}
-
-internal class FakeYouTubeTranscriptFetcher(
-    private val onFetch: suspend (videoId: String, languages: List<String>) -> YouTubeTranscript = { videoId, _ ->
-        YouTubeTranscript(
-            videoId = videoId,
-            text = "Never gonna give you up",
-            title = "Rick Astley",
-        )
-    },
-) : YouTubeTranscriptFetcher {
-    val recordedVideoIds = mutableListOf<String>()
-    val recordedLanguages = mutableListOf<List<String>>()
-
-    override suspend fun fetch(videoId: String, languages: List<String>): YouTubeTranscript {
-        recordedVideoIds += videoId
-        recordedLanguages += languages
-        return onFetch(videoId, languages)
-    }
 }

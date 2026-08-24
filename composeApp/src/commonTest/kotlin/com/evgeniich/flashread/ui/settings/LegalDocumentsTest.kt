@@ -39,20 +39,18 @@ class LegalDocumentsTest {
     }
 
     @Test
-    fun privacyPolicy_mentionsYouTubeCaptionDownload() {
+    fun privacyPolicy_doesNotMentionYouTube() {
         val text = LegalDocuments.privacyPolicy.sections.joinToString(" ") { it.body }
-        assertTrue(text.contains("YouTube", ignoreCase = true))
-        assertTrue(text.contains("captions", ignoreCase = true))
-        assertTrue(text.contains("transcript", ignoreCase = true))
-        assertTrue(text.contains("contacts YouTube", ignoreCase = true))
-        assertFalse(text.contains("stores the title and URL you provide", ignoreCase = true))
+        assertFalse(text.contains("YouTube", ignoreCase = true))
+        assertFalse(text.contains("transcript", ignoreCase = true))
+        assertTrue(text.contains("on your device", ignoreCase = true))
     }
 
     @Test
-    fun termsAndConditions_mentionsYouTubeCaptionDownload() {
+    fun termsAndConditions_doesNotMentionYouTube() {
         val text = LegalDocuments.termsAndConditions.sections.joinToString(" ") { it.body }
-        assertTrue(text.contains("YouTube", ignoreCase = true))
-        assertTrue(text.contains("captions", ignoreCase = true))
-        assertTrue(text.contains("transcript", ignoreCase = true))
+        assertFalse(text.contains("YouTube", ignoreCase = true))
+        assertFalse(text.contains("transcript", ignoreCase = true))
+        assertFalse(text.contains("captions", ignoreCase = true))
     }
 }

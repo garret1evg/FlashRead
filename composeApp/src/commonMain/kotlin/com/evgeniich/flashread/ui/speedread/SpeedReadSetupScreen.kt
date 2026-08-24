@@ -46,7 +46,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.evgeniich.flashread.core.model.Book
-import com.evgeniich.flashread.core.model.MaterialSourceType
 import com.evgeniich.flashread.core.speedread.SpeedReadDefaults
 import com.evgeniich.flashread.core.speedread.SpeedReadSettings
 import com.evgeniich.flashread.resources.Res
@@ -270,7 +269,7 @@ private fun MaterialSummaryCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                MaterialArtwork(sourceType = book.sourceType, coverFileName = book.coverFileName)
+                MaterialArtwork(coverFileName = book.coverFileName)
                 Spacer(Modifier.width(FlashReadDimens.space12))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -358,14 +357,11 @@ private fun previewBookContent(content: String): String {
 
 @Composable
 private fun materialSecondaryLabel(book: Book): String {
-    return when (book.sourceType) {
-        MaterialSourceType.YouTube -> stringResource(Res.string.source_youtube_video)
-        MaterialSourceType.Book -> pluralStringResource(
-            Res.plurals.word_count,
-            book.wordCount,
-            book.wordCount,
-        )
-    }
+    return pluralStringResource(
+        Res.plurals.word_count,
+        book.wordCount,
+        book.wordCount,
+    )
 }
 
 @Composable
