@@ -311,7 +311,7 @@ private fun SettingsScreenPreview() {
             onLanguageSelected = {},
             onOpenPrivacyPolicy = {},
             onOpenTerms = {},
-            versionName = "1.0",
+            versionName = "1.0.0",
         )
     }
 }
