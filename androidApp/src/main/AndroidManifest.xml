@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
+        android:name=".FlashReadApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -10,19 +11,29 @@
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="false">
 
-        <!-- Required so DebugView can identify EEA devices; matches disclosed Firebase Analytics use. -->
+        <!-- Basic Consent Mode: all disabled until user consent -->
+        <meta-data
+            android:name="firebase_analytics_collection_enabled"
+            android:value="false" />
         <meta-data
             android:name="google_analytics_default_allow_analytics_storage"
-            android:value="true" />
+            android:value="false" />
         <meta-data
             android:name="google_analytics_default_allow_ad_storage"
-            android:value="true" />
+            android:value="false" />
         <meta-data
             android:name="google_analytics_default_allow_ad_user_data"
-            android:value="true" />
+            android:value="false" />
         <meta-data
             android:name="google_analytics_default_allow_ad_personalization_signals"
             android:value="false" />
+
+        <!-- Google sample AdMob App ID (required at process start; replace with the
+             production ID from AdMob Console before shipping).
+             https://developers.google.com/admob/android/quick-start -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
 
         <activity
             android:name=".MainActivity"

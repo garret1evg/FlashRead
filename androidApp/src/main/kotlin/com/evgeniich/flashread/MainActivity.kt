@@ -7,19 +7,23 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.evgeniich.flashread.platform.AndroidAppContext
+import com.evgeniich.flashread.ads.AdMobManager
+import com.evgeniich.flashread.consent.ConsentManager
 import com.evgeniich.flashread.platform.ExternalBookImporter
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        AndroidAppContext.init(applicationContext)
         if (savedInstanceState == null) {
             dispatchOpenIntent(intent)
         }
         setContent {
             App()
+        }
+        ConsentManager.gatherConsent(this) {
+            // После consent flow - инициализировать AdMob если разрешено
+            AdMobManager.initializeIfAllowed(applicationContext)
         }
     }
 

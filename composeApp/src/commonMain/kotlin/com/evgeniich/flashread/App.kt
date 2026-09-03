@@ -62,6 +62,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.evgeniich.flashread.analytics.Analytics
 import com.evgeniich.flashread.analytics.AnalyticsEvent
+import com.evgeniich.flashread.consent.showPrivacyOptionsForm
 import com.evgeniich.flashread.core.locale.resolveLocaleOverride
 import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.data.repository.AppLanguageRepository
@@ -367,6 +368,7 @@ fun App() {
                                 languageRepository.save(language)
                                 appLanguage = language
                             },
+                            onManagePrivacy = { showPrivacyOptionsForm() },
                             onOpenPrivacyPolicy = { backStack.pushIfNeeded(AppRoute.PrivacyPolicy) },
                             onOpenTerms = { backStack.pushIfNeeded(AppRoute.Terms) },
                         )

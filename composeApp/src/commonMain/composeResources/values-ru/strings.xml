@@ -96,6 +96,7 @@
     <string name="player_settings">Настройки</string>
 
     <string name="settings_legal">Правовая информация</string>
+    <string name="settings_manage_privacy">Управление конфиденциальностью</string>
     <string name="settings_privacy_policy">Политика конфиденциальности</string>
     <string name="settings_terms">Условия использования</string>
     <string name="settings_version">Версия %1$s</string>

@@ -39,6 +39,8 @@ kotlin {
             implementation(libs.timber)
             implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.firebase.analytics)
+            implementation(libs.user.messaging.platform)
+            implementation(libs.play.services.ads)
         }
         getByName("androidHostTest").dependencies {
             implementation(libs.kotlin.test)

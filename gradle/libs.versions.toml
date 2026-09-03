@@ -18,6 +18,8 @@ kotlin = "2.3.21"
 kxml2 = "2.3.0"
 kotlinx-coroutines = "1.10.2"
 timber = "5.0.1"
+user-messaging-platform = "3.1.0"
+play-services-ads = "24.4.0"
 material3 = "1.9.0"
 navigation3-runtime = "1.1.1"
 navigation3-ui = "1.1.0"
@@ -48,6 +50,8 @@ kxml2 = { module = "net.sf.kxml:kxml2", version.ref = "kxml2" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+user-messaging-platform = { module = "com.google.android.ump:user-messaging-platform", version.ref = "user-messaging-platform" }
+play-services-ads = { module = "com.google.android.gms:play-services-ads", version.ref = "play-services-ads" }
 jetbrains-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3-runtime" }
 jetbrains-navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "navigation3-ui" }
 

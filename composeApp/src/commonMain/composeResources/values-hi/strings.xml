@@ -96,6 +96,7 @@
     <string name="player_settings">सेटिंग्स</string>
 
     <string name="settings_legal">कानूनी</string>
+    <string name="settings_manage_privacy">गोपनीयता प्रबंधित करें</string>
     <string name="settings_privacy_policy">गोपनीयता नीति</string>
     <string name="settings_terms">नियम और शर्तें</string>
     <string name="settings_version">संस्करण %1$s</string>

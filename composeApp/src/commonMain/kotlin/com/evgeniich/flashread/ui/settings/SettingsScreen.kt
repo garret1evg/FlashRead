@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Policy
+import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.evgeniich.flashread.consent.isPrivacyOptionsRequired
 import com.evgeniich.flashread.core.locale.AppLanguage
 import com.evgeniich.flashread.platform.AppInfo
 import com.evgeniich.flashread.resources.Res
@@ -65,6 +67,7 @@ private val languagePickerOptions: List<AppLanguage> = listOf(AppLanguage.System
 fun SettingsScreen(
     selectedLanguage: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
+    onManagePrivacy: () -> Unit,
     onOpenPrivacyPolicy: () -> Unit,
     onOpenTerms: () -> Unit,
     modifier: Modifier = Modifier,
@@ -113,6 +116,17 @@ fun SettingsScreen(
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         ) {
+            if (isPrivacyOptionsRequired()) {
+                SettingsLinkRow(
+                    icon = Icons.Outlined.PrivacyTip,
+                    label = stringResource(Res.string.settings_manage_privacy),
+                    onClick = onManagePrivacy,
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = FlashReadDimens.space16),
+                    color = MaterialTheme.colorScheme.outline,
+                )
+            }
             SettingsLinkRow(
                 icon = Icons.Outlined.Policy,
                 label = stringResource(Res.string.settings_privacy_policy),
@@ -309,6 +323,7 @@ private fun SettingsScreenPreview() {
         SettingsScreen(
             selectedLanguage = AppLanguage.System,
             onLanguageSelected = {},
+            onManagePrivacy = {},
             onOpenPrivacyPolicy = {},
             onOpenTerms = {},
             versionName = "1.0.0",
