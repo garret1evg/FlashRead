@@ -60,6 +60,8 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.evgeniich.flashread.analytics.Analytics
+import com.evgeniich.flashread.analytics.AnalyticsEvent
 import com.evgeniich.flashread.core.locale.resolveLocaleOverride
 import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.data.repository.AppLanguageRepository
@@ -140,8 +142,9 @@ fun App() {
         val showBottomBar = currentRoute.isTopLevel
         val showTopBar = currentRoute.showsScaffoldTopBar
 
-        fun openReader(bookId: String) {
+        fun openReader(bookId: String, source: AnalyticsEvent.ReaderStart.Source) {
             appViewModel.selectBook(bookId)
+            logReaderStart(bookId, source)
             backStack.pushIfNeeded(AppRoute.Reader)
         }
 
@@ -179,6 +182,7 @@ fun App() {
             val bookId = pendingReaderBookId ?: return@LaunchedEffect
             appViewModel.selectBook(bookId)
             backStack.openReaderFromLibrary()
+            logReaderStart(bookId, AnalyticsEvent.ReaderStart.Source.Share)
             appViewModel.consumePendingReaderNavigation()
         }
 
@@ -289,7 +293,9 @@ fun App() {
                             onImportBook = launchBookImport,
                             onCreateBook = { openBookEditor(null) },
                             onSpeedReadText = ::openQuickSpeedRead,
-                            onContinueReading = { bookId -> openReader(bookId) },
+                            onContinueReading = { bookId ->
+                                openReader(bookId, AnalyticsEvent.ReaderStart.Source.Home)
+                            },
                         )
                     }
                     entry<AppRoute.Library> {
@@ -301,7 +307,9 @@ fun App() {
                             onSpeedReadText = ::openQuickSpeedRead,
                             onRenameBook = appViewModel::renameBook,
                             onDeleteBook = appViewModel::deleteBook,
-                            onContinueReading = { bookId -> openReader(bookId) },
+                            onContinueReading = { bookId ->
+                                openReader(bookId, AnalyticsEvent.ReaderStart.Source.Library)
+                            },
                             onEditBook = { bookId -> openBookEditor(bookId) },
                             busyMessage = libraryBusyMessage,
                         )
@@ -348,6 +356,14 @@ fun App() {
                         SettingsScreen(
                             selectedLanguage = appLanguage,
                             onLanguageSelected = { language ->
+                                if (language != appLanguage) {
+                                    Analytics.log(
+                                        AnalyticsEvent.SettingsChange(
+                                            settingName = AnalyticsEvent.SettingsChange.SettingName.Language,
+                                            settingValue = language.toStorage(),
+                                        ),
+                                    )
+                                }
                                 languageRepository.save(language)
                                 appLanguage = language
                             },
@@ -614,6 +630,15 @@ private fun AppScreen.label(): String = when (this) {
     AppScreen.Home -> stringResource(Res.string.nav_home)
     AppScreen.Library -> stringResource(Res.string.nav_library)
     AppScreen.Settings -> stringResource(Res.string.nav_settings)
+}
+
+private fun logReaderStart(bookId: String, source: AnalyticsEvent.ReaderStart.Source) {
+    val material = if (bookId.startsWith(CreatedBookIdPrefix)) {
+        AnalyticsEvent.ReaderStart.Material.Created
+    } else {
+        AnalyticsEvent.ReaderStart.Material.Imported
+    }
+    Analytics.log(AnalyticsEvent.ReaderStart(source = source, material = material))
 }
 
 private suspend fun AppMessage.toSnackbarText(): String = when (this) {

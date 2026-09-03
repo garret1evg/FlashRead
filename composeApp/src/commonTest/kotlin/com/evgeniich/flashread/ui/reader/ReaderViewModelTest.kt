@@ -1,10 +1,15 @@
 package com.evgeniich.flashread.ui.reader
 
+import com.evgeniich.flashread.analytics.AnalyticsEvent
+import com.evgeniich.flashread.analytics.AnalyticsLogger
+import com.evgeniich.flashread.analytics.ProgressBucket
+import com.evgeniich.flashread.analytics.RecordingAnalytics
 import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.core.model.ReadingPosition
 import com.evgeniich.flashread.core.reading.ReaderTextDefaults
 import com.evgeniich.flashread.core.reading.ReaderTextSettings
 import com.evgeniich.flashread.core.reading.ReaderTheme
+import com.evgeniich.flashread.core.reading.withReadingStats
 import com.evgeniich.flashread.memoryReaderTextSettingsRepository
 import com.evgeniich.flashread.memoryReadingSessionRepository
 import kotlin.test.AfterTest
@@ -183,6 +188,67 @@ class ReaderViewModelTest {
     }
 
     @Test
+    fun saveParagraphIndexLogsNewlyCrossedProgressBuckets() {
+        val analytics = RecordingAnalytics()
+        val viewModel = readerViewModel(
+            content = fourParagraphs(),
+            analytics = analytics,
+        )
+
+        viewModel.saveParagraphIndex(1)
+        assertEquals(
+            listOf<AnalyticsEvent>(AnalyticsEvent.ReaderProgress(ProgressBucket.P25)),
+            analytics.events,
+        )
+
+        viewModel.saveParagraphIndex(3)
+        assertEquals(
+            listOf<AnalyticsEvent>(
+                AnalyticsEvent.ReaderProgress(ProgressBucket.P25),
+                AnalyticsEvent.ReaderProgress(ProgressBucket.P50),
+                AnalyticsEvent.ReaderProgress(ProgressBucket.P75),
+            ),
+            analytics.events,
+        )
+
+        viewModel.saveParagraphIndex(4)
+        assertEquals(
+            listOf<AnalyticsEvent>(
+                AnalyticsEvent.ReaderProgress(ProgressBucket.P25),
+                AnalyticsEvent.ReaderProgress(ProgressBucket.P50),
+                AnalyticsEvent.ReaderProgress(ProgressBucket.P75),
+                AnalyticsEvent.ReaderProgress(ProgressBucket.P100),
+            ),
+            analytics.events,
+        )
+    }
+
+    @Test
+    fun resumeDoesNotLogAlreadyReachedProgressBuckets() {
+        val analytics = RecordingAnalytics()
+        val viewModel = readerViewModel(
+            content = fourParagraphs(),
+            positions = mutableMapOf("book-1" to 2),
+            analytics = analytics,
+        )
+
+        viewModel.saveParagraphIndex(2)
+        assertTrue(analytics.events.isEmpty())
+
+        viewModel.saveParagraphIndex(1)
+        assertTrue(analytics.events.isEmpty())
+
+        viewModel.saveParagraphIndex(4)
+        assertEquals(
+            listOf<AnalyticsEvent>(
+                AnalyticsEvent.ReaderProgress(ProgressBucket.P75),
+                AnalyticsEvent.ReaderProgress(ProgressBucket.P100),
+            ),
+            analytics.events,
+        )
+    }
+
+    @Test
     fun refreshPositionUpdatesWhenPlayerAdvancesFromSameParagraph() {
         // Scenario: User scrolls to paragraph 1, goes to speed read, reads a few words, comes back
         val content = "First paragraph.\n\nSecond word here.\n\nThird paragraph."
@@ -215,17 +281,22 @@ class ReaderViewModelTest {
         assertEquals(null, viewModel.scrollToParagraph.value)
     }
 
+    private fun fourParagraphs(): String =
+        (1..4).joinToString("\n\n") { "Paragraph $it." }
+
     private fun readerViewModel(
         content: String,
         positions: MutableMap<String, Int> = mutableMapOf(),
         wordOffsets: MutableMap<String, Int> = mutableMapOf(),
         storedSettings: Array<ReaderTextSettings> = arrayOf(ReaderTextSettings()),
+        analytics: AnalyticsLogger = RecordingAnalytics(),
     ): ReaderViewModel {
         return ReaderViewModel(
-            book = Book(id = "book-1", title = "Sample", content = content),
+            book = Book(id = "book-1", title = "Sample", content = content).withReadingStats(),
             readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
             textSettingsRepository = memoryReaderTextSettingsRepository(storedSettings),
             computationDispatcher = dispatcher,
+            analytics = analytics,
         )
     }
 }

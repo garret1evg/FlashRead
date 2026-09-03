@@ -1,5 +1,8 @@
 package com.evgeniich.flashread
 
+import com.evgeniich.flashread.analytics.AnalyticsEvent
+import com.evgeniich.flashread.analytics.AnalyticsLogger
+import com.evgeniich.flashread.analytics.RecordingAnalytics
 import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.core.model.MaterialSourceType
 import com.evgeniich.flashread.core.model.ReadingPosition
@@ -210,10 +213,12 @@ class AppViewModelTest {
     @Test
     fun createBookPersistsTitleContentAndSelectsIt() = runTest {
         val stored = mutableListOf<Book>()
+        val analytics = RecordingAnalytics()
         val viewModel = appViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(),
             recentBookRepository = memoryRecentBookRepository(),
+            analytics = analytics,
         )
 
         viewModel.createBook(title = "  My notes  ", content = "one two\n\nthree")
@@ -226,6 +231,32 @@ class AppViewModelTest {
         assertEquals(book.id, viewModel.uiState.value.selectedBookId)
         assertEquals(1, stored.size)
         assertEquals(book, stored.single())
+        assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.BookCreate), analytics.events)
+    }
+
+    @Test
+    fun createBookDoesNotLogWhenContentIsBlank() = runTest {
+        val analytics = RecordingAnalytics()
+        val viewModel = appViewModel(analytics = analytics)
+
+        viewModel.createBook(title = "Ignored", content = "   \n  ")
+
+        assertTrue(viewModel.uiState.value.books.isEmpty())
+        assertTrue(analytics.events.isEmpty())
+    }
+
+    @Test
+    fun updateCreatedBookDoesNotLogBookCreate() = runTest {
+        val analytics = RecordingAnalytics()
+        val viewModel = appViewModel(analytics = analytics)
+        viewModel.createBook(title = "Draft", content = "one two")
+        analytics.events.clear()
+        val createdId = viewModel.uiState.value.books.single().id
+
+        viewModel.updateCreatedBook(bookId = createdId, title = "Revised", content = "one two three")
+
+        assertEquals("Revised", viewModel.uiState.value.books.single().title)
+        assertTrue(analytics.events.isEmpty())
     }
 
     @Test
@@ -313,10 +344,12 @@ class AppViewModelTest {
         val stored = mutableListOf<Book>()
         val positions = mutableMapOf<String, Int>()
         val wordOffsets = mutableMapOf<String, Int>()
+        val analytics = RecordingAnalytics()
         val viewModel = appViewModel(
             bookRepository = memoryBookRepository(stored),
             readingSessionRepository = memoryReadingSessionRepository(positions, wordOffsets),
             recentBookRepository = memoryRecentBookRepository(),
+            analytics = analytics,
         )
         viewModel.upsertImportedBook(
             ImportedBook(id = "book-1", title = "notes.txt", content = "library text"),
@@ -328,8 +361,10 @@ class AppViewModelTest {
         assertEquals("book-1", viewModel.uiState.value.selectedBookId)
         assertEquals("book-1", viewModel.uiState.value.currentBook?.id)
         assertEquals("book-1", viewModel.uiState.value.speedReadBook?.id)
+        assertTrue(analytics.events.isEmpty())
 
         assertTrue(viewModel.startScratchSpeedRead("  paste this  \n\nnow  "))
+        assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.QuickSpeedRead), analytics.events)
         val state = viewModel.uiState.value
         assertEquals(ScratchSpeedReadBookId, state.scratchBook?.id)
         assertEquals(DefaultSpeedReadTitle, state.scratchBook?.title)
@@ -453,12 +488,14 @@ class AppViewModelTest {
         readingSessionRepository: ReadingSessionRepository = memoryReadingSessionRepository(),
         coverRepository: CoverRepository = CoverRepository(),
         recentBookRepository: RecentBookRepository = memoryRecentBookRepository(),
+        analytics: AnalyticsLogger = RecordingAnalytics(),
     ): AppViewModel {
         return AppViewModel(
             bookRepository = bookRepository,
             readingSessionRepository = readingSessionRepository,
             coverRepository = coverRepository,
             recentBookRepository = recentBookRepository,
+            analytics = analytics,
         )
     }
 }

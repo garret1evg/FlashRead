@@ -2,6 +2,12 @@ package com.evgeniich.flashread.ui.speedread
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.evgeniich.flashread.ScratchSpeedReadBookId
+import com.evgeniich.flashread.analytics.Analytics
+import com.evgeniich.flashread.analytics.AnalyticsBuckets
+import com.evgeniich.flashread.analytics.AnalyticsEvent
+import com.evgeniich.flashread.analytics.AnalyticsLogger
+import com.evgeniich.flashread.analytics.SettingsChangeLogger
 import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.core.model.ReadingPosition
 import com.evgeniich.flashread.core.speedread.SpeedReadPlayback
@@ -13,6 +19,8 @@ import com.evgeniich.flashread.core.speedread.SpeedReadSessionTotals
 import com.evgeniich.flashread.core.speedread.SpeedReadSettings
 import com.evgeniich.flashread.data.repository.ReadingSessionRepository
 import com.evgeniich.flashread.data.repository.SpeedReadSettingsRepository
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -29,6 +37,7 @@ class SpeedReadPlayerViewModel(
     private val readingSessionRepository: ReadingSessionRepository = ReadingSessionRepository(),
     private val settingsRepository: SpeedReadSettingsRepository = SpeedReadSettingsRepository(),
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val analytics: AnalyticsLogger = Analytics,
 ) : ViewModel() {
     private val startPosition = readingSessionRepository.getPosition(book.id)
     private val startParagraphIndex = startPosition.paragraphIndex
@@ -44,6 +53,10 @@ class SpeedReadPlayerViewModel(
     private var controller: SpeedReadPlayerController? = null
     private var tickerJob: Job? = null
     private var prepareJob: Job? = null
+    private val settingsChangeLogger = SettingsChangeLogger(analytics, viewModelScope)
+    private var sessionStarted = false
+    private var completeLogged = false
+    private var playStartedAt: TimeMark? = null
 
     private val _viewState = MutableStateFlow(SpeedReadPlayerViewState.placeholder(settings))
     val viewState: StateFlow<SpeedReadPlayerViewState> = _viewState.asStateFlow()
@@ -63,8 +76,10 @@ class SpeedReadPlayerViewModel(
     fun updateSettings(updated: SpeedReadSettings) {
         val normalized = updated.normalized()
         val chunkChanged = normalized.chunkSize != settings.chunkSize
+        val previous = settings
         settings = normalized
         settingsRepository.save(normalized)
+        settingsChangeLogger.logSpeedReadDiff(previous, normalized)
         if (chunkChanged) {
             persistPosition(force = true)
             prepareSession()
@@ -97,6 +112,8 @@ class SpeedReadPlayerViewModel(
 
     override fun onCleared() {
         persistPosition(force = true)
+        settingsChangeLogger.flush()
+        logSpeedReadComplete(AnalyticsEvent.SpeedReadComplete.Result.Closed)
         super.onCleared()
     }
 
@@ -154,8 +171,43 @@ class SpeedReadPlayerViewModel(
     private fun publish() {
         val current = controller ?: return
         _viewState.value = current.viewState
+        trackPlaybackAnalytics(current.viewState)
         persistPosition()
         syncTicker()
+    }
+
+    private fun trackPlaybackAnalytics(state: SpeedReadPlayerViewState) {
+        if (state.isPlaying && !sessionStarted) {
+            sessionStarted = true
+            playStartedAt = TimeSource.Monotonic.markNow()
+            analytics.log(
+                AnalyticsEvent.SpeedReadStart(
+                    wpmBucket = AnalyticsBuckets.wpm(state.settings.wpm),
+                    spritzEnabled = state.settings.spritzEnabled,
+                    source = if (book.id == ScratchSpeedReadBookId) {
+                        AnalyticsEvent.SpeedReadStart.Source.Paste
+                    } else {
+                        AnalyticsEvent.SpeedReadStart.Source.Book
+                    },
+                    chunkSize = state.settings.chunkSize,
+                ),
+            )
+        }
+        if (state.isFinished) {
+            logSpeedReadComplete(AnalyticsEvent.SpeedReadComplete.Result.Finished)
+        }
+    }
+
+    private fun logSpeedReadComplete(result: AnalyticsEvent.SpeedReadComplete.Result) {
+        if (!sessionStarted || completeLogged) return
+        completeLogged = true
+        val durationMs = playStartedAt?.elapsedNow()?.inWholeMilliseconds ?: 0L
+        analytics.log(
+            AnalyticsEvent.SpeedReadComplete(
+                durationBucket = AnalyticsBuckets.duration(durationMs),
+                result = result,
+            ),
+        )
     }
 
     private fun persistPosition(force: Boolean = false) {

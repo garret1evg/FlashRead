@@ -2,9 +2,15 @@ package com.evgeniich.flashread.ui.reader
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.evgeniich.flashread.analytics.Analytics
+import com.evgeniich.flashread.analytics.AnalyticsBuckets
+import com.evgeniich.flashread.analytics.AnalyticsEvent
+import com.evgeniich.flashread.analytics.AnalyticsLogger
+import com.evgeniich.flashread.analytics.SettingsChangeLogger
 import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.core.model.ReadingPosition
 import com.evgeniich.flashread.core.reading.ReaderTextSettings
+import com.evgeniich.flashread.core.reading.bookProgressPercent
 import com.evgeniich.flashread.core.speedread.firstWordInParagraph
 import com.evgeniich.flashread.core.speedread.splitBookParagraphs
 import com.evgeniich.flashread.core.speedread.wordAtParagraphOffset
@@ -29,6 +35,7 @@ class ReaderViewModel(
     private val readingSessionRepository: ReadingSessionRepository = ReadingSessionRepository(),
     private val textSettingsRepository: ReaderTextSettingsRepository = ReaderTextSettingsRepository(),
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val analytics: AnalyticsLogger = Analytics,
 ) : ViewModel() {
     private val _document = MutableStateFlow<ReaderDocument?>(null)
     val document: StateFlow<ReaderDocument?> = _document.asStateFlow()
@@ -47,6 +54,12 @@ class ReaderViewModel(
 
     private val _settings = MutableStateFlow(textSettingsRepository.load())
     val settings: StateFlow<ReaderTextSettings> = _settings.asStateFlow()
+
+    private val settingsChangeLogger = SettingsChangeLogger(analytics, viewModelScope)
+    private var lastLoggedProgressPercent = bookProgressPercent(
+        paragraphIndex = readingSessionRepository.getPosition(book.id).paragraphIndex,
+        paragraphCount = book.paragraphCount,
+    )
 
     init {
         viewModelScope.launch {
@@ -108,6 +121,7 @@ class ReaderViewModel(
                 wordOffset = ReadingPosition.UNSET,
             ),
         )
+        logProgressIfCrossed(safeParagraphIndex)
     }
 
     fun selectWord(paragraphIndex: Int, localCharOffset: Int) {
@@ -129,9 +143,27 @@ class ReaderViewModel(
     }
 
     fun updateSettings(updated: ReaderTextSettings) {
+        val previous = _settings.value
         val normalized = updated.normalized()
         _settings.value = normalized
         textSettingsRepository.save(normalized)
+        settingsChangeLogger.logReaderDiff(previous, normalized)
+    }
+
+    override fun onCleared() {
+        settingsChangeLogger.flush()
+        super.onCleared()
+    }
+
+    private fun logProgressIfCrossed(paragraphIndex: Int) {
+        val toPercent = bookProgressPercent(paragraphIndex, book.paragraphCount)
+        val crossed = AnalyticsBuckets.progressCrossed(lastLoggedProgressPercent, toPercent)
+        for (bucket in crossed) {
+            analytics.log(AnalyticsEvent.ReaderProgress(bucket))
+        }
+        if (toPercent > lastLoggedProgressPercent) {
+            lastLoggedProgressPercent = toPercent
+        }
     }
 
     private fun prepareDocument(): PreparedReader {

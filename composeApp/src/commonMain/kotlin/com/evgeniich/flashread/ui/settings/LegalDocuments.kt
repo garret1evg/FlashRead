@@ -12,7 +12,7 @@ data class LegalDocument(
 )
 
 object LegalDocuments {
-    private const val LAST_UPDATED = "August 24, 2026"
+    private const val LAST_UPDATED = "August 31, 2026"
 
     val privacyPolicy = LegalDocument(
         title = "Privacy Policy",
@@ -27,8 +27,12 @@ object LegalDocuments {
                 body = "FlashRead stores the books and files you import, books you write in the app, extracted text, titles, optional cover images, reading progress, reader preferences, and speed-reading settings. This information stays in app storage on your device.",
             ),
             LegalSection(
+                heading = "Analytics",
+                body = "FlashRead uses Google Firebase Analytics to record usage events, such as importing a book, opening the reader, starting a speed-reading session, and changing settings. These events do not include the titles or text of your books. Google may collect the device Advertising ID as part of Firebase Analytics.",
+            ),
+            LegalSection(
                 heading = "Information we do not collect",
-                body = "FlashRead does not create an account, and it does not collect analytics, advertising identifiers, crash reports, or location data. The app does not upload your imported books, books you write, or reading history to our servers.",
+                body = "FlashRead does not create an account, and it does not collect crash reports or location data. The app does not upload your imported books, books you write, or reading history to our servers.",
             ),
             LegalSection(
                 heading = "How information is used",

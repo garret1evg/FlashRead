@@ -5,4 +5,5 @@ data class ExtractedBook(
     val content: String,
     val coverBytes: ByteArray? = null,
     val coverMimeType: String? = null,
+    val format: BookFormat = BookFormat.Unknown,
 )

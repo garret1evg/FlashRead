@@ -13,6 +13,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.evgeniich.flashread.analytics.Analytics
+import com.evgeniich.flashread.analytics.AnalyticsEvent
+import com.evgeniich.flashread.core.importdoc.BookExtractException
+import com.evgeniich.flashread.core.importdoc.BookFormat
 import com.evgeniich.flashread.core.importdoc.BookTextExtractor
 import com.evgeniich.flashread.core.importdoc.CoverThumbnail
 import com.evgeniich.flashread.resources.Res
@@ -53,7 +57,13 @@ actual fun rememberBookImportLauncher(
         scope.launch {
             try {
                 val imported = withContext(Dispatchers.IO) {
-                    importBookFromUri(contentResolver, uri, cacheDir, fallbackTitle)
+                    importBookFromUri(
+                        contentResolver,
+                        uri,
+                        cacheDir,
+                        fallbackTitle,
+                        AnalyticsEvent.BookImport.Source.Picker,
+                    )
                 }
                 if (imported.content.isBlank()) {
                     onError(emptyFileMessage)
@@ -103,22 +113,64 @@ internal fun importBookFromUri(
     uri: Uri,
     cacheDir: File,
     fallbackTitle: String,
+    source: AnalyticsEvent.BookImport.Source,
 ): ImportedBook {
     val displayName = readDisplayName(contentResolver.query(uri, null, null, null, null))
-    val extracted = BookTextExtractor.extract(
-        contentResolver = contentResolver,
-        uri = uri,
-        cacheDir = cacheDir,
-        fileName = displayName,
-        mimeType = contentResolver.getType(uri),
-    )
-    val cover = extracted.coverBytes?.let { CoverThumbnail.prepare(it, extracted.coverMimeType) }
-    return ImportedBook(
-        id = uri.toString(),
-        title = extracted.title?.trim()?.takeIf { it.isNotEmpty() } ?: displayName ?: fallbackTitle,
-        content = extracted.content,
-        coverBytes = cover?.first,
-        coverMimeType = cover?.second,
+    val mimeType = contentResolver.getType(uri)
+    try {
+        val extracted = BookTextExtractor.extract(
+            contentResolver = contentResolver,
+            uri = uri,
+            cacheDir = cacheDir,
+            fileName = displayName,
+            mimeType = mimeType,
+        )
+        val result = if (extracted.content.isBlank()) {
+            AnalyticsEvent.BookImport.Result.Empty
+        } else {
+            AnalyticsEvent.BookImport.Result.Success
+        }
+        logBookImport(extracted.format, result, source)
+        val cover = extracted.coverBytes?.let { CoverThumbnail.prepare(it, extracted.coverMimeType) }
+        return ImportedBook(
+            id = uri.toString(),
+            title = extracted.title?.trim()?.takeIf { it.isNotEmpty() } ?: displayName ?: fallbackTitle,
+            content = extracted.content,
+            coverBytes = cover?.first,
+            coverMimeType = cover?.second,
+        )
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: BookExtractException) {
+        logBookImport(error.format, bookImportResult(error.message), source)
+        throw error
+    } catch (error: Exception) {
+        val format = BookFormat.detect(fileName = displayName, mimeType = mimeType)
+        logBookImport(format, bookImportResult(error.message), source)
+        throw error
+    }
+}
+
+internal fun bookImportResult(rawMessage: String?): AnalyticsEvent.BookImport.Result {
+    return when (rawMessage) {
+        BookTextExtractor.UNSUPPORTED_FORMAT_MESSAGE -> AnalyticsEvent.BookImport.Result.Unsupported
+        BookTextExtractor.DAMAGED_FILE_MESSAGE -> AnalyticsEvent.BookImport.Result.Damaged
+        BookTextExtractor.UNABLE_TO_READ_MESSAGE -> AnalyticsEvent.BookImport.Result.UnableRead
+        else -> AnalyticsEvent.BookImport.Result.Failed
+    }
+}
+
+private fun logBookImport(
+    format: BookFormat,
+    result: AnalyticsEvent.BookImport.Result,
+    source: AnalyticsEvent.BookImport.Source,
+) {
+    Analytics.log(
+        AnalyticsEvent.BookImport(
+            format = AnalyticsEvent.BookImport.Format.from(format),
+            result = result,
+            source = source,
+        ),
     )
 }
 

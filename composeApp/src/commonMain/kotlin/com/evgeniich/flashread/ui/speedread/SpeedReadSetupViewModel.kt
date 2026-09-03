@@ -2,6 +2,9 @@ package com.evgeniich.flashread.ui.speedread
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.evgeniich.flashread.analytics.Analytics
+import com.evgeniich.flashread.analytics.AnalyticsLogger
+import com.evgeniich.flashread.analytics.SettingsChangeLogger
 import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.core.speedread.SpeedReadPlayback
 import com.evgeniich.flashread.core.speedread.SpeedReadSettings
@@ -30,6 +33,7 @@ class SpeedReadSetupViewModel(
     private val settingsRepository: SpeedReadSettingsRepository = SpeedReadSettingsRepository(),
     private val readingSessionRepository: ReadingSessionRepository = ReadingSessionRepository(),
     private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val analytics: AnalyticsLogger = Analytics,
 ) : ViewModel() {
     private val startPosition = readingSessionRepository.getPosition(book.id)
     private val startParagraphIndex = startPosition.paragraphIndex
@@ -48,13 +52,17 @@ class SpeedReadSetupViewModel(
     )
     val uiState: StateFlow<SpeedReadSetupUiState> = _uiState.asStateFlow()
 
+    private val settingsChangeLogger = SettingsChangeLogger(analytics, viewModelScope)
+
     init {
         refreshRemainingTime()
     }
 
     fun updateSettings(updated: SpeedReadSettings) {
+        val previous = _uiState.value.settings
         val normalized = updated.normalized()
         settingsRepository.save(normalized)
+        settingsChangeLogger.logSpeedReadDiff(previous, normalized)
         val cacheReady = cachedChunkSize == normalized.chunkSize
         _uiState.value = SpeedReadSetupUiState(
             settings = normalized,
@@ -72,6 +80,12 @@ class SpeedReadSetupViewModel(
 
     fun persistSettings() {
         settingsRepository.save(_uiState.value.settings)
+        settingsChangeLogger.flush()
+    }
+
+    override fun onCleared() {
+        settingsChangeLogger.flush()
+        super.onCleared()
     }
 
     private fun refreshRemainingTime() {

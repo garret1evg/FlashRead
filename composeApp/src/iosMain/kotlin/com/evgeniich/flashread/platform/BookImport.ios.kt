@@ -1,6 +1,8 @@
 package com.evgeniich.flashread.platform
 
 import androidx.compose.runtime.Composable
+import com.evgeniich.flashread.analytics.Analytics
+import com.evgeniich.flashread.analytics.AnalyticsEvent
 import com.evgeniich.flashread.navigation.AppRoute
 import com.evgeniich.flashread.resources.Res
 import com.evgeniich.flashread.resources.*
@@ -13,6 +15,13 @@ actual fun rememberBookImportLauncher(
 ): () -> Unit {
     val unsupported = stringResource(Res.string.import_ios_unsupported)
     return {
+        Analytics.log(
+            AnalyticsEvent.BookImport(
+                format = AnalyticsEvent.BookImport.Format.Unknown,
+                result = AnalyticsEvent.BookImport.Result.Unsupported,
+                source = AnalyticsEvent.BookImport.Source.Picker,
+            ),
+        )
         onError(unsupported)
     }
 }

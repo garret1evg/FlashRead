@@ -62,6 +62,12 @@ object BookTextExtractor {
     }
 }
 
+internal class BookExtractException(
+    val format: BookFormat,
+    message: String,
+    cause: Throwable? = null,
+) : IllegalStateException(message, cause)
+
 private const val HEADER_BYTES = 1024
 
 private val HTML_EXTENSIONS = setOf("html", "htm")
@@ -78,19 +84,27 @@ private fun extractDetected(
     } else {
         null
     }
-    return when (
-        BookFormat.detect(
-            fileName = fileName,
-            mimeType = mimeType,
-            headerBytes = header,
-            zipEntryNames = zipEntries,
+    val format = BookFormat.detect(
+        fileName = fileName,
+        mimeType = mimeType,
+        headerBytes = header,
+        zipEntryNames = zipEntries,
+    )
+    val extracted = try {
+        when (format) {
+            BookFormat.Text -> extractText(file, fileName, mimeType, header)
+            BookFormat.Fb2 -> parseOrDamaged(file, Fb2TextExtractor::extract)
+            BookFormat.Epub -> parseOrDamaged(file, EpubTextExtractor::extract)
+            BookFormat.Unknown -> error(BookTextExtractor.UNSUPPORTED_FORMAT_MESSAGE)
+        }
+    } catch (error: IllegalStateException) {
+        throw BookExtractException(
+            format = format,
+            message = error.message ?: BookTextExtractor.DAMAGED_FILE_MESSAGE,
+            cause = error,
         )
-    ) {
-        BookFormat.Text -> extractText(file, fileName, mimeType, header)
-        BookFormat.Fb2 -> parseOrDamaged(file, Fb2TextExtractor::extract)
-        BookFormat.Epub -> parseOrDamaged(file, EpubTextExtractor::extract)
-        BookFormat.Unknown -> error(BookTextExtractor.UNSUPPORTED_FORMAT_MESSAGE)
     }
+    return extracted.copy(format = format)
 }
 
 private fun parseOrDamaged(

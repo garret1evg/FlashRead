@@ -1,6 +1,9 @@
 package com.evgeniich.flashread
 
 import androidx.lifecycle.ViewModel
+import com.evgeniich.flashread.analytics.Analytics
+import com.evgeniich.flashread.analytics.AnalyticsEvent
+import com.evgeniich.flashread.analytics.AnalyticsLogger
 import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.core.model.MaterialSourceType
 import com.evgeniich.flashread.core.model.ReadingPosition
@@ -22,6 +25,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 
 internal const val ScratchSpeedReadBookId = "scratch:speed-read"
+internal const val CreatedBookIdPrefix = "created:"
 internal const val DefaultNewBookTitle = "New book"
 internal const val DefaultSpeedReadTitle = "Speed read"
 
@@ -51,6 +55,7 @@ class AppViewModel(
     private val readingSessionRepository: ReadingSessionRepository = ReadingSessionRepository(),
     private val coverRepository: CoverRepository = CoverRepository(),
     private val recentBookRepository: RecentBookRepository = RecentBookRepository(),
+    private val analytics: AnalyticsLogger = Analytics,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(loadInitialState())
     val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
@@ -128,6 +133,7 @@ class AppViewModel(
             ),
         )
         _uiState.update { it.copy(scratchBook = book) }
+        analytics.log(AnalyticsEvent.QuickSpeedRead)
         return true
     }
 
@@ -145,13 +151,14 @@ class AppViewModel(
         val trimmedContent = content.trim()
         if (trimmedContent.isBlank()) return
         val book = Book(
-            id = "created:${Uuid.random()}",
+            id = "$CreatedBookIdPrefix${Uuid.random()}",
             title = authoredBookTitle(title, defaultTitle),
             content = trimmedContent,
             sourceType = MaterialSourceType.Book,
         ).withReadingStats()
         upsert(book)
         selectBook(book.id)
+        analytics.log(AnalyticsEvent.BookCreate)
     }
 
     fun updateCreatedBook(
@@ -160,7 +167,7 @@ class AppViewModel(
         content: String,
         defaultTitle: String = DefaultNewBookTitle,
     ) {
-        if (!bookId.startsWith("created:")) return
+        if (!bookId.startsWith(CreatedBookIdPrefix)) return
         val trimmedContent = content.trim()
         if (trimmedContent.isBlank()) return
         val existing = _uiState.value.books.firstOrNull { it.id == bookId } ?: return

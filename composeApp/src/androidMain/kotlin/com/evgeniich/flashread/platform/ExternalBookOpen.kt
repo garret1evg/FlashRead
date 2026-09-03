@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import com.evgeniich.flashread.analytics.AnalyticsEvent
 import com.evgeniich.flashread.navigation.AppRoute
 import com.evgeniich.flashread.resources.Res
 import com.evgeniich.flashread.resources.*
@@ -58,7 +59,13 @@ object ExternalBookImporter {
             try {
                 val fallbackTitle = getString(Res.string.import_fallback_title)
                 val imported = withContext(Dispatchers.IO) {
-                    importBookFromUri(contentResolver, uri, cacheDir, fallbackTitle)
+                    importBookFromUri(
+                        contentResolver,
+                        uri,
+                        cacheDir,
+                        fallbackTitle,
+                        AnalyticsEvent.BookImport.Source.Share,
+                    )
                 }
                 if (imported.content.isBlank()) {
                     _state.value = ExternalBookImportState(

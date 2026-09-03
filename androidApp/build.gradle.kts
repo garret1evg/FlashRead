@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -46,4 +47,7 @@ dependencies {
     implementation(projects.composeApp)
     implementation(libs.androidx.activity.compose)
     debugImplementation(libs.compose.uiTooling)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
 }

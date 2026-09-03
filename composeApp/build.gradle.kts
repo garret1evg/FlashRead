@@ -37,6 +37,8 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.kxml2)
             implementation(libs.timber)
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.firebase.analytics)
         }
         getByName("androidHostTest").dependencies {
             implementation(libs.kotlin.test)
