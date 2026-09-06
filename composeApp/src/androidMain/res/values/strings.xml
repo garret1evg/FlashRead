@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">FlashRead</string>
-    <!-- TODO: Replace with production ad unit ID from AdMob Console -->
+    <!-- Library default / debug fallback. The app module overrides this for release. -->
     <string name="admob_banner_unit_id" translatable="false">ca-app-pub-3940256099942544/9214589741</string>
 </resources>

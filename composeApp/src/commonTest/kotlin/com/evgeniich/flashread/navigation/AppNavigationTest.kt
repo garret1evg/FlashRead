@@ -150,6 +150,66 @@ class AppNavigationTest {
     }
 
     @Test
+    fun bannerAd_isEligibleOnlyOnHomeAndLibrary() {
+        assertTrue(AppRoute.Home.showsBannerAd)
+        assertTrue(AppRoute.Library.showsBannerAd)
+        assertFalse(AppRoute.Settings.showsBannerAd)
+        assertFalse(AppRoute.Reader.showsBannerAd)
+        assertFalse(AppRoute.SpeedRead.showsBannerAd)
+        assertFalse(AppRoute.SpeedReadPlayer.showsBannerAd)
+        assertFalse(AppRoute.PrivacyPolicy.showsBannerAd)
+        assertFalse(AppRoute.Terms.showsBannerAd)
+        assertFalse(AppRoute.BookEditor.showsBannerAd)
+        assertFalse(AppRoute.QuickSpeedRead.showsBannerAd)
+    }
+
+    @Test
+    fun bannerAd_staysEligibleWhenSwitchingHomeAndLibrary() {
+        val backStack = mutableListOf<AppRoute>(AppRoute.Home)
+        assertTrue(backStack.last().showsBannerAd)
+        assertTrue(backStack.last().isTopLevel)
+
+        backStack.navigateToTopLevel(AppRoute.Library)
+        assertEquals(listOf(AppRoute.Library), backStack.toList())
+        assertTrue(backStack.last().showsBannerAd)
+        assertTrue(backStack.last().isTopLevel)
+
+        backStack.navigateToTopLevel(AppRoute.Home)
+        assertEquals(listOf(AppRoute.Home), backStack.toList())
+        assertTrue(backStack.last().showsBannerAd)
+    }
+
+    @Test
+    fun bannerAd_hidesOnSettingsButBottomBarStays() {
+        val backStack = mutableListOf<AppRoute>(AppRoute.Home)
+        backStack.navigateToTopLevel(AppRoute.Settings)
+        assertEquals(listOf(AppRoute.Settings), backStack.toList())
+        assertTrue(backStack.last().isTopLevel)
+        assertFalse(backStack.last().showsBannerAd)
+    }
+
+    @Test
+    fun bannerAd_hidesOnNestedScreensAndReturnsWithLibrary() {
+        val backStack = mutableListOf<AppRoute>(AppRoute.Library)
+        assertTrue(backStack.last().showsBannerAd)
+
+        backStack.openReaderFromLibrary()
+        assertEquals(listOf(AppRoute.Library, AppRoute.Reader), backStack.toList())
+        assertFalse(backStack.last().showsBannerAd)
+        assertFalse(backStack.last().isTopLevel)
+
+        backStack.pushIfNeeded(AppRoute.SpeedRead)
+        assertFalse(backStack.last().showsBannerAd)
+        assertFalse(backStack.last().isTopLevel)
+
+        assertTrue(backStack.popBack())
+        assertTrue(backStack.popBack())
+        assertEquals(listOf(AppRoute.Library), backStack.toList())
+        assertTrue(backStack.last().showsBannerAd)
+        assertTrue(backStack.last().isTopLevel)
+    }
+
+    @Test
     fun quickSpeedRead_isNestedWithoutScaffoldTopBar() {
         assertFalse(AppRoute.QuickSpeedRead.isTopLevel)
         assertFalse(AppRoute.QuickSpeedRead.showsScaffoldTopBar)

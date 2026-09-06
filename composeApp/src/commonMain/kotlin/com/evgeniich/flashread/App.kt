@@ -60,6 +60,8 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.evgeniich.flashread.ads.BannerAdHost
+import com.evgeniich.flashread.ads.canShowBannerAds
 import com.evgeniich.flashread.analytics.Analytics
 import com.evgeniich.flashread.analytics.AnalyticsEvent
 import com.evgeniich.flashread.consent.showPrivacyOptionsForm
@@ -75,6 +77,7 @@ import com.evgeniich.flashread.navigation.navigateToTopLevel
 import com.evgeniich.flashread.navigation.openReaderFromLibrary
 import com.evgeniich.flashread.navigation.popBack
 import com.evgeniich.flashread.navigation.pushIfNeeded
+import com.evgeniich.flashread.navigation.showsBannerAd
 import com.evgeniich.flashread.navigation.showsScaffoldTopBar
 import com.evgeniich.flashread.platform.ObserveExternalBookOpens
 import com.evgeniich.flashread.platform.currentSystemLanguageTag
@@ -221,39 +224,45 @@ fun App() {
             },
             bottomBar = {
                 if (showBottomBar) {
-                    NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                    ) {
-                        AppScreen.entries.forEach { screen ->
-                            val selected = currentScreen == screen
-                            val label = screen.label()
-                            NavigationBarItem(
-                                selected = selected,
-                                onClick = {
-                                    backStack.navigateToTopLevel(screen.route)
-                                },
-                                label = {
-                                    Text(
-                                        text = label,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = screen.icon(selected),
-                                        contentDescription = label,
-                                    )
-                                },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                ),
-                            )
+                    Column {
+                        if (currentRoute.showsBannerAd && canShowBannerAds()) {
+                            BannerAdHost(modifier = Modifier.fillMaxWidth())
+                            Spacer(Modifier.height(FlashReadDimens.space12))
+                        }
+                        NavigationBar(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                        ) {
+                            AppScreen.entries.forEach { screen ->
+                                val selected = currentScreen == screen
+                                val label = screen.label()
+                                NavigationBarItem(
+                                    selected = selected,
+                                    onClick = {
+                                        backStack.navigateToTopLevel(screen.route)
+                                    },
+                                    label = {
+                                        Text(
+                                            text = label,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    },
+                                    icon = {
+                                        Icon(
+                                            imageVector = screen.icon(selected),
+                                            contentDescription = label,
+                                        )
+                                    },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    ),
+                                )
+                            }
                         }
                     }
                 }
