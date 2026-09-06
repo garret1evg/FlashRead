@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">FlashRead</string>
+    <string name="app_name">FlashReader</string>
     <!-- TODO: Replace with production ad unit ID from AdMob Console -->
     <string name="admob_banner_unit_id" translatable="false">ca-app-pub-3940256099942544/9214589741</string>
 </resources>

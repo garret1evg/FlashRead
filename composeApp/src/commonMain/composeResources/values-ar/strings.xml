@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">FlashRead</string>
+    <string name="app_name">FlashReader</string>
 
     <string name="action_back">رجوع</string>
     <string name="action_save">حفظ</string>
