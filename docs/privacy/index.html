@@ -40,7 +40,6 @@
         <li><a href="#no-accounts">No accounts</a></li>
         <li><a href="#local-data">Local data</a></li>
         <li><a href="#content-vs-technical">Content and technical data</a></li>
-        <li><a href="#youtube">YouTube transcripts</a></li>
         <li><a href="#firebase">Firebase Analytics</a></li>
         <li><a href="#admob">Google AdMob</a></li>
         <li><a href="#ump">Google User Messaging Platform (UMP)</a></li>
@@ -76,10 +75,9 @@
       <li>Titles and optional cover images</li>
       <li>Bookmarks, reading position, and reading history</li>
       <li>Reader and speed-reading settings (for example theme, font size, words per minute)</li>
-      <li>YouTube transcripts you load, after they are fetched</li>
     </ul>
     <p>
-      This library content stays on your device unless you export it, include it in a device backup, or use a feature that sends a YouTube URL to a network service as described below.
+      This library content stays on your device unless you export it or include it in a device backup.
     </p>
 
     <h2 id="content-vs-technical">Content and technical data</h2>
@@ -103,11 +101,6 @@
             <td>Stored on your device. Not sent to Firebase Analytics or Google AdMob.</td>
           </tr>
           <tr>
-            <td>YouTube request data</td>
-            <td>The video URL you submit to load a transcript</td>
-            <td>May be sent to a network service to fetch the transcript. The transcript is then stored locally.</td>
-          </tr>
-          <tr>
             <td>Technical and advertising data</td>
             <td>Usage events, device information, identifiers, approximate location, ad interactions, purchase tokens</td>
             <td>Processed by Google services such as Firebase Analytics, AdMob, UMP, and Google Play Billing, as described in this policy.</td>
@@ -118,17 +111,6 @@
     <p>
       FlashReader does not upload your imported books, texts you write, cover images, bookmarks, or reading history to Firebase Analytics or Google AdMob. Analytics events are designed so they do not include book titles or the text of your materials.
     </p>
-
-    <h2 id="youtube">YouTube transcripts</h2>
-    <p>
-      If you use the YouTube transcript feature, you provide a video URL. That URL may be transmitted to a network service so FlashReader can request available captions or transcript data.
-    </p>
-    <ul>
-      <li>The URL identifies the video you asked to load. It is not your library of imported books.</li>
-      <li>The service that receives the URL may also receive technical information that normally accompanies a network request, such as IP address and device or browser-style headers.</li>
-      <li>If a transcript is returned, FlashReader stores it locally like other texts so you can read it in the app.</li>
-      <li>Availability of a transcript depends on the video and the service. FlashReader does not control YouTube’s caption data.</li>
-    </ul>
 
     <h2 id="firebase">Firebase Analytics</h2>
     <p>

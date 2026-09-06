@@ -35,7 +35,6 @@ Keep these identical in the HTML here and in `LegalDocuments.kt`.
 
 - [x] Fill developer name, contact email, dates, Firebase retention, children statement, and governing law. Leave the Play Store URL until the listing exists.
 - [ ] Confirm the Firebase SDK in the app matches what Privacy Policy describes (Analytics events, device/identifiers, diagnostics). Do not claim the app “does not collect data.”
-- [ ] Confirm the YouTube transcript flow: a video URL may be sent to a network service; book and document files are not uploaded for that feature.
 - [x] Confirm the Firebase Analytics retention period in the Firebase / Google Analytics console (14 months).
 - [x] Confirm the target age statement: FlashReader is not directed at children under 13.
 - [ ] Align this site with Play Console **Data safety**: local library vs technical data (Firebase, AdMob, UMP, Play Billing), and that uninstalling the app does not guarantee deletion from Google services.
