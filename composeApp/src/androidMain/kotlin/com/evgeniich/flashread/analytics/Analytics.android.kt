@@ -4,24 +4,25 @@ import android.content.Context
 import android.os.Bundle
 import com.evgeniich.flashread.platform.AndroidAppContext
 import com.google.android.ump.UserMessagingPlatform
+import com.google.firebase.FirebaseApp
 import com.google.firebase.analytics.FirebaseAnalytics
 
 actual object Analytics : AnalyticsLogger {
     override fun log(event: AnalyticsEvent) {
         if (!AndroidAppContext.isInitialized) return
-        FirebaseAnalytics.getInstance(AndroidAppContext.applicationContext)
-            .logEvent(event.name, event.toBundle())
+        firebaseAnalyticsOrNull(AndroidAppContext.applicationContext)
+            ?.logEvent(event.name, event.toBundle())
     }
 }
 
 internal fun applyAnalyticsConsent(context: Context) {
+    val analytics = firebaseAnalyticsOrNull(context) ?: return
     val allowed = UserMessagingPlatform.getConsentInformation(context).canRequestAds()
     val status = if (allowed) {
         FirebaseAnalytics.ConsentStatus.GRANTED
     } else {
         FirebaseAnalytics.ConsentStatus.DENIED
     }
-    val analytics = FirebaseAnalytics.getInstance(context)
     analytics.setConsent(
         mapOf(
             FirebaseAnalytics.ConsentType.ANALYTICS_STORAGE to status,
@@ -31,6 +32,11 @@ internal fun applyAnalyticsConsent(context: Context) {
         ),
     )
     analytics.setAnalyticsCollectionEnabled(allowed)
+}
+
+private fun firebaseAnalyticsOrNull(context: Context): FirebaseAnalytics? {
+    if (FirebaseApp.getApps(context).isEmpty()) return null
+    return FirebaseAnalytics.getInstance(context)
 }
 
 internal fun AnalyticsEvent.toBundle(): Bundle {

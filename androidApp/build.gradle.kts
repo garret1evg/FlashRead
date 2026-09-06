@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.androidApplication)
@@ -7,9 +8,24 @@ plugins {
     alias(libs.plugins.google.services)
 }
 
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
+}
+
 android {
     namespace = "com.evgeniich.flashread"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(keystoreProperties.getProperty("storeFile") ?: "")
+            storePassword = keystoreProperties.getProperty("storePassword") ?: ""
+            keyAlias = keystoreProperties.getProperty("keyAlias") ?: ""
+            keyPassword = keystoreProperties.getProperty("keyPassword") ?: ""
+        }
+    }
 
     defaultConfig {
         applicationId = "com.evgeniich.flashread"
@@ -26,8 +42,28 @@ android {
     }
 
     buildTypes {
-        getByName("release") {
+        getByName("debug") {
+            // Explicitly disable obfuscation for debug builds
             isMinifyEnabled = false
+            isShrinkResources = false
+            isDebuggable = true
+            
+            // Application ID suffix allows dev and release to coexist on device
+            applicationIdSuffix = ".dev"
+            
+            // Version name suffix for clear identification
+            versionNameSuffix = "-dev"
+        }
+        
+        getByName("release") {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
+            signingConfig = signingConfigs.getByName("release")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 
@@ -40,6 +76,14 @@ android {
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11)
+    }
+}
+
+// Debug uses applicationIdSuffix ".dev" and does not need Firebase.
+// Skip google-services so the build does not require a matching client.
+tasks.configureEach {
+    if (name == "processDebugGoogleServices") {
+        enabled = false
     }
 }
 

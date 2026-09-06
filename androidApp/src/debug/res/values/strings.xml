@@ -1,4 +1,7 @@
 <resources>
+    <!-- Dev version of app name - distinguishes from release -->
+    <string name="app_name">FlashReader Dev</string>
+    
     <!-- Google sample banner unit. Debug builds must not use production ads. -->
     <string name="admob_banner_unit_id" translatable="false">ca-app-pub-3940256099942544/9214589741</string>
 </resources>
