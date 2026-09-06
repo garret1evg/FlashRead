@@ -27,6 +27,7 @@ Keep these identical in the HTML here and in `LegalDocuments.kt`.
 | Effective date | 31 August 2026 |
 | Last updated | 6 September 2026 (in-app: `September 6, 2026`) |
 | Firebase Analytics retention | 14 months |
+| Firebase Crashlytics retention | 90 days |
 | Children | FlashReader is not directed at children under 13. We do not knowingly collect personal information from children. |
 | Governing law | the laws of Poland and the courts of Poland |
 | Google Play URL | Not published yet. Home page says the app will be available on Google Play. Add the store URL when the listing exists. |
@@ -34,10 +35,11 @@ Keep these identical in the HTML here and in `LegalDocuments.kt`.
 ## Checklist before you publish
 
 - [x] Fill developer name, contact email, dates, Firebase retention, children statement, and governing law. Leave the Play Store URL until the listing exists.
-- [ ] Confirm the Firebase SDK in the app matches what Privacy Policy describes (Analytics events, device/identifiers, diagnostics). Do not claim the app “does not collect data.”
+- [ ] Confirm the Firebase SDK in the app matches what Privacy Policy describes (Analytics events, Crashlytics reports, device/identifiers, diagnostics). Do not claim the app “does not collect data.”
 - [x] Confirm the Firebase Analytics retention period in the Firebase / Google Analytics console (14 months).
+- [x] Confirm Firebase Crashlytics retention (90 days).
 - [x] Confirm the target age statement: FlashReader is not directed at children under 13.
-- [ ] Align this site with Play Console **Data safety**: local library vs technical data (Firebase, AdMob, UMP, Play Billing), and that uninstalling the app does not guarantee deletion from Google services.
+- [ ] Align this site with Play Console **Data safety**: local library vs technical data (Firebase Analytics, Crashlytics, AdMob, UMP, Play Billing), and that uninstalling the app does not guarantee deletion from Google services.
 - [ ] Confirm AdMob / UMP wording: consent, Privacy options in app settings, and advertising identifiers.
 - [ ] Confirm Google Play Billing wording (payments processed by Google, purchase token) and refunds via Google Play.
 - [ ] Check relative links (Home, Privacy, Terms, Support, CSS) from the site root and from `privacy/`, `terms/`, and `support/`.

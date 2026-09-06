@@ -33,8 +33,12 @@ object LegalDocuments {
                 body = "FlashReader uses Google Firebase Analytics to record usage events, such as importing a book, opening the reader, starting a speed-reading session, and changing settings. These events do not include the titles or text of your books. Google may collect the device Advertising ID as part of Firebase Analytics.",
             ),
             LegalSection(
+                heading = "Crash reports",
+                body = "FlashReader uses Google Firebase Crashlytics to collect crash and error reports so we can fix stability problems. These reports include stack traces, device and app version information, and related diagnostic data. They do not include the titles or text of your books. Collection is subject to your consent choices where Google’s consent tools apply.",
+            ),
+            LegalSection(
                 heading = "Information we do not collect",
-                body = "FlashReader does not create an account, and it does not collect crash reports or location data. The app does not upload your imported books, books you write, or reading history to our servers.",
+                body = "FlashReader does not create an account, and it does not collect location data from GPS. The app does not upload your imported books, books you write, or reading history to our servers.",
             ),
             LegalSection(
                 heading = "How information is used",
@@ -46,7 +50,7 @@ object LegalDocuments {
             ),
             LegalSection(
                 heading = "Retention and your choices",
-                body = "Your materials remain on the device until you delete them from the library or uninstall the app. Uninstalling FlashReader removes the data stored by the app, except copies that may remain in an operating-system backup. Google retains Firebase Analytics data for 14 months. Uninstalling the app does not guarantee that Google will delete information already processed by Firebase Analytics, AdMob, UMP, or Google Play Billing.",
+                body = "Your materials remain on the device until you delete them from the library or uninstall the app. Uninstalling FlashReader removes the data stored by the app, except copies that may remain in an operating-system backup. Google retains Firebase Analytics data for 14 months and Firebase Crashlytics crash data for 90 days. Uninstalling the app does not guarantee that Google will delete information already processed by Firebase Analytics, Firebase Crashlytics, AdMob, UMP, or Google Play Billing.",
             ),
             LegalSection(
                 heading = "Children",

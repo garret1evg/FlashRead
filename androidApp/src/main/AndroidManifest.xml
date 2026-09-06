@@ -13,6 +13,9 @@
 
         <!-- Basic Consent Mode: all disabled until user consent -->
         <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false" />
+        <meta-data
             android:name="firebase_analytics_collection_enabled"
             android:value="false" />
         <meta-data

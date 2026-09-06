@@ -1,3 +1,4 @@
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
@@ -6,6 +7,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
@@ -53,6 +55,11 @@ android {
             
             // Version name suffix for clear identification
             versionNameSuffix = "-dev"
+
+            // Debug has no google-services client; skip mapping upload.
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled = false
+            }
         }
         
         getByName("release") {
@@ -94,4 +101,5 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 }

@@ -52,10 +52,21 @@ class LegalDocumentsTest {
     }
 
     @Test
-    fun privacyPolicy_doesNotCollectAccountCrashReportsOrLocation() {
+    fun privacyPolicy_describesFirebaseCrashlytics() {
+        val document = LegalDocuments.privacyPolicy
+        val crash = document.sections.single { it.heading == "Crash reports" }
+        assertTrue(crash.body.contains("Firebase Crashlytics"))
+        assertTrue(crash.body.contains("crash and error reports", ignoreCase = true))
+        assertTrue(crash.body.contains("do not include the titles or text of your books"))
+        assertTrue(crash.body.contains("consent", ignoreCase = true))
+        val text = document.sections.joinToString(" ") { it.body }
+        assertFalse(text.contains("does not collect crash reports", ignoreCase = true))
+    }
+
+    @Test
+    fun privacyPolicy_doesNotCollectAccountOrLocation() {
         val text = LegalDocuments.privacyPolicy.sections.joinToString(" ") { it.body }
         assertTrue(text.contains("does not create an account", ignoreCase = true))
-        assertTrue(text.contains("does not collect crash reports", ignoreCase = true))
         assertTrue(text.contains("location data", ignoreCase = true))
         assertTrue(text.contains("does not upload your imported books", ignoreCase = true))
     }
@@ -84,6 +95,8 @@ class LegalDocumentsTest {
         assertTrue(text.contains("Yevhen Chmutov"))
         assertTrue(text.contains("yevhen.chmutov.support@gmail.com"))
         assertTrue(text.contains("14 months"))
+        assertTrue(text.contains("90 days"))
+        assertTrue(text.contains("Firebase Crashlytics"))
         assertTrue(text.contains("not directed at children under 13", ignoreCase = true))
         assertTrue(text.contains("AdMob"))
         assertTrue(text.contains("UMP"))

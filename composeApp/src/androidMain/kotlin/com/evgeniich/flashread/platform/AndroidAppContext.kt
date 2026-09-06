@@ -6,6 +6,9 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import com.evgeniich.flashread.analytics.applyAnalyticsConsent
+import com.evgeniich.flashread.crash.CrashlyticsTree
+import com.evgeniich.flashread.crash.applyCrashlyticsConsent
+import com.google.firebase.FirebaseApp
 import timber.log.Timber
 import java.lang.ref.WeakReference
 
@@ -23,6 +26,7 @@ object AndroidAppContext {
         applicationContext = context.applicationContext
         plantTimberIfNeeded(applicationContext)
         applyAnalyticsConsent(applicationContext)
+        applyCrashlyticsConsent(applicationContext)
         (applicationContext as? Application)?.let(CurrentActivityTracker::register)
     }
 
@@ -31,6 +35,9 @@ object AndroidAppContext {
         val debuggable = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
         if (debuggable) {
             Timber.plant(Timber.DebugTree())
+        }
+        if (FirebaseApp.getApps(context).isNotEmpty()) {
+            Timber.plant(CrashlyticsTree())
         }
     }
 }

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import com.evgeniich.flashread.ads.AdMobManager
 import com.evgeniich.flashread.analytics.applyAnalyticsConsent
+import com.evgeniich.flashread.crash.applyCrashlyticsConsent
 import com.evgeniich.flashread.platform.AndroidAppContext
 import com.google.android.ump.ConsentDebugSettings
 import com.google.android.ump.ConsentInformation
@@ -96,6 +97,7 @@ object ConsentManager {
     fun applyConsentToAnalytics() {
         if (!AndroidAppContext.isInitialized) return
         applyAnalyticsConsent(appContext)
+        applyCrashlyticsConsent(appContext)
     }
 
     private fun consentRequestParameters(context: Context): ConsentRequestParameters {
