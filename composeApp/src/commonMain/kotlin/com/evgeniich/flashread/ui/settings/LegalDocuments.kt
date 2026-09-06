@@ -12,7 +12,9 @@ data class LegalDocument(
 )
 
 object LegalDocuments {
-    private const val LAST_UPDATED = "August 31, 2026"
+    private const val LAST_UPDATED = "September 6, 2026"
+    private const val DEVELOPER_NAME = "Yevhen Chmutov"
+    private const val CONTACT_EMAIL = "yevhen.chmutov.support@gmail.com"
 
     val privacyPolicy = LegalDocument(
         title = "Privacy Policy",
@@ -20,7 +22,7 @@ object LegalDocuments {
         sections = listOf(
             LegalSection(
                 heading = "Overview",
-                body = "FlashReader is a reading and speed-reading app. This policy explains what information the app stores and how it is used. FlashReader is designed to keep your materials on your device.",
+                body = "FlashReader is a reading and speed-reading app published by $DEVELOPER_NAME. This policy explains what information the app stores and how it is used. FlashReader is designed to keep your materials on your device.",
             ),
             LegalSection(
                 heading = "Information stored on your device",
@@ -44,7 +46,7 @@ object LegalDocuments {
             ),
             LegalSection(
                 heading = "Retention and your choices",
-                body = "Your materials remain on the device until you delete them from the library or uninstall the app. Uninstalling FlashReader removes the data stored by the app, except copies that may remain in an operating-system backup.",
+                body = "Your materials remain on the device until you delete them from the library or uninstall the app. Uninstalling FlashReader removes the data stored by the app, except copies that may remain in an operating-system backup. Google retains Firebase Analytics data for 14 months. Uninstalling the app does not guarantee that Google will delete information already processed by Firebase Analytics, AdMob, UMP, or Google Play Billing.",
             ),
             LegalSection(
                 heading = "Children",
@@ -56,7 +58,7 @@ object LegalDocuments {
             ),
             LegalSection(
                 heading = "Contact",
-                body = "For privacy questions, contact the developer through the FlashReader listing on Google Play or the App Store.",
+                body = "For privacy questions, contact $DEVELOPER_NAME at $CONTACT_EMAIL.",
             ),
         ),
     )
@@ -83,7 +85,7 @@ object LegalDocuments {
             ),
             LegalSection(
                 heading = "Intellectual property",
-                body = "FlashReader, including its name, logo, and software, is owned by the developer and is licensed to you for personal use. These terms do not transfer any ownership rights to you.",
+                body = "FlashReader, including its name, logo, and software, is owned by $DEVELOPER_NAME and is licensed to you for personal use. These terms do not transfer any ownership rights to you.",
             ),
             LegalSection(
                 heading = "Disclaimer",
@@ -98,8 +100,12 @@ object LegalDocuments {
                 body = "We may update these terms from time to time. The date at the top of this screen shows the latest version. Continued use after an update means you accept the revised terms.",
             ),
             LegalSection(
+                heading = "Governing law",
+                body = "These terms are governed by the laws of Poland and the courts of Poland, without regard to conflict-of-law rules, except where mandatory consumer-protection laws in your country of residence apply and cannot be waived.",
+            ),
+            LegalSection(
                 heading = "Contact",
-                body = "For questions about these terms, contact the developer through the FlashReader listing on Google Play or the App Store.",
+                body = "For questions about these terms, contact $DEVELOPER_NAME at $CONTACT_EMAIL.",
             ),
         ),
     )

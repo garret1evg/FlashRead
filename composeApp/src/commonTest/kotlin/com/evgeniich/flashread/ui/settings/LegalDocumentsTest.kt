@@ -11,7 +11,7 @@ class LegalDocumentsTest {
     fun privacyPolicy_hasTitleAndSections() {
         val document = LegalDocuments.privacyPolicy
         assertEquals("Privacy Policy", document.title)
-        assertEquals("August 31, 2026", document.lastUpdated)
+        assertEquals("September 6, 2026", document.lastUpdated)
         assertTrue(document.sections.size >= 5)
         assertTrue(document.sections.all { it.heading.isNotBlank() && it.body.isNotBlank() })
     }
@@ -74,5 +74,30 @@ class LegalDocumentsTest {
         assertFalse(text.contains("YouTube", ignoreCase = true))
         assertFalse(text.contains("transcript", ignoreCase = true))
         assertFalse(text.contains("captions", ignoreCase = true))
+    }
+
+    @Test
+    fun privacyPolicy_usesPublishedContactRetentionAndChildrenFacts() {
+        val document = LegalDocuments.privacyPolicy
+        assertEquals("September 6, 2026", document.lastUpdated)
+        val text = document.sections.joinToString(" ") { it.body }
+        assertTrue(text.contains("Yevhen Chmutov"))
+        assertTrue(text.contains("yevhen.chmutov.support@gmail.com"))
+        assertTrue(text.contains("14 months"))
+        assertTrue(text.contains("not directed at children under 13", ignoreCase = true))
+        assertTrue(text.contains("AdMob"))
+        assertTrue(text.contains("UMP"))
+        assertTrue(text.contains("Google Play Billing"))
+    }
+
+    @Test
+    fun termsAndConditions_usePublishedContactAndPolishLaw() {
+        val document = LegalDocuments.termsAndConditions
+        assertEquals("September 6, 2026", document.lastUpdated)
+        val text = document.sections.joinToString(" ") { it.body }
+        assertTrue(text.contains("Yevhen Chmutov"))
+        assertTrue(text.contains("yevhen.chmutov.support@gmail.com"))
+        assertTrue(text.contains("laws of Poland"))
+        assertTrue(text.contains("courts of Poland"))
     }
 }
