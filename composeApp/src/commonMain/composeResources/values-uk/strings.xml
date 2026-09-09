@@ -105,6 +105,8 @@
     <string name="settings_version_cd">Версія %1$s</string>
     <string name="settings_language">Мова</string>
     <string name="settings_language_system">Системна</string>
+    <string name="settings_keep_screen_on">Не вимикати екран</string>
+    <string name="settings_keep_screen_on_subtitle">Екран не гасне під час швидкого читання</string>
     <string name="language_en">English</string>
     <string name="language_es">Español</string>
     <string name="language_pt">Português</string>

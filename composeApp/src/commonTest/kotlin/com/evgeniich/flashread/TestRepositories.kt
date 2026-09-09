@@ -8,6 +8,7 @@ import com.evgeniich.flashread.core.speedread.SpeedReadSettings
 import com.evgeniich.flashread.data.repository.AppLanguageRepository
 import com.evgeniich.flashread.data.repository.BookRepository
 import com.evgeniich.flashread.data.repository.CoverRepository
+import com.evgeniich.flashread.data.repository.KeepScreenOnRepository
 import com.evgeniich.flashread.data.repository.ReaderTextSettingsRepository
 import com.evgeniich.flashread.data.repository.ReadingSessionRepository
 import com.evgeniich.flashread.data.repository.RecentBookRepository
@@ -78,6 +79,15 @@ internal fun memoryAppLanguageRepository(
     return AppLanguageRepository(
         onLoad = { language[0] },
         onSave = { language[0] = it },
+    )
+}
+
+internal fun memoryKeepScreenOnRepository(
+    enabled: BooleanArray = booleanArrayOf(true),
+): KeepScreenOnRepository {
+    return KeepScreenOnRepository(
+        onLoad = { enabled[0] },
+        onSave = { enabled[0] = it },
     )
 }
 

@@ -181,6 +181,7 @@ sealed class AnalyticsEvent {
             ChunkSize("chunk_size"),
             SpritzEnabled("spritz_enabled"),
             LoopEnabled("loop_enabled"),
+            KeepScreenOn("keep_screen_on"),
         }
 
         companion object {

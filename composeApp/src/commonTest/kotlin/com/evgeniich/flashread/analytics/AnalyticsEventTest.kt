@@ -165,6 +165,7 @@ class AnalyticsEventTest {
         assertEquals("chunk_size", AnalyticsEvent.SettingsChange.SettingName.ChunkSize.value)
         assertEquals("spritz_enabled", AnalyticsEvent.SettingsChange.SettingName.SpritzEnabled.value)
         assertEquals("loop_enabled", AnalyticsEvent.SettingsChange.SettingName.LoopEnabled.value)
+        assertEquals("keep_screen_on", AnalyticsEvent.SettingsChange.SettingName.KeepScreenOn.value)
     }
 
     @Test

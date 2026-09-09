@@ -15,11 +15,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Policy
 import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material3.AlertDialog
@@ -31,6 +33,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -67,6 +70,8 @@ private val languagePickerOptions: List<AppLanguage> = listOf(AppLanguage.System
 fun SettingsScreen(
     selectedLanguage: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
+    keepScreenOn: Boolean,
+    onKeepScreenOnChange: (Boolean) -> Unit,
     onManagePrivacy: () -> Unit,
     onOpenPrivacyPolicy: () -> Unit,
     onOpenTerms: () -> Unit,
@@ -98,6 +103,17 @@ fun SettingsScreen(
                 label = languageLabel,
                 value = selectedLanguageLabel,
                 onClick = { showLanguageDialog = true },
+            )
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = FlashReadDimens.space16),
+                color = MaterialTheme.colorScheme.outline,
+            )
+            SettingsSwitchRow(
+                icon = Icons.Outlined.LightMode,
+                label = stringResource(Res.string.settings_keep_screen_on),
+                subtitle = stringResource(Res.string.settings_keep_screen_on_subtitle),
+                checked = keepScreenOn,
+                onCheckedChange = onKeepScreenOnChange,
             )
         }
         Spacer(Modifier.height(FlashReadDimens.space16))
@@ -300,6 +316,54 @@ private fun SettingsLinkRow(
 }
 
 @Composable
+private fun SettingsSwitchRow(
+    icon: ImageVector,
+    label: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = label,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        supportingContent = {
+            Text(
+                text = subtitle,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        leadingContent = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        },
+        trailingContent = {
+            Switch(
+                checked = checked,
+                onCheckedChange = null,
+            )
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = FlashReadDimens.minTouchTarget)
+            .toggleable(
+                value = checked,
+                onValueChange = onCheckedChange,
+                role = Role.Switch,
+            ),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+    )
+}
+
+@Composable
 private fun AppLanguage.label(): String = when (this) {
     AppLanguage.System -> stringResource(Res.string.settings_language_system)
     is AppLanguage.Language -> when (code) {
@@ -323,6 +387,8 @@ private fun SettingsScreenPreview() {
         SettingsScreen(
             selectedLanguage = AppLanguage.System,
             onLanguageSelected = {},
+            keepScreenOn = true,
+            onKeepScreenOnChange = {},
             onManagePrivacy = {},
             onOpenPrivacyPolicy = {},
             onOpenTerms = {},

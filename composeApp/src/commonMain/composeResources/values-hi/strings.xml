@@ -105,6 +105,8 @@
     <string name="settings_version_cd">संस्करण %1$s</string>
     <string name="settings_language">भाषा</string>
     <string name="settings_language_system">सिस्टम</string>
+    <string name="settings_keep_screen_on">स्क्रीन चालू रखें</string>
+    <string name="settings_keep_screen_on_subtitle">स्पीड रीडिंग के दौरान स्क्रीन बंद नहीं होगी</string>
     <string name="language_en">English</string>
     <string name="language_es">Español</string>
     <string name="language_pt">Português</string>

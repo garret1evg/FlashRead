@@ -64,6 +64,7 @@ import com.evgeniich.flashread.consent.showPrivacyOptionsForm
 import com.evgeniich.flashread.core.locale.resolveLocaleOverride
 import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.data.repository.AppLanguageRepository
+import com.evgeniich.flashread.data.repository.KeepScreenOnRepository
 import com.evgeniich.flashread.locale.AppEnvironment
 import com.evgeniich.flashread.navigation.AppRoute
 import com.evgeniich.flashread.navigation.AppScreen
@@ -104,6 +105,8 @@ import org.jetbrains.compose.resources.stringResource
 fun App() {
     val languageRepository = remember { AppLanguageRepository() }
     var appLanguage by remember { mutableStateOf(languageRepository.load()) }
+    val keepScreenOnRepository = remember { KeepScreenOnRepository() }
+    var keepScreenOn by remember { mutableStateOf(keepScreenOnRepository.load()) }
     val systemLanguageTag = remember { currentSystemLanguageTag() }
     val localeOverride = resolveLocaleOverride(appLanguage, systemLanguageTag)
     val backStack = remember {
@@ -330,6 +333,7 @@ fun App() {
                         ) { book ->
                             SpeedReadPlayerScreen(
                                 book = book,
+                                keepScreenOn = keepScreenOn,
                                 onClose = { backStack.popBack() },
                             )
                         }
@@ -348,6 +352,19 @@ fun App() {
                                 }
                                 languageRepository.save(language)
                                 appLanguage = language
+                            },
+                            keepScreenOn = keepScreenOn,
+                            onKeepScreenOnChange = { enabled ->
+                                if (enabled != keepScreenOn) {
+                                    Analytics.log(
+                                        AnalyticsEvent.SettingsChange(
+                                            settingName = AnalyticsEvent.SettingsChange.SettingName.KeepScreenOn,
+                                            settingValue = enabled.toString(),
+                                        ),
+                                    )
+                                }
+                                keepScreenOnRepository.save(enabled)
+                                keepScreenOn = enabled
                             },
                             onManagePrivacy = { showPrivacyOptionsForm() },
                             onOpenPrivacyPolicy = { backStack.pushIfNeeded(AppRoute.PrivacyPolicy) },

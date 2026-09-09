@@ -105,6 +105,8 @@
     <string name="settings_version_cd">Versão %1$s</string>
     <string name="settings_language">Idioma</string>
     <string name="settings_language_system">Sistema</string>
+    <string name="settings_keep_screen_on">Manter a tela ligada</string>
+    <string name="settings_keep_screen_on_subtitle">Impede que a tela desligue durante a leitura rápida</string>
     <string name="language_en">English</string>
     <string name="language_es">Español</string>
     <string name="language_pt">Português</string>

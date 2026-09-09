@@ -105,6 +105,8 @@
     <string name="settings_version_cd">Version %1$s</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_system">System</string>
+    <string name="settings_keep_screen_on">Keep screen on</string>
+    <string name="settings_keep_screen_on_subtitle">Prevents the screen from turning off during speed reading</string>
     <string name="language_en">English</string>
     <string name="language_es">Español</string>
     <string name="language_pt">Português</string>

@@ -105,6 +105,8 @@
     <string name="settings_version_cd">الإصدار %1$s</string>
     <string name="settings_language">اللغة</string>
     <string name="settings_language_system">النظام</string>
+    <string name="settings_keep_screen_on">إبقاء الشاشة قيد التشغيل</string>
+    <string name="settings_keep_screen_on_subtitle">يمنع إطفاء الشاشة أثناء القراءة السريعة</string>
     <string name="language_en">English</string>
     <string name="language_es">Español</string>
     <string name="language_pt">Português</string>

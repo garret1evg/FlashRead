@@ -58,6 +58,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.keepScreenOn
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -106,6 +107,7 @@ private val PlayerWordLineHeight = 42.sp
 fun SpeedReadPlayerScreen(
     book: Book,
     onClose: () -> Unit = {},
+    keepScreenOn: Boolean = true,
     modifier: Modifier = Modifier,
     viewModel: SpeedReadPlayerViewModel = viewModel(key = book.id) {
         SpeedReadPlayerViewModel(book)
@@ -136,7 +138,9 @@ fun SpeedReadPlayerScreen(
         onPrevious = viewModel::stepBack,
         onNext = viewModel::stepForward,
         onSettingsChange = viewModel::updateSettings,
-        modifier = modifier,
+        modifier = modifier.then(
+            if (keepScreenOn) Modifier.keepScreenOn() else Modifier
+        ),
     )
 }
 
