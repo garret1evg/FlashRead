@@ -121,11 +121,7 @@ class AppNavigationTest {
     }
 
     @Test
-    fun settingsLegalScreens_useScaffoldTopBarAndReturnToSettings() {
-        assertTrue(AppRoute.PrivacyPolicy.showsScaffoldTopBar)
-        assertTrue(AppRoute.Terms.showsScaffoldTopBar)
-        assertFalse(AppRoute.Settings.showsScaffoldTopBar)
-
+    fun settingsLegalScreens_returnToSettings() {
         val backStack = mutableListOf<AppRoute>(AppRoute.Settings)
         backStack.pushIfNeeded(AppRoute.PrivacyPolicy)
         assertEquals(listOf(AppRoute.Settings, AppRoute.PrivacyPolicy), backStack.toList())
@@ -137,9 +133,8 @@ class AppNavigationTest {
     }
 
     @Test
-    fun bookEditor_isNestedWithoutScaffoldTopBar() {
+    fun bookEditor_isNested() {
         assertFalse(AppRoute.BookEditor.isTopLevel)
-        assertFalse(AppRoute.BookEditor.showsScaffoldTopBar)
         assertNull(AppScreen.fromRoute(AppRoute.BookEditor))
 
         val backStack = mutableListOf<AppRoute>(AppRoute.Library)
@@ -210,9 +205,8 @@ class AppNavigationTest {
     }
 
     @Test
-    fun quickSpeedRead_isNestedWithoutScaffoldTopBar() {
+    fun quickSpeedRead_isNested() {
         assertFalse(AppRoute.QuickSpeedRead.isTopLevel)
-        assertFalse(AppRoute.QuickSpeedRead.showsScaffoldTopBar)
         assertNull(AppScreen.fromRoute(AppRoute.QuickSpeedRead))
 
         val backStack = mutableListOf<AppRoute>(AppRoute.Home)

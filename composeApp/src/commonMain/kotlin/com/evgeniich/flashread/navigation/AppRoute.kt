@@ -31,8 +31,3 @@ val AppRoute.isTopLevel: Boolean
 /** Banner ads sit above the bottom bar on Home and Library only. */
 val AppRoute.showsBannerAd: Boolean
     get() = this is AppRoute.Home || this is AppRoute.Library
-
-val AppRoute.showsScaffoldTopBar: Boolean
-    get() = this is AppRoute.SpeedRead ||
-        this is AppRoute.PrivacyPolicy ||
-        this is AppRoute.Terms

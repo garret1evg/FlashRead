@@ -49,6 +49,8 @@ object FlashReadDimens {
     val typeIconSize = 40.dp
     val coverThumbWidth = 48.dp
     val coverThumbHeight = 72.dp
+    /** Approximate height of an adaptive banner ad to reserve space. */
+    val bannerAdHeight = 50.dp
 }
 
 object FlashReadShapes {

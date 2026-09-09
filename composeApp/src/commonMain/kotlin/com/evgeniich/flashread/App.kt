@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.Home
@@ -28,7 +27,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -37,8 +35,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,7 +74,6 @@ import com.evgeniich.flashread.navigation.openReaderFromLibrary
 import com.evgeniich.flashread.navigation.popBack
 import com.evgeniich.flashread.navigation.pushIfNeeded
 import com.evgeniich.flashread.navigation.showsBannerAd
-import com.evgeniich.flashread.navigation.showsScaffoldTopBar
 import com.evgeniich.flashread.platform.ObserveExternalBookOpens
 import com.evgeniich.flashread.platform.currentSystemLanguageTag
 import com.evgeniich.flashread.platform.launchRouteForExternalBookOpen
@@ -123,7 +118,6 @@ fun App() {
         val snackbarHostState = remember { SnackbarHostState() }
         val defaultNewBookTitle = stringResource(Res.string.default_new_book_title)
         val defaultSpeedReadTitle = stringResource(Res.string.default_speed_read_title)
-        val backLabel = stringResource(Res.string.action_back)
         val libraryBusyMessage = if (uiState.isImportingExternalBook) {
             stringResource(Res.string.library_opening_book)
         } else {
@@ -144,7 +138,6 @@ fun App() {
         val currentRoute = backStack.lastOrNull() ?: AppRoute.Home
         val currentScreen = AppScreen.fromRoute(currentRoute)
         val showBottomBar = currentRoute.isTopLevel
-        val showTopBar = currentRoute.showsScaffoldTopBar
 
         fun openReader(bookId: String, source: AnalyticsEvent.ReaderStart.Source) {
             appViewModel.selectBook(bookId)
@@ -194,39 +187,17 @@ fun App() {
             contentWindowInsets = WindowInsets.safeDrawing,
             containerColor = MaterialTheme.colorScheme.background,
             snackbarHost = { SnackbarHost(snackbarHostState) },
-            topBar = {
-                if (showTopBar) {
-                    TopAppBar(
-                        title = {
-                            Text(
-                                text = currentRoute.screenTitle(),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        navigationIcon = {
-                            if (!currentRoute.isTopLevel) {
-                                IconButton(onClick = { backStack.popBack() }) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = backLabel,
-                                    )
-                                }
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.background,
-                            titleContentColor = MaterialTheme.colorScheme.onBackground,
-                            navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
-                        ),
-                    )
-                }
-            },
             bottomBar = {
                 if (showBottomBar) {
+                    val showBannerSlot = canShowBannerAds()
                     Column {
-                        if (currentRoute.showsBannerAd && canShowBannerAds()) {
-                            BannerAdHost(modifier = Modifier.fillMaxWidth())
+                        if (showBannerSlot) {
+                            if (currentRoute.showsBannerAd) {
+                                BannerAdHost(modifier = Modifier.fillMaxWidth())
+                            } else {
+                                // Reserve banner height on Settings to avoid jump
+                                Spacer(Modifier.height(FlashReadDimens.bannerAdHeight))
+                            }
                             Spacer(Modifier.height(FlashReadDimens.space12))
                         }
                         NavigationBar(
@@ -347,6 +318,7 @@ fun App() {
                         ) { book ->
                             SpeedReadSetupScreen(
                                 book = book,
+                                onBack = { backStack.popBack() },
                                 onContinue = { backStack.pushIfNeeded(AppRoute.SpeedReadPlayer) },
                             )
                         }
@@ -383,10 +355,16 @@ fun App() {
                         )
                     }
                     entry<AppRoute.PrivacyPolicy> {
-                        LegalDocumentScreen(document = LegalDocuments.privacyPolicy)
+                        LegalDocumentScreen(
+                            document = LegalDocuments.privacyPolicy,
+                            onBack = { backStack.popBack() },
+                        )
                     }
                     entry<AppRoute.Terms> {
-                        LegalDocumentScreen(document = LegalDocuments.termsAndConditions)
+                        LegalDocumentScreen(
+                            document = LegalDocuments.termsAndConditions,
+                            onBack = { backStack.popBack() },
+                        )
                     }
                     entry<AppRoute.BookEditor> {
                         val editorBookId = uiState.editorBookId
@@ -621,19 +599,6 @@ private fun HomeActionButton(
             overflow = TextOverflow.Ellipsis,
         )
     }
-}
-
-@Composable
-private fun AppRoute.screenTitle(): String = when (this) {
-    AppRoute.Home -> stringResource(Res.string.screen_home)
-    AppRoute.Library -> stringResource(Res.string.screen_library)
-    AppRoute.Reader -> stringResource(Res.string.screen_reader)
-    AppRoute.SpeedRead, AppRoute.QuickSpeedRead -> stringResource(Res.string.screen_speed_read)
-    AppRoute.SpeedReadPlayer -> stringResource(Res.string.screen_speed_read_player)
-    AppRoute.Settings -> stringResource(Res.string.screen_settings)
-    AppRoute.PrivacyPolicy -> stringResource(Res.string.screen_privacy_policy)
-    AppRoute.Terms -> stringResource(Res.string.screen_terms)
-    AppRoute.BookEditor -> stringResource(Res.string.screen_editor)
 }
 
 @Composable

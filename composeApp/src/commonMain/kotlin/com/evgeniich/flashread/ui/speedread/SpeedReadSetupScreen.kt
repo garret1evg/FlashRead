@@ -7,15 +7,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -23,6 +27,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -30,6 +36,8 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -63,6 +71,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun SpeedReadSetupScreen(
     book: Book,
+    onBack: () -> Unit,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SpeedReadSetupViewModel = viewModel(key = book.id) {
@@ -76,12 +85,43 @@ fun SpeedReadSetupScreen(
     val wpmValueCd = stringResource(Res.string.wpm_value_cd, settings.wpm)
     val wpmSliderCd = stringResource(Res.string.wpm_slider_cd)
     val startLabel = stringResource(Res.string.start_speed_read)
+    val title = stringResource(Res.string.screen_speed_read)
+    val backLabel = stringResource(Res.string.action_back)
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
+        TopAppBar(
+            title = {
+                Text(
+                    text = title,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            },
+            navigationIcon = {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier
+                        .size(FlashReadDimens.minTouchTarget)
+                        .semantics { contentDescription = backLabel },
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = backLabel,
+                    )
+                }
+            },
+            windowInsets = WindowInsets(0, 0, 0, 0),
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.background,
+                titleContentColor = MaterialTheme.colorScheme.onBackground,
+                navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+            ),
+        )
+
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -396,6 +436,7 @@ private fun SpeedReadSetupScreenPreview() {
     FlashReadTheme {
         SpeedReadSetupScreen(
             book = book,
+            onBack = {},
             onContinue = {},
             viewModel = remember { SpeedReadSetupViewModel(book) },
         )
