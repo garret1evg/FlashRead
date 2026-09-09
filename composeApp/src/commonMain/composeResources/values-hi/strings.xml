@@ -68,8 +68,6 @@
     <string name="reader_font_size_cd">फ़ॉन्ट आकार %1$d पॉइंट</string>
     <string name="reader_line_height">पंक्ति अंतराल</string>
     <string name="reader_line_height_cd">पंक्ति अंतराल %1$s</string>
-    <string name="reader_theme">थीम</string>
-    <string name="reader_theme_cd">थीम: %1$s</string>
     <string name="reader_theme_light">हल्की</string>
     <string name="reader_theme_sepia">सेपिया</string>
     <string name="reader_theme_dark">गहरी</string>
@@ -105,6 +103,8 @@
     <string name="settings_version_cd">संस्करण %1$s</string>
     <string name="settings_language">भाषा</string>
     <string name="settings_language_system">सिस्टम</string>
+    <string name="settings_theme">थीम</string>
+    <string name="settings_theme_system">सिस्टम</string>
     <string name="settings_keep_screen_on">स्क्रीन चालू रखें</string>
     <string name="settings_keep_screen_on_subtitle">स्पीड रीडिंग के दौरान स्क्रीन बंद नहीं होगी</string>
     <string name="language_en">English</string>

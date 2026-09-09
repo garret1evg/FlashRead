@@ -16,9 +16,6 @@ internal class SettingsChangeLogger(
     private val pending = mutableMapOf<AnalyticsEvent.SettingsChange.SettingName, String>()
 
     fun logReaderDiff(previous: ReaderTextSettings, updated: ReaderTextSettings) {
-        if (previous.theme != updated.theme) {
-            logImmediate(AnalyticsEvent.SettingsChange.SettingName.Theme, updated.theme.name.lowercase())
-        }
         if (previous.alignment != updated.alignment) {
             logImmediate(
                 AnalyticsEvent.SettingsChange.SettingName.Alignment,

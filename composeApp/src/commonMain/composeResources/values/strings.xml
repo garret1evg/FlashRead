@@ -68,8 +68,6 @@
     <string name="reader_font_size_cd">Font size %1$d points</string>
     <string name="reader_line_height">Line height</string>
     <string name="reader_line_height_cd">Line height %1$s</string>
-    <string name="reader_theme">Theme</string>
-    <string name="reader_theme_cd">Theme: %1$s</string>
     <string name="reader_theme_light">Light</string>
     <string name="reader_theme_sepia">Sepia</string>
     <string name="reader_theme_dark">Dark</string>
@@ -105,6 +103,8 @@
     <string name="settings_version_cd">Version %1$s</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_system">System</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System</string>
     <string name="settings_keep_screen_on">Keep screen on</string>
     <string name="settings_keep_screen_on_subtitle">Prevents the screen from turning off during speed reading</string>
     <string name="language_en">English</string>

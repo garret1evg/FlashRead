@@ -64,6 +64,7 @@ import com.evgeniich.flashread.consent.showPrivacyOptionsForm
 import com.evgeniich.flashread.core.locale.resolveLocaleOverride
 import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.data.repository.AppLanguageRepository
+import com.evgeniich.flashread.data.repository.AppThemeRepository
 import com.evgeniich.flashread.data.repository.KeepScreenOnRepository
 import com.evgeniich.flashread.locale.AppEnvironment
 import com.evgeniich.flashread.navigation.AppRoute
@@ -76,6 +77,7 @@ import com.evgeniich.flashread.navigation.popBack
 import com.evgeniich.flashread.navigation.pushIfNeeded
 import com.evgeniich.flashread.navigation.showsBannerAd
 import com.evgeniich.flashread.platform.ObserveExternalBookOpens
+import com.evgeniich.flashread.platform.applyPlatformTheme
 import com.evgeniich.flashread.platform.currentSystemLanguageTag
 import com.evgeniich.flashread.platform.launchRouteForExternalBookOpen
 import com.evgeniich.flashread.platform.rememberBookImportLauncher
@@ -105,6 +107,8 @@ import org.jetbrains.compose.resources.stringResource
 fun App() {
     val languageRepository = remember { AppLanguageRepository() }
     var appLanguage by remember { mutableStateOf(languageRepository.load()) }
+    val themeRepository = remember { AppThemeRepository() }
+    var appTheme by remember { mutableStateOf(themeRepository.load()) }
     val keepScreenOnRepository = remember { KeepScreenOnRepository() }
     var keepScreenOn by remember { mutableStateOf(keepScreenOnRepository.load()) }
     val systemLanguageTag = remember { currentSystemLanguageTag() }
@@ -114,7 +118,7 @@ fun App() {
     }
 
     AppEnvironment(localeOverride) {
-        FlashReadTheme {
+        FlashReadTheme(theme = appTheme) {
         val appViewModel: AppViewModel = viewModel { AppViewModel() }
         val uiState by appViewModel.uiState.collectAsStateWithLifecycle()
         val currentBook = uiState.currentBook
@@ -125,6 +129,10 @@ fun App() {
             stringResource(Res.string.library_opening_book)
         } else {
             null
+        }
+
+        LaunchedEffect(appTheme) {
+            applyPlatformTheme(appTheme)
         }
 
         LaunchedEffect(appViewModel) {
@@ -352,6 +360,20 @@ fun App() {
                                 }
                                 languageRepository.save(language)
                                 appLanguage = language
+                            },
+                            selectedTheme = appTheme,
+                            onThemeSelected = { theme ->
+                                if (theme != appTheme) {
+                                    Analytics.log(
+                                        AnalyticsEvent.SettingsChange(
+                                            settingName = AnalyticsEvent.SettingsChange.SettingName.Theme,
+                                            settingValue = theme.toStorage(),
+                                        ),
+                                    )
+                                }
+                                themeRepository.save(theme)
+                                appTheme = theme
+                                applyPlatformTheme(theme)
                             },
                             keepScreenOn = keepScreenOn,
                             onKeepScreenOnChange = { enabled ->

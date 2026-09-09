@@ -68,8 +68,6 @@
     <string name="reader_font_size_cd">Розмір шрифту %1$d пунктів</string>
     <string name="reader_line_height">Міжрядковий інтервал</string>
     <string name="reader_line_height_cd">Міжрядковий інтервал %1$s</string>
-    <string name="reader_theme">Тема</string>
-    <string name="reader_theme_cd">Тема: %1$s</string>
     <string name="reader_theme_light">Світла</string>
     <string name="reader_theme_sepia">Сепія</string>
     <string name="reader_theme_dark">Темна</string>
@@ -105,6 +103,8 @@
     <string name="settings_version_cd">Версія %1$s</string>
     <string name="settings_language">Мова</string>
     <string name="settings_language_system">Системна</string>
+    <string name="settings_theme">Тема</string>
+    <string name="settings_theme_system">Системна</string>
     <string name="settings_keep_screen_on">Не вимикати екран</string>
     <string name="settings_keep_screen_on_subtitle">Екран не гасне під час швидкого читання</string>
     <string name="language_en">English</string>

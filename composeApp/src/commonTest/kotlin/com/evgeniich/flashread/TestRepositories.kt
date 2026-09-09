@@ -5,7 +5,9 @@ import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.core.model.ReadingPosition
 import com.evgeniich.flashread.core.reading.ReaderTextSettings
 import com.evgeniich.flashread.core.speedread.SpeedReadSettings
+import com.evgeniich.flashread.core.theme.AppTheme
 import com.evgeniich.flashread.data.repository.AppLanguageRepository
+import com.evgeniich.flashread.data.repository.AppThemeRepository
 import com.evgeniich.flashread.data.repository.BookRepository
 import com.evgeniich.flashread.data.repository.CoverRepository
 import com.evgeniich.flashread.data.repository.KeepScreenOnRepository
@@ -79,6 +81,15 @@ internal fun memoryAppLanguageRepository(
     return AppLanguageRepository(
         onLoad = { language[0] },
         onSave = { language[0] = it },
+    )
+}
+
+internal fun memoryAppThemeRepository(
+    theme: Array<AppTheme> = arrayOf(AppTheme.System),
+): AppThemeRepository {
+    return AppThemeRepository(
+        onLoad = { theme[0] },
+        onSave = { theme[0] = it },
     )
 }
 

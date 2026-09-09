@@ -5,7 +5,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,7 +33,6 @@ import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -81,12 +79,10 @@ import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.core.reading.ReaderAlignment
 import com.evgeniich.flashread.core.reading.ReaderTextDefaults
 import com.evgeniich.flashread.core.reading.ReaderTextSettings
-import com.evgeniich.flashread.core.reading.ReaderTheme
 import com.evgeniich.flashread.core.reading.bookProgressPercent
 import com.evgeniich.flashread.resources.Res
 import com.evgeniich.flashread.resources.*
 import com.evgeniich.flashread.ui.library.MaterialTitleFormatter
-import com.evgeniich.flashread.ui.theme.FlashReadColors
 import com.evgeniich.flashread.ui.theme.FlashReadDimens
 import com.evgeniich.flashread.ui.theme.FlashReadShapes
 import com.evgeniich.flashread.ui.theme.FlashReadTheme
@@ -132,7 +128,7 @@ fun ReaderScreen(
     val progressPercent = remember(paragraphs.size, visibleParagraphIndex) {
         bookProgressPercent(visibleParagraphIndex, paragraphs.size)
     }
-    val palette = remember(settings.theme) { settings.theme.palette() }
+    val palette = readerPalette()
     val displayTitle = remember(book.title) { MaterialTitleFormatter.displayTitle(book.title) }
     val backLabel = stringResource(Res.string.action_back)
     val textSettingsLabel = stringResource(Res.string.reader_text_settings)
@@ -271,8 +267,8 @@ fun ReaderScreen(
                 .semantics { contentDescription = openSpeedReadLabel },
             shape = FlashReadShapes.button,
             colors = ButtonDefaults.buttonColors(
-                containerColor = FlashReadColors.primary,
-                contentColor = FlashReadColors.onPrimary,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
             ),
             contentPadding = PaddingValues(horizontal = FlashReadDimens.space16),
         ) {
@@ -313,13 +309,13 @@ private fun ReadingProgressRow(
                 .weight(1f)
                 .height(6.dp)
                 .clip(RoundedCornerShape(FlashReadDimens.space4)),
-            color = FlashReadColors.primary,
+            color = MaterialTheme.colorScheme.primary,
             trackColor = palette.progressTrack,
         )
         Text(
             text = stringResource(Res.string.percent_value, progressPercent),
             style = MaterialTheme.typography.labelLarge,
-            color = FlashReadColors.primary,
+            color = MaterialTheme.colorScheme.primary,
             maxLines = 1,
         )
     }
@@ -387,40 +383,6 @@ private fun ReaderTextSettingsSheet(
                     )
                 },
             )
-
-            Spacer(Modifier.height(FlashReadDimens.space20))
-            Text(
-                text = stringResource(Res.string.reader_theme),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Spacer(Modifier.height(FlashReadDimens.space8))
-            FlowRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .selectableGroup(),
-                horizontalArrangement = Arrangement.spacedBy(FlashReadDimens.space8),
-                verticalArrangement = Arrangement.spacedBy(FlashReadDimens.space8),
-            ) {
-                ReaderTheme.entries.forEach { theme ->
-                    val themeLabel = theme.label()
-                    val themeCd = stringResource(Res.string.reader_theme_cd, themeLabel)
-                    FilterChip(
-                        selected = settings.theme == theme,
-                        onClick = { onSettingsChange(settings.copy(theme = theme)) },
-                        label = {
-                            Text(
-                                text = themeLabel,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        modifier = Modifier
-                            .heightIn(min = FlashReadDimens.minTouchTarget)
-                            .semantics { contentDescription = themeCd },
-                    )
-                }
-            }
 
             Spacer(Modifier.height(FlashReadDimens.space20))
             Text(
@@ -565,38 +527,17 @@ private fun readerBodyStyle(settings: ReaderTextSettings, color: Color): TextSty
     )
 }
 
-private fun ReaderTheme.palette(): ReaderPalette = when (this) {
-    ReaderTheme.Light -> ReaderPalette(
-        background = FlashReadColors.background,
-        onBackground = FlashReadColors.textPrimary,
-        outline = FlashReadColors.outline,
-        progressTrack = FlashReadColors.primaryContainer,
-        wordHighlight = FlashReadColors.primary,
-        wordHighlightText = FlashReadColors.onPrimary,
-    )
-    ReaderTheme.Sepia -> ReaderPalette(
-        background = Color(0xFFF4ECD8),
-        onBackground = Color(0xFF5C4B32),
-        outline = Color(0xFFE6D9BF),
-        progressTrack = Color(0xFFE8DCC4),
-        wordHighlight = Color(0xFF8B5A12),
-        wordHighlightText = Color(0xFFFFF8E7),
-    )
-    ReaderTheme.Dark -> ReaderPalette(
-        background = Color(0xFF121212),
-        onBackground = Color(0xFFE8E6E3),
-        outline = Color(0xFF3A3A3A),
-        progressTrack = Color(0xFF2C2C2C),
-        wordHighlight = Color(0xFFC4B0F0),
-        wordHighlightText = Color(0xFF2D1B54),
-    )
-}
-
 @Composable
-private fun ReaderTheme.label(): String = when (this) {
-    ReaderTheme.Light -> stringResource(Res.string.reader_theme_light)
-    ReaderTheme.Sepia -> stringResource(Res.string.reader_theme_sepia)
-    ReaderTheme.Dark -> stringResource(Res.string.reader_theme_dark)
+private fun readerPalette(): ReaderPalette {
+    val colors = MaterialTheme.colorScheme
+    return ReaderPalette(
+        background = colors.background,
+        onBackground = colors.onBackground,
+        outline = colors.outline,
+        progressTrack = colors.primaryContainer,
+        wordHighlight = colors.primary,
+        wordHighlightText = colors.onPrimary,
+    )
 }
 
 private fun ReaderAlignment.toTextAlign(): TextAlign = when (this) {

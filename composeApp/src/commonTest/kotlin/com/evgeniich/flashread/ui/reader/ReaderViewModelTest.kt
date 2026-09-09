@@ -8,7 +8,6 @@ import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.core.model.ReadingPosition
 import com.evgeniich.flashread.core.reading.ReaderTextDefaults
 import com.evgeniich.flashread.core.reading.ReaderTextSettings
-import com.evgeniich.flashread.core.reading.ReaderTheme
 import com.evgeniich.flashread.core.reading.withReadingStats
 import com.evgeniich.flashread.memoryReaderTextSettingsRepository
 import com.evgeniich.flashread.memoryReadingSessionRepository
@@ -66,10 +65,9 @@ class ReaderViewModelTest {
         assertEquals(4, positions["book-1"])
 
         viewModel.updateSettings(
-            ReaderTextSettings(fontSizeSp = 99, theme = ReaderTheme.Dark),
+            ReaderTextSettings(fontSizeSp = 99),
         )
         assertEquals(ReaderTextDefaults.MAX_FONT_SIZE_SP, viewModel.settings.value.fontSizeSp)
-        assertEquals(ReaderTheme.Dark, storedSettings[0].theme)
         assertEquals(ReaderTextDefaults.MAX_FONT_SIZE_SP, storedSettings[0].fontSizeSp)
     }
 

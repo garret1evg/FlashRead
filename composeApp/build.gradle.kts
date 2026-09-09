@@ -83,6 +83,7 @@ kotlin {
     sourceSets {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.appcompat)
             implementation(libs.compose.uiToolingPreview)
             implementation(files(stripKxml2XmlPull.flatMap { it.outputJar }))
             implementation(libs.timber)

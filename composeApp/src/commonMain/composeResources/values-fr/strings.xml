@@ -68,8 +68,6 @@
     <string name="reader_font_size_cd">Taille de police : %1$d points</string>
     <string name="reader_line_height">Interligne</string>
     <string name="reader_line_height_cd">Interligne %1$s</string>
-    <string name="reader_theme">Thème</string>
-    <string name="reader_theme_cd">Thème : %1$s</string>
     <string name="reader_theme_light">Clair</string>
     <string name="reader_theme_sepia">Sépia</string>
     <string name="reader_theme_dark">Sombre</string>
@@ -105,6 +103,8 @@
     <string name="settings_version_cd">Version %1$s</string>
     <string name="settings_language">Langue</string>
     <string name="settings_language_system">Système</string>
+    <string name="settings_theme">Thème</string>
+    <string name="settings_theme_system">Système</string>
     <string name="settings_keep_screen_on">Garder l'écran allumé</string>
     <string name="settings_keep_screen_on_subtitle">Empêche l'écran de s'éteindre pendant la lecture rapide</string>
     <string name="language_en">English</string>

@@ -7,8 +7,11 @@ import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.evgeniich.flashread.core.theme.AppTheme
 
 object FlashReadColors {
     val background = Color(0xFFF8F7FC)
@@ -32,6 +35,18 @@ object FlashReadDarkColors {
     val outline = Color(0xFF49454F)
     val primaryContainer = Color(0xFF4A3A73)
     val onPrimaryContainer = Color(0xFFEDE7F6)
+}
+
+object FlashReadSepiaColors {
+    val background = Color(0xFFF4ECD8)
+    val surface = Color(0xFFFFF8E7)
+    val primary = Color(0xFF8B5A12)
+    val onPrimary = Color(0xFFFFF8E7)
+    val textPrimary = Color(0xFF5C4B32)
+    val textSecondary = Color(0xFF8A7A62)
+    val outline = Color(0xFFE6D9BF)
+    val primaryContainer = Color(0xFFE8DCC4)
+    val onPrimaryContainer = Color(0xFF5C4B32)
 }
 
 object FlashReadDimens {
@@ -81,6 +96,25 @@ private val FlashReadLightColorScheme = lightColorScheme(
     outlineVariant = FlashReadColors.outline,
 )
 
+private val FlashReadSepiaColorScheme = lightColorScheme(
+    primary = FlashReadSepiaColors.primary,
+    onPrimary = FlashReadSepiaColors.onPrimary,
+    primaryContainer = FlashReadSepiaColors.primaryContainer,
+    onPrimaryContainer = FlashReadSepiaColors.onPrimaryContainer,
+    secondary = FlashReadSepiaColors.primary,
+    onSecondary = FlashReadSepiaColors.onPrimary,
+    secondaryContainer = FlashReadSepiaColors.primaryContainer,
+    onSecondaryContainer = FlashReadSepiaColors.onPrimaryContainer,
+    background = FlashReadSepiaColors.background,
+    onBackground = FlashReadSepiaColors.textPrimary,
+    surface = FlashReadSepiaColors.surface,
+    onSurface = FlashReadSepiaColors.textPrimary,
+    surfaceVariant = FlashReadSepiaColors.primaryContainer,
+    onSurfaceVariant = FlashReadSepiaColors.textSecondary,
+    outline = FlashReadSepiaColors.outline,
+    outlineVariant = FlashReadSepiaColors.outline,
+)
+
 private val FlashReadDarkColorScheme = darkColorScheme(
     primary = FlashReadDarkColors.primary,
     onPrimary = FlashReadDarkColors.onPrimary,
@@ -108,14 +142,31 @@ private val FlashReadMaterialShapes = Shapes(
     extraLarge = FlashReadShapes.sheet,
 )
 
+val LocalAppTheme = staticCompositionLocalOf { AppTheme.Light }
+
+fun AppTheme.splashBackground(systemDark: Boolean): Color = when (resolve(systemDark)) {
+    AppTheme.Dark -> FlashReadDarkColors.background
+    AppTheme.Sepia -> FlashReadSepiaColors.background
+    AppTheme.Light, AppTheme.System -> FlashReadColors.background
+}
+
 @Composable
 fun FlashReadTheme(
+    theme: AppTheme = AppTheme.System,
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) FlashReadDarkColorScheme else FlashReadLightColorScheme,
-        shapes = FlashReadMaterialShapes,
-        content = content,
-    )
+    val resolved = theme.resolve(systemDark = darkTheme)
+    ApplyWindowLightBars(light = resolved != AppTheme.Dark)
+    CompositionLocalProvider(LocalAppTheme provides resolved) {
+        MaterialTheme(
+            colorScheme = when (resolved) {
+                AppTheme.Dark -> FlashReadDarkColorScheme
+                AppTheme.Sepia -> FlashReadSepiaColorScheme
+                AppTheme.Light, AppTheme.System -> FlashReadLightColorScheme
+            },
+            shapes = FlashReadMaterialShapes,
+            content = content,
+        )
+    }
 }

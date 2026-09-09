@@ -68,8 +68,6 @@
     <string name="reader_font_size_cd">Размер шрифта %1$d пунктов</string>
     <string name="reader_line_height">Межстрочный интервал</string>
     <string name="reader_line_height_cd">Межстрочный интервал %1$s</string>
-    <string name="reader_theme">Тема</string>
-    <string name="reader_theme_cd">Тема: %1$s</string>
     <string name="reader_theme_light">Светлая</string>
     <string name="reader_theme_sepia">Сепия</string>
     <string name="reader_theme_dark">Тёмная</string>
@@ -105,6 +103,8 @@
     <string name="settings_version_cd">Версия %1$s</string>
     <string name="settings_language">Язык</string>
     <string name="settings_language_system">Системный</string>
+    <string name="settings_theme">Тема</string>
+    <string name="settings_theme_system">Системная</string>
     <string name="settings_keep_screen_on">Не выключать экран</string>
     <string name="settings_keep_screen_on_subtitle">Экран не гаснет во время скорочтения</string>
     <string name="language_en">English</string>

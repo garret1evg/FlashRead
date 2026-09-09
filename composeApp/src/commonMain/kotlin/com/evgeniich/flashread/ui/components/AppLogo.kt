@@ -13,12 +13,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.evgeniich.flashread.core.theme.AppTheme
 import com.evgeniich.flashread.resources.Res
 import com.evgeniich.flashread.resources.*
 import com.evgeniich.flashread.ui.theme.FlashReadDimens
+import com.evgeniich.flashread.ui.theme.LocalAppTheme
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -28,9 +32,18 @@ fun AppLogo(
     size: Dp = 40.dp,
     contentDescription: String? = stringResource(Res.string.app_name),
 ) {
+    val colorFilter = if (LocalAppTheme.current == AppTheme.Sepia) {
+        ColorFilter.tint(
+            color = MaterialTheme.colorScheme.primary,
+            blendMode = BlendMode.Color,
+        )
+    } else {
+        null
+    }
     Image(
         painter = painterResource(Res.drawable.app_logo),
         contentDescription = contentDescription,
+        colorFilter = colorFilter,
         modifier = modifier
             .size(size)
             .clip(CircleShape),

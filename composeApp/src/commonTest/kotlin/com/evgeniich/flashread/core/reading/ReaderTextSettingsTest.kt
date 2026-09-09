@@ -10,7 +10,6 @@ class ReaderTextSettingsTest {
         val settings = ReaderTextSettings()
         assertEquals(18, settings.fontSizeSp)
         assertEquals(1.55f, settings.lineHeightMultiplier, 0.001f)
-        assertEquals(ReaderTheme.Light, settings.theme)
         assertEquals(ReaderAlignment.Start, settings.alignment)
         assertEquals(settings, settings.normalized())
     }

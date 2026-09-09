@@ -23,20 +23,23 @@ object AndroidAppContext {
         get() = CurrentActivityTracker.activity
 
     fun init(context: Context) {
-        applicationContext = context.applicationContext
+        applicationContext = context.applicationContext ?: context
         plantTimberIfNeeded(applicationContext)
         applyAnalyticsConsent(applicationContext)
         applyCrashlyticsConsent(applicationContext)
-        (applicationContext as? Application)?.let(CurrentActivityTracker::register)
+        (applicationContext as? Application ?: context as? Application)
+            ?.let(CurrentActivityTracker::register)
     }
 
     private fun plantTimberIfNeeded(context: Context) {
-        if (Timber.forest().isNotEmpty()) return
         val debuggable = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
-        if (debuggable) {
+        if (debuggable && Timber.forest().none { it is Timber.DebugTree }) {
             Timber.plant(Timber.DebugTree())
         }
-        if (FirebaseApp.getApps(context).isNotEmpty()) {
+        if (
+            FirebaseApp.getApps(context).isNotEmpty() &&
+            Timber.forest().none { it is CrashlyticsTree }
+        ) {
             Timber.plant(CrashlyticsTree())
         }
     }

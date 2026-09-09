@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Policy
 import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material3.AlertDialog
@@ -54,6 +55,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.evgeniich.flashread.consent.isPrivacyOptionsRequired
 import com.evgeniich.flashread.core.locale.AppLanguage
+import com.evgeniich.flashread.core.theme.AppTheme
 import com.evgeniich.flashread.platform.AppInfo
 import com.evgeniich.flashread.resources.Res
 import com.evgeniich.flashread.resources.*
@@ -70,6 +72,8 @@ private val languagePickerOptions: List<AppLanguage> = listOf(AppLanguage.System
 fun SettingsScreen(
     selectedLanguage: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
+    selectedTheme: AppTheme,
+    onThemeSelected: (AppTheme) -> Unit,
     keepScreenOn: Boolean,
     onKeepScreenOnChange: (Boolean) -> Unit,
     onManagePrivacy: () -> Unit,
@@ -79,8 +83,11 @@ fun SettingsScreen(
     versionName: String = AppInfo.versionName,
 ) {
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
     val languageLabel = stringResource(Res.string.settings_language)
     val selectedLanguageLabel = selectedLanguage.label()
+    val themeLabel = stringResource(Res.string.settings_theme)
+    val selectedThemeLabel = selectedTheme.label()
 
     Column(
         modifier = modifier
@@ -103,6 +110,16 @@ fun SettingsScreen(
                 label = languageLabel,
                 value = selectedLanguageLabel,
                 onClick = { showLanguageDialog = true },
+            )
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = FlashReadDimens.space16),
+                color = MaterialTheme.colorScheme.outline,
+            )
+            SettingsLinkRow(
+                icon = Icons.Outlined.Palette,
+                label = themeLabel,
+                value = selectedThemeLabel,
+                onClick = { showThemeDialog = true },
             )
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = FlashReadDimens.space16),
@@ -193,6 +210,17 @@ fun SettingsScreen(
             },
         )
     }
+
+    if (showThemeDialog) {
+        ThemePickerDialog(
+            selectedTheme = selectedTheme,
+            onDismiss = { showThemeDialog = false },
+            onThemeSelected = { theme ->
+                showThemeDialog = false
+                onThemeSelected(theme)
+            },
+        )
+    }
 }
 
 @Composable
@@ -241,6 +269,70 @@ private fun LanguagePickerDialog(
                             .selectable(
                                 selected = selected,
                                 onClick = { onLanguageSelected(option) },
+                                role = Role.RadioButton,
+                            ),
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
+            ) {
+                Text(stringResource(Res.string.action_close))
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = FlashReadShapes.card,
+    )
+}
+
+@Composable
+private fun ThemePickerDialog(
+    selectedTheme: AppTheme,
+    onDismiss: () -> Unit,
+    onThemeSelected: (AppTheme) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(Res.string.settings_theme),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .selectableGroup(),
+            ) {
+                AppTheme.entries.forEach { option ->
+                    val selected = option == selectedTheme
+                    val label = option.label()
+                    ListItem(
+                        headlineContent = {
+                            Text(
+                                text = label,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        leadingContent = {
+                            RadioButton(
+                                selected = selected,
+                                onClick = null,
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = FlashReadDimens.minTouchTarget)
+                            .selectable(
+                                selected = selected,
+                                onClick = { onThemeSelected(option) },
                                 role = Role.RadioButton,
                             ),
                         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
@@ -364,6 +456,14 @@ private fun SettingsSwitchRow(
 }
 
 @Composable
+private fun AppTheme.label(): String = when (this) {
+    AppTheme.System -> stringResource(Res.string.settings_theme_system)
+    AppTheme.Light -> stringResource(Res.string.reader_theme_light)
+    AppTheme.Sepia -> stringResource(Res.string.reader_theme_sepia)
+    AppTheme.Dark -> stringResource(Res.string.reader_theme_dark)
+}
+
+@Composable
 private fun AppLanguage.label(): String = when (this) {
     AppLanguage.System -> stringResource(Res.string.settings_language_system)
     is AppLanguage.Language -> when (code) {
@@ -388,6 +488,8 @@ private fun SettingsScreenPreview() {
         SettingsScreen(
             selectedLanguage = AppLanguage.System,
             onLanguageSelected = {},
+            selectedTheme = AppTheme.System,
+            onThemeSelected = {},
             keepScreenOn = true,
             onKeepScreenOnChange = {},
             onManagePrivacy = {},

@@ -8,9 +8,11 @@ import androidx.activity.enableEdgeToEdge
 import com.evgeniich.flashread.ads.AdMobManager
 import com.evgeniich.flashread.consent.ConsentManager
 import com.evgeniich.flashread.platform.ExternalBookImporter
+import com.evgeniich.flashread.platform.applyLaunchTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        applyLaunchTheme(this)
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) {

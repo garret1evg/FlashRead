@@ -101,6 +101,7 @@ tasks.configureEach {
 dependencies {
     implementation(projects.composeApp)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.appcompat)
     debugImplementation(libs.compose.uiTooling)
 
     implementation(platform(libs.firebase.bom))

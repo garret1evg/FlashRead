@@ -5,7 +5,6 @@ import kotlin.math.roundToInt
 data class ReaderTextSettings(
     val fontSizeSp: Int = ReaderTextDefaults.DEFAULT_FONT_SIZE_SP,
     val lineHeightMultiplier: Float = ReaderTextDefaults.DEFAULT_LINE_HEIGHT,
-    val theme: ReaderTheme = ReaderTextDefaults.DEFAULT_THEME,
     val alignment: ReaderAlignment = ReaderTextDefaults.DEFAULT_ALIGNMENT,
 ) {
     fun normalized(): ReaderTextSettings = copy(
@@ -15,12 +14,6 @@ data class ReaderTextSettings(
         ),
         lineHeightMultiplier = ReaderTextDefaults.snapLineHeight(lineHeightMultiplier),
     )
-}
-
-enum class ReaderTheme {
-    Light,
-    Sepia,
-    Dark,
 }
 
 enum class ReaderAlignment {
@@ -41,7 +34,6 @@ object ReaderTextDefaults {
     const val LINE_HEIGHT_STEP = 0.05f
     val LINE_HEIGHT_SLIDER_STEPS = ((200 - 120) / 5) - 1
 
-    val DEFAULT_THEME = ReaderTheme.Light
     val DEFAULT_ALIGNMENT = ReaderAlignment.Start
 
     fun snapLineHeight(value: Float): Float {
