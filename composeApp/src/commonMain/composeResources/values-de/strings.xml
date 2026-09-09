@@ -45,6 +45,9 @@
     <string name="library_empty_title">Die Bibliothek ist leer</string>
     <string name="library_empty_body">Importiere ein Buch, erstelle eines oder füge Text zum Schnelllesen ein.</string>
     <string name="library_add_first_material">Erstes Material hinzufügen</string>
+    <string name="library_quick_start">Schnellstart</string>
+    <string name="quick_start_sample_title">Mehr Geschichten. In deinem Tempo.</string>
+    <string name="quick_start_sample_body">Was wäre, wenn du das Buch, das du schon lange lesen möchtest, jetzt einfach anfängst? Ein paar Minuten, der erste Absatz, noch eine Seite.\n\nFlashReader bietet dir eine andere Art zu lesen: Die Wörter erscheinen einzeln, in deinem gewählten Tempo. Du musst keiner Zeile mit den Augen folgen — folge einfach der Geschichte. Beginne mit einem angenehmen Tempo und passe es so an, dass du den Text weiterhin verstehst und das Lesen genießt. Möchtest du auf einer Seite verweilen, wechsle in den normalen Lesemodus.\n\nProbieren wir es aus?\n\nEines frühen Morgens öffnest du ein Buch und findest zwischen den Seiten eine Fahrkarte. Kein Datum, kein Bahnhof. Nur ein Satz: „Der Zug fährt ab, sobald du dich entscheidest.“\n\nDraußen ertönt ein fernes Pfeifen.\n\nSeltsam. In dieser Stadt gab es noch nie eine Eisenbahn.\n\nNeugierig, wie es weitergeht? Öffne diesen Text im Schnelllesemodus und lies ihn noch einmal in einem anderen Tempo.\n\nDu bestimmst die Geschwindigkeit. Die Geschichte lädt dich ein, weiterzulesen.</string>
     <string name="library_field_title">Titel</string>
     <string name="library_rename_title">Umbenennen</string>
     <string name="percent_value">%1$d%</string>

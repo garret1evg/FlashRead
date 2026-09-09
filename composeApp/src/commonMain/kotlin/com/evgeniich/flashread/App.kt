@@ -125,6 +125,8 @@ fun App() {
         val snackbarHostState = remember { SnackbarHostState() }
         val defaultNewBookTitle = stringResource(Res.string.default_new_book_title)
         val defaultSpeedReadTitle = stringResource(Res.string.default_speed_read_title)
+        val quickStartTitle = stringResource(Res.string.quick_start_sample_title)
+        val quickStartContent = stringResource(Res.string.quick_start_sample_body)
         val libraryBusyMessage = if (uiState.isImportingExternalBook) {
             stringResource(Res.string.library_opening_book)
         } else {
@@ -163,6 +165,17 @@ fun App() {
 
         fun openQuickSpeedRead() {
             backStack.pushIfNeeded(AppRoute.QuickSpeedRead)
+        }
+
+        fun addQuickStartSample(source: AnalyticsEvent.ReaderStart.Source) {
+            val bookId = appViewModel.createBook(
+                title = quickStartTitle,
+                content = quickStartContent,
+                defaultTitle = defaultNewBookTitle,
+            )
+            if (bookId != null) {
+                openReader(bookId, source)
+            }
         }
 
         fun startScratchSpeedRead(content: String) {
@@ -285,6 +298,9 @@ fun App() {
                             onImportBook = launchBookImport,
                             onCreateBook = { openBookEditor(null) },
                             onSpeedReadText = ::openQuickSpeedRead,
+                            onQuickStart = {
+                                addQuickStartSample(AnalyticsEvent.ReaderStart.Source.Home)
+                            },
                             onContinueReading = { bookId ->
                                 openReader(bookId, AnalyticsEvent.ReaderStart.Source.Home)
                             },
@@ -297,6 +313,9 @@ fun App() {
                             onImportBook = launchBookImport,
                             onCreateBook = { openBookEditor(null) },
                             onSpeedReadText = ::openQuickSpeedRead,
+                            onQuickStart = {
+                                addQuickStartSample(AnalyticsEvent.ReaderStart.Source.Library)
+                            },
                             onRenameBook = appViewModel::renameBook,
                             onDeleteBook = appViewModel::deleteBook,
                             onContinueReading = { bookId ->
@@ -480,6 +499,7 @@ private fun HomeScreen(
     onImportBook: () -> Unit,
     onCreateBook: () -> Unit,
     onSpeedReadText: () -> Unit,
+    onQuickStart: () -> Unit,
     onContinueReading: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -489,6 +509,7 @@ private fun HomeScreen(
             onImportBook = onImportBook,
             onCreateBook = onCreateBook,
             onSpeedReadText = onSpeedReadText,
+            onQuickStart = onQuickStart,
         )
         return
     }
@@ -569,13 +590,16 @@ private fun EmptyBookState(
     onImportBook: () -> Unit,
     onCreateBook: () -> Unit,
     onSpeedReadText: () -> Unit,
+    onQuickStart: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = FlashReadDimens.screenHorizontalPadding),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
+            .padding(vertical = FlashReadDimens.space24),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -599,6 +623,8 @@ private fun EmptyBookState(
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(FlashReadDimens.space16))
+        HomeActionButton(text = stringResource(Res.string.library_quick_start), onClick = onQuickStart)
+        Spacer(Modifier.height(FlashReadDimens.space12))
         HomeActionButtons(
             onImportBook = onImportBook,
             onCreateBook = onCreateBook,

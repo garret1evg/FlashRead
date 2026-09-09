@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
@@ -78,6 +80,7 @@ fun LibraryScreen(
     onImportBook: () -> Unit,
     onCreateBook: () -> Unit,
     onSpeedReadText: () -> Unit,
+    onQuickStart: () -> Unit,
     onRenameBook: (bookId: String, newTitle: String) -> Unit,
     onDeleteBook: (String) -> Unit,
     onContinueReading: (String) -> Unit,
@@ -123,6 +126,7 @@ fun LibraryScreen(
             books.isEmpty() -> {
                 LibraryEmptyState(
                     onAddMaterial = { showAddSheet = true },
+                    onQuickStart = onQuickStart,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
@@ -219,10 +223,13 @@ private fun AddMaterialButton(
 @Composable
 private fun LibraryEmptyState(
     onAddMaterial: () -> Unit,
+    onQuickStart: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.padding(vertical = FlashReadDimens.space24),
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = FlashReadDimens.space24),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -246,10 +253,43 @@ private fun LibraryEmptyState(
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(FlashReadDimens.space24))
+        QuickStartButton(
+            onClick = onQuickStart,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(FlashReadDimens.space12))
         AddMaterialButton(
             label = stringResource(Res.string.library_add_first_material),
             onClick = onAddMaterial,
             modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun QuickStartButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = FlashReadDimens.minTouchTarget),
+        shape = FlashReadShapes.button,
+        contentPadding = PaddingValues(
+            horizontal = FlashReadDimens.space16,
+            vertical = FlashReadDimens.space12,
+        ),
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Bolt,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(Modifier.width(FlashReadDimens.space8))
+        Text(
+            text = stringResource(Res.string.library_quick_start),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -534,6 +574,7 @@ private fun LibraryScreenPreview() {
             onImportBook = {},
             onCreateBook = {},
             onSpeedReadText = {},
+            onQuickStart = {},
             onRenameBook = { _, _ -> },
             onDeleteBook = {},
             onContinueReading = {},
@@ -552,6 +593,7 @@ private fun LibraryEmptyPreview() {
             onImportBook = {},
             onCreateBook = {},
             onSpeedReadText = {},
+            onQuickStart = {},
             onRenameBook = { _, _ -> },
             onDeleteBook = {},
             onContinueReading = {},

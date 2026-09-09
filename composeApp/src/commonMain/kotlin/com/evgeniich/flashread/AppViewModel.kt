@@ -147,9 +147,9 @@ class AppViewModel(
         title: String,
         content: String,
         defaultTitle: String = DefaultNewBookTitle,
-    ) {
+    ): String? {
         val trimmedContent = content.trim()
-        if (trimmedContent.isBlank()) return
+        if (trimmedContent.isBlank()) return null
         val book = Book(
             id = "$CreatedBookIdPrefix${Uuid.random()}",
             title = authoredBookTitle(title, defaultTitle),
@@ -159,6 +159,7 @@ class AppViewModel(
         upsert(book)
         selectBook(book.id)
         analytics.log(AnalyticsEvent.BookCreate)
+        return book.id
     }
 
     fun updateCreatedBook(

@@ -221,9 +221,10 @@ class AppViewModelTest {
             analytics = analytics,
         )
 
-        viewModel.createBook(title = "  My notes  ", content = "one two\n\nthree")
+        val createdId = viewModel.createBook(title = "  My notes  ", content = "one two\n\nthree")
 
         val book = viewModel.uiState.value.books.single()
+        assertEquals(book.id, createdId)
         assertTrue(book.id.startsWith("created:"))
         assertEquals("My notes", book.title)
         assertEquals("one two\n\nthree", book.content)
@@ -239,7 +240,7 @@ class AppViewModelTest {
         val analytics = RecordingAnalytics()
         val viewModel = appViewModel(analytics = analytics)
 
-        viewModel.createBook(title = "Ignored", content = "   \n  ")
+        assertNull(viewModel.createBook(title = "Ignored", content = "   \n  "))
 
         assertTrue(viewModel.uiState.value.books.isEmpty())
         assertTrue(analytics.events.isEmpty())

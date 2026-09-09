@@ -45,6 +45,9 @@
     <string name="library_empty_title">Library is empty</string>
     <string name="library_empty_body">Import a book, write your own, or paste text for speed reading.</string>
     <string name="library_add_first_material">Add your first material</string>
+    <string name="library_quick_start">Quick start</string>
+    <string name="quick_start_sample_title">More stories. At your pace.</string>
+    <string name="quick_start_sample_body">What if you could start that book you’ve been putting off right now? Just a few minutes, the first paragraph, one more page.\n\nFlashReader offers a different way to read: words appear one at a time, at a pace you choose. No need to follow a line across the page — just follow the story. Start comfortably and adjust the speed while keeping the meaning and enjoyment in focus. Whenever you want to linger on a page, switch to regular reading mode.\n\nReady to try?\n\nEarly one morning, you open a book and find a ticket between its pages. No date. No station name. Just one line: “The train leaves when you decide.”\n\nA distant whistle sounds outside.\n\nStrange. This town has never had a railway.\n\nCurious about what comes next? Open this text in speed-reading mode and read it again at a new pace.\n\nYou choose the speed. The story invites you onward.</string>
     <string name="library_field_title">Title</string>
     <string name="library_rename_title">Rename</string>
     <string name="percent_value">%1$d%</string>
