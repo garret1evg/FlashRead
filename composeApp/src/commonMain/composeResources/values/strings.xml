@@ -94,6 +94,8 @@
 
     <string name="player_progress_cd">Progress %1$s of %2$s</string>
     <string name="player_settings">Settings</string>
+    <string name="player_restart_confirm_title">Restart from the beginning?</string>
+    <string name="player_restart_confirm_message">This will return to the first word.</string>
 
     <string name="settings_legal">Legal</string>
     <string name="settings_manage_privacy">Manage Privacy</string>

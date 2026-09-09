@@ -94,6 +94,8 @@
 
     <string name="player_progress_cd">प्रगति %1$s में से %2$s</string>
     <string name="player_settings">सेटिंग्स</string>
+    <string name="player_restart_confirm_title">शुरू से फिर से शुरू करें?</string>
+    <string name="player_restart_confirm_message">पाठ पहले शब्द पर वापस चला जाएगा।</string>
 
     <string name="settings_legal">कानूनी</string>
     <string name="settings_manage_privacy">गोपनीयता प्रबंधित करें</string>

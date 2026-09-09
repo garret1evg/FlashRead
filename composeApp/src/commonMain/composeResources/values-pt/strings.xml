@@ -94,6 +94,8 @@
 
     <string name="player_progress_cd">Progresso %1$s de %2$s</string>
     <string name="player_settings">Definições</string>
+    <string name="player_restart_confirm_title">Recomeçar do início?</string>
+    <string name="player_restart_confirm_message">O texto voltará à primeira palavra.</string>
 
     <string name="settings_legal">Legal</string>
     <string name="settings_manage_privacy">Gerenciar privacidade</string>

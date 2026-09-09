@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -30,10 +31,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -153,6 +154,7 @@ internal fun SpeedReadPlayerPane(
 ) {
     var showWpmSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
+    var showRestartConfirm by remember { mutableStateOf(false) }
     val enabled = !state.isEmpty
     val playPauseCd = playPauseLabel(state)
 
@@ -168,9 +170,7 @@ internal fun SpeedReadPlayerPane(
         ) {
             PlayerTopBar(
                 onClose = onClose,
-                onRestart = onRestart,
                 onSettings = { showSettingsSheet = true },
-                restartEnabled = enabled,
             )
             Box(
                 modifier = Modifier
@@ -214,8 +214,20 @@ internal fun SpeedReadPlayerPane(
     if (showSettingsSheet) {
         PlayerSettingsSheet(
             settings = state.settings,
+            restartEnabled = enabled,
+            onRestartClick = { showRestartConfirm = true },
             onSettingsChange = onSettingsChange,
             onDismiss = { showSettingsSheet = false },
+        )
+    }
+    if (showRestartConfirm) {
+        RestartConfirmDialog(
+            onDismiss = { showRestartConfirm = false },
+            onConfirm = {
+                showRestartConfirm = false
+                showSettingsSheet = false
+                onRestart()
+            },
         )
     }
 }
@@ -223,9 +235,7 @@ internal fun SpeedReadPlayerPane(
 @Composable
 private fun PlayerTopBar(
     onClose: () -> Unit,
-    onRestart: () -> Unit,
     onSettings: () -> Unit,
-    restartEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -240,12 +250,6 @@ private fun PlayerTopBar(
             contentDescription = stringResource(Res.string.action_close),
         )
         Spacer(Modifier.weight(1f))
-        PlayerIconButton(
-            onClick = onRestart,
-            imageVector = Icons.Filled.Replay,
-            contentDescription = stringResource(Res.string.action_restart),
-            enabled = restartEnabled,
-        )
         PlayerIconButton(
             onClick = onSettings,
             imageVector = Icons.Filled.Settings,
@@ -583,6 +587,8 @@ private fun PlayerWpmSheet(
 @Composable
 private fun PlayerSettingsSheet(
     settings: SpeedReadSettings,
+    restartEnabled: Boolean,
+    onRestartClick: () -> Unit,
     onSettingsChange: (SpeedReadSettings) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -641,8 +647,63 @@ private fun PlayerSettingsSheet(
                 checked = settings.loopEnabled,
                 onCheckedChange = { onSettingsChange(settings.copy(loopEnabled = it)) },
             )
+            Spacer(Modifier.height(FlashReadDimens.space8))
+            val restartLabel = stringResource(Res.string.action_restart)
+            TextButton(
+                onClick = onRestartClick,
+                enabled = restartEnabled,
+                contentPadding = PaddingValues(horizontal = 0.dp),
+                modifier = Modifier
+                    .heightIn(min = FlashReadDimens.minTouchTarget)
+                    .semantics { contentDescription = restartLabel },
+            ) {
+                Text(
+                    text = restartLabel,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
+}
+
+@Composable
+private fun RestartConfirmDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(Res.string.player_restart_confirm_title),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        text = {
+            Text(text = stringResource(Res.string.player_restart_confirm_message))
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
+            ) {
+                Text(stringResource(Res.string.action_restart))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
+            ) {
+                Text(stringResource(Res.string.action_cancel))
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = FlashReadShapes.card,
+    )
 }
 
 @Composable

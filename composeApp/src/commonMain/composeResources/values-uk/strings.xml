@@ -94,6 +94,8 @@
 
     <string name="player_progress_cd">Прогрес %1$s із %2$s</string>
     <string name="player_settings">Налаштування</string>
+    <string name="player_restart_confirm_title">Почати спочатку?</string>
+    <string name="player_restart_confirm_message">Текст повернеться до першого слова.</string>
 
     <string name="settings_legal">Правова інформація</string>
     <string name="settings_manage_privacy">Керування конфіденційністю</string>
