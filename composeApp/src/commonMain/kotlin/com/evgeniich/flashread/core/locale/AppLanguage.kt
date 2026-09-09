@@ -20,6 +20,7 @@ sealed interface AppLanguage {
             "pt",
             "fr",
             "de",
+            "pl",
             "ru",
             "uk",
             "hi",

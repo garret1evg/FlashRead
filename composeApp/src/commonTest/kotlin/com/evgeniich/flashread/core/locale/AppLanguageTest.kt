@@ -71,6 +71,7 @@ class AppLanguageTest {
         assertNull(AppLanguage.language("ja-JP"))
         assertNull(AppLanguage.language("  "))
         assertEquals(AppLanguage.Language("pt"), AppLanguage.language("pt-BR"))
+        assertEquals(AppLanguage.Language("pl"), AppLanguage.language("pl-PL"))
         assertEquals(AppLanguage.Language("ar"), AppLanguage.language("AR"))
         assertEquals(AppLanguage.Language("en"), AppLanguage.language("en-US"))
     }

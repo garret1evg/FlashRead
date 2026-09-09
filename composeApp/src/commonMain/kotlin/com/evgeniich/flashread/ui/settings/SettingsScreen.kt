@@ -372,6 +372,7 @@ private fun AppLanguage.label(): String = when (this) {
         "pt" -> stringResource(Res.string.language_pt)
         "fr" -> stringResource(Res.string.language_fr)
         "de" -> stringResource(Res.string.language_de)
+        "pl" -> stringResource(Res.string.language_pl)
         "ru" -> stringResource(Res.string.language_ru)
         "uk" -> stringResource(Res.string.language_uk)
         "hi" -> stringResource(Res.string.language_hi)
