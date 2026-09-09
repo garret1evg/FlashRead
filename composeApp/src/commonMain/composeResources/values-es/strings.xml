@@ -84,6 +84,7 @@
     <string name="wpm_value_cd">%1$d palabras por minuto</string>
     <string name="wpm_slider_cd">Velocidad de lectura, palabras por minuto</string>
     <string name="wpm_preset_cd">Preajuste de %1$d palabras por minuto</string>
+    <string name="expert_settings">Ajustes expertos</string>
     <string name="words_per_flash">Palabras por destello</string>
     <string name="spritz">Spritz</string>
     <string name="spritz_subtitle_setup">Resaltar el punto óptimo de reconocimiento de cada palabra</string>

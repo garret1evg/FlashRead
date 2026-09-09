@@ -84,6 +84,7 @@
     <string name="wpm_value_cd">%1$d слів на хвилину</string>
     <string name="wpm_slider_cd">Швидкість читання, слів на хвилину</string>
     <string name="wpm_preset_cd">Предустановлення %1$d слів на хвилину</string>
+    <string name="expert_settings">Експертні налаштування</string>
     <string name="words_per_flash">Слів за показ</string>
     <string name="spritz">Spritz</string>
     <string name="spritz_subtitle_setup">Підсвічувати оптимальну точку розпізнавання в слові</string>

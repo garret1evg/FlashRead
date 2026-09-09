@@ -84,6 +84,7 @@
     <string name="wpm_value_cd">%1$d كلمة في الدقيقة</string>
     <string name="wpm_slider_cd">سرعة القراءة، كلمات في الدقيقة</string>
     <string name="wpm_preset_cd">إعداد مسبق %1$d كلمة في الدقيقة</string>
+    <string name="expert_settings">الإعدادات المتقدمة</string>
     <string name="words_per_flash">كلمات في كل عرض</string>
     <string name="spritz">Spritz</string>
     <string name="spritz_subtitle_setup">إبراز نقطة التعرف المثلى في الكلمة</string>

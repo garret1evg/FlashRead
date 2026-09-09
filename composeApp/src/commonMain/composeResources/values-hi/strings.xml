@@ -84,6 +84,7 @@
     <string name="wpm_value_cd">%1$d शब्द प्रति मिनट</string>
     <string name="wpm_slider_cd">पढ़ने की गति, शब्द प्रति मिनट</string>
     <string name="wpm_preset_cd">%1$d शब्द प्रति मिनट का प्रीसेट</string>
+    <string name="expert_settings">विशेषज्ञ सेटिंग्स</string>
     <string name="words_per_flash">प्रति फ़्लैश शब्द</string>
     <string name="spritz">Spritz</string>
     <string name="spritz_subtitle_setup">प्रत्येक शब्द में इष्टतम पहचान बिंदु को हाइलाइट करें</string>

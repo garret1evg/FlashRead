@@ -1,7 +1,9 @@
 package com.evgeniich.flashread.ui.speedread
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -20,6 +22,8 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -40,11 +44,15 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -209,51 +217,9 @@ fun SpeedReadSetupScreen(
             }
 
             Spacer(Modifier.height(FlashReadDimens.space24))
-            Text(
-                text = stringResource(Res.string.words_per_flash),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Spacer(Modifier.height(FlashReadDimens.space8))
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                SpeedReadDefaults.CHUNK_SIZES.forEachIndexed { index, size ->
-                    val chunkCd = pluralStringResource(
-                        Res.plurals.words_per_flash_cd,
-                        size,
-                        size,
-                    )
-                    SegmentedButton(
-                        selected = settings.chunkSize == size,
-                        onClick = { viewModel.updateSettings(settings.copy(chunkSize = size)) },
-                        shape = SegmentedButtonDefaults.itemShape(
-                            index = index,
-                            count = SpeedReadDefaults.CHUNK_SIZES.size,
-                        ),
-                        modifier = Modifier
-                            .heightIn(min = FlashReadDimens.minTouchTarget)
-                            .semantics {
-                                contentDescription = chunkCd
-                            },
-                    ) {
-                        Text(text = size.toString())
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(FlashReadDimens.space16))
-            if (settings.isSpritzAvailable) {
-                SettingsSwitchRow(
-                    title = stringResource(Res.string.spritz),
-                    subtitle = stringResource(Res.string.spritz_subtitle_setup),
-                    checked = settings.spritzEnabled,
-                    onCheckedChange = { viewModel.updateSettings(settings.copy(spritzEnabled = it)) },
-                )
-            }
-            SettingsSwitchRow(
-                title = stringResource(Res.string.loop),
-                subtitle = stringResource(Res.string.loop_subtitle_setup),
-                checked = settings.loopEnabled,
-                onCheckedChange = { viewModel.updateSettings(settings.copy(loopEnabled = it)) },
+            ExpertSettingsSection(
+                settings = settings,
+                onSettingsChange = viewModel::updateSettings,
             )
             Spacer(Modifier.height(FlashReadDimens.space16))
         }
@@ -339,6 +305,93 @@ private fun MaterialSummaryCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExpertSettingsSection(
+    settings: SpeedReadSettings,
+    onSettingsChange: (SpeedReadSettings) -> Unit,
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val title = stringResource(Res.string.expert_settings)
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = FlashReadDimens.minTouchTarget)
+                .clickable(onClick = { expanded = !expanded })
+                .semantics {
+                    role = Role.Button
+                    contentDescription = title
+                },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f),
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        AnimatedVisibility(visible = expanded) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Spacer(Modifier.height(FlashReadDimens.space8))
+                Text(
+                    text = stringResource(Res.string.words_per_flash),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Spacer(Modifier.height(FlashReadDimens.space8))
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    SpeedReadDefaults.CHUNK_SIZES.forEachIndexed { index, size ->
+                        val chunkCd = pluralStringResource(
+                            Res.plurals.words_per_flash_cd,
+                            size,
+                            size,
+                        )
+                        SegmentedButton(
+                            selected = settings.chunkSize == size,
+                            onClick = { onSettingsChange(settings.copy(chunkSize = size)) },
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = SpeedReadDefaults.CHUNK_SIZES.size,
+                            ),
+                            modifier = Modifier
+                                .heightIn(min = FlashReadDimens.minTouchTarget)
+                                .semantics {
+                                    contentDescription = chunkCd
+                                },
+                        ) {
+                            Text(text = size.toString())
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(FlashReadDimens.space16))
+                if (settings.isSpritzAvailable) {
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.spritz),
+                        subtitle = stringResource(Res.string.spritz_subtitle_setup),
+                        checked = settings.spritzEnabled,
+                        onCheckedChange = { onSettingsChange(settings.copy(spritzEnabled = it)) },
+                    )
+                }
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.loop),
+                    subtitle = stringResource(Res.string.loop_subtitle_setup),
+                    checked = settings.loopEnabled,
+                    onCheckedChange = { onSettingsChange(settings.copy(loopEnabled = it)) },
                 )
             }
         }

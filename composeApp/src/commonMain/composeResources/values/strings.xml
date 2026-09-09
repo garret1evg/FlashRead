@@ -84,6 +84,7 @@
     <string name="wpm_value_cd">%1$d words per minute</string>
     <string name="wpm_slider_cd">Reading speed, words per minute</string>
     <string name="wpm_preset_cd">%1$d words per minute preset</string>
+    <string name="expert_settings">Expert settings</string>
     <string name="words_per_flash">Words per flash</string>
     <string name="spritz">Spritz</string>
     <string name="spritz_subtitle_setup">Highlight the optimal recognition point in each word</string>
