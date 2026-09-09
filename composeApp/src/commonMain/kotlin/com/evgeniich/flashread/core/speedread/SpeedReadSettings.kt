@@ -6,6 +6,12 @@ data class SpeedReadSettings(
     val spritzEnabled: Boolean = SpeedReadDefaults.DEFAULT_SPRITZ_ENABLED,
     val loopEnabled: Boolean = SpeedReadDefaults.DEFAULT_LOOP_ENABLED,
 ) {
+    val isSpritzAvailable: Boolean
+        get() = chunkSize <= SpeedReadDefaults.MIN_CHUNK_SIZE
+
+    val effectiveSpritzEnabled: Boolean
+        get() = spritzEnabled && isSpritzAvailable
+
     fun normalized(): SpeedReadSettings = copy(
         wpm = SpeedReadDefaults.snapWpm(wpm),
         chunkSize = chunkSize.coerceIn(SpeedReadDefaults.MIN_CHUNK_SIZE, SpeedReadDefaults.MAX_CHUNK_SIZE),

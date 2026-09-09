@@ -59,16 +59,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -85,6 +88,7 @@ import com.evgeniich.flashread.core.speedread.SpeedReadPlayerViewState
 import com.evgeniich.flashread.core.speedread.SpeedReadPosition
 import com.evgeniich.flashread.core.speedread.SpeedReadSettings
 import com.evgeniich.flashread.core.speedread.orpParts
+import com.evgeniich.flashread.core.speedread.wrapFlashText
 import com.evgeniich.flashread.resources.Res
 import com.evgeniich.flashread.resources.*
 import com.evgeniich.flashread.ui.theme.FlashReadDimens
@@ -95,6 +99,7 @@ import org.jetbrains.compose.resources.stringResource
 
 private val OrpFrameHeight = 168.dp
 private val PlayerWordSize = 34.sp
+private val PlayerWordLineHeight = 42.sp
 
 @Composable
 fun SpeedReadPlayerScreen(
@@ -182,7 +187,8 @@ internal fun SpeedReadPlayerPane(
             ) {
                 OrpWordFrame(
                     text = state.text,
-                    spritzEnabled = state.settings.spritzEnabled,
+                    spritzEnabled = state.settings.effectiveSpritzEnabled,
+                    wrapToTwoLines = !state.settings.isSpritzAvailable,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -357,6 +363,7 @@ private fun PlayerBottomBar(
 private fun OrpWordFrame(
     text: String,
     spritzEnabled: Boolean,
+    wrapToTwoLines: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val textMeasurer = rememberTextMeasurer()
@@ -386,45 +393,58 @@ private fun OrpWordFrame(
         modifier = modifier.height(OrpFrameHeight),
         contentAlignment = Alignment.Center,
     ) {
-        val centerX = constraints.maxWidth / 2f
-        val layout = textMeasurer.measure(
-            text = annotated,
-            style = textStyle,
-            maxLines = 1,
-            overflow = TextOverflow.Visible,
+        var wrappedTextHeightPx by remember(text, wrapToTwoLines) { mutableStateOf(0f) }
+        FlashFocusMarkers(
+            color = markerColor,
+            textHeightPx = if (wrapToTwoLines) wrappedTextHeightPx else 0f,
         )
-        val translationX = when {
-            text.isEmpty() -> 0f
-            parts.pivotIndex != null && parts.pivotIndex in text.indices -> {
-                val box = layout.getBoundingBox(parts.pivotIndex)
-                centerX - (box.left + box.width / 2f)
+
+        if (text.isEmpty()) return@BoxWithConstraints
+
+        if (wrapToTwoLines) {
+            val paddingPx = with(LocalDensity.current) {
+                FlashReadDimens.screenHorizontalPadding.roundToPx()
             }
-            else -> centerX - layout.size.width / 2f
-        }
-
-        Canvas(Modifier.fillMaxSize()) {
-            val stroke = 2.dp.toPx()
-            val marker = 10.dp.toPx()
-            val gap = 30.dp.toPx()
-            val cx = size.width / 2f
-            val cy = size.height / 2f
-            drawLine(
-                color = markerColor,
-                start = Offset(cx, cy - gap - marker),
-                end = Offset(cx, cy - gap),
-                strokeWidth = stroke,
-                cap = StrokeCap.Round,
+            val maxTextWidth = (constraints.maxWidth - paddingPx * 2).coerceAtLeast(0)
+            val displayText = remember(text, maxTextWidth) {
+                wrapFlashText(text, maxTextWidth) { line ->
+                    textMeasurer.measure(
+                        text = line,
+                        style = textStyle,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Visible,
+                    ).size.width
+                }
+            }
+            Text(
+                text = displayText,
+                style = textStyle.copy(
+                    textAlign = TextAlign.Center,
+                    lineHeight = PlayerWordLineHeight,
+                ),
+                maxLines = 2,
+                overflow = TextOverflow.Clip,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = FlashReadDimens.screenHorizontalPadding),
+                onTextLayout = { wrappedTextHeightPx = it.size.height.toFloat() },
             )
-            drawLine(
-                color = markerColor,
-                start = Offset(cx, cy + gap),
-                end = Offset(cx, cy + gap + marker),
-                strokeWidth = stroke,
-                cap = StrokeCap.Round,
+        } else {
+            val centerX = constraints.maxWidth / 2f
+            val layout = textMeasurer.measure(
+                text = annotated,
+                style = textStyle,
+                maxLines = 1,
+                overflow = TextOverflow.Visible,
             )
-        }
-
-        if (text.isNotEmpty()) {
+            val translationX = when {
+                parts.pivotIndex != null && parts.pivotIndex in text.indices -> {
+                    val box = layout.getBoundingBox(parts.pivotIndex)
+                    centerX - (box.left + box.width / 2f)
+                }
+                else -> centerX - layout.size.width / 2f
+            }
             Text(
                 text = annotated,
                 style = textStyle,
@@ -437,6 +457,40 @@ private fun OrpWordFrame(
                     .graphicsLayer { this.translationX = translationX },
             )
         }
+    }
+}
+
+@Composable
+private fun FlashFocusMarkers(
+    color: Color,
+    textHeightPx: Float,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier.fillMaxSize()) {
+        val stroke = 2.dp.toPx()
+        val marker = 10.dp.toPx()
+        val minGap = 30.dp.toPx()
+        val gap = if (textHeightPx > 0f) {
+            maxOf(minGap, textHeightPx / 2f + 8.dp.toPx())
+        } else {
+            minGap
+        }
+        val cx = size.width / 2f
+        val cy = size.height / 2f
+        drawLine(
+            color = color,
+            start = Offset(cx, cy - gap - marker),
+            end = Offset(cx, cy - gap),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = color,
+            start = Offset(cx, cy + gap),
+            end = Offset(cx, cy + gap + marker),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round,
+        )
     }
 }
 
@@ -573,12 +627,14 @@ private fun PlayerSettingsSheet(
                 }
             }
             Spacer(Modifier.height(FlashReadDimens.space8))
-            PlayerSwitchRow(
-                title = stringResource(Res.string.spritz),
-                subtitle = stringResource(Res.string.spritz_subtitle_player),
-                checked = settings.spritzEnabled,
-                onCheckedChange = { onSettingsChange(settings.copy(spritzEnabled = it)) },
-            )
+            if (settings.isSpritzAvailable) {
+                PlayerSwitchRow(
+                    title = stringResource(Res.string.spritz),
+                    subtitle = stringResource(Res.string.spritz_subtitle_player),
+                    checked = settings.spritzEnabled,
+                    onCheckedChange = { onSettingsChange(settings.copy(spritzEnabled = it)) },
+                )
+            }
             PlayerSwitchRow(
                 title = stringResource(Res.string.loop),
                 subtitle = stringResource(Res.string.loop_subtitle_player),
@@ -666,12 +722,12 @@ internal object SpeedReadPlayerDemo {
 
     val multiWord = SpeedReadPlayerViewState(
         status = SpeedReadPlayerStatus.Playing,
-        text = "one two three",
+        text = "one two three four",
         position = SpeedReadPosition(tokenIndex = 0, offset = 0, paragraphIndex = 0),
         progress = 0.34f,
         elapsedMs = 8_000,
         remainingMs = 16_000,
-        settings = settings.copy(chunkSize = 3),
+        settings = settings.copy(chunkSize = 4),
         isEmpty = false,
     )
 

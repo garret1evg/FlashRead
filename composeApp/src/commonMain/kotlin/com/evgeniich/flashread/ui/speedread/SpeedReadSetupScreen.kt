@@ -241,12 +241,14 @@ fun SpeedReadSetupScreen(
             }
 
             Spacer(Modifier.height(FlashReadDimens.space16))
-            SettingsSwitchRow(
-                title = stringResource(Res.string.spritz),
-                subtitle = stringResource(Res.string.spritz_subtitle_setup),
-                checked = settings.spritzEnabled,
-                onCheckedChange = { viewModel.updateSettings(settings.copy(spritzEnabled = it)) },
-            )
+            if (settings.isSpritzAvailable) {
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.spritz),
+                    subtitle = stringResource(Res.string.spritz_subtitle_setup),
+                    checked = settings.spritzEnabled,
+                    onCheckedChange = { viewModel.updateSettings(settings.copy(spritzEnabled = it)) },
+                )
+            }
             SettingsSwitchRow(
                 title = stringResource(Res.string.loop),
                 subtitle = stringResource(Res.string.loop_subtitle_setup),

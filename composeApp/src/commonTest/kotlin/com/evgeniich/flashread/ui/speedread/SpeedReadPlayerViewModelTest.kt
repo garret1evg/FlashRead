@@ -20,6 +20,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -69,11 +70,14 @@ class SpeedReadPlayerViewModelTest {
         val viewModel = playerViewModel(content = "one two three four")
         assertEquals("one", viewModel.viewState.value.text)
 
-        viewModel.updateSettings(SpeedReadSettings(wpm = 300, chunkSize = 3))
+        viewModel.updateSettings(SpeedReadSettings(wpm = 300, chunkSize = 3, spritzEnabled = true))
         val rebuilt = viewModel.viewState.value
         assertEquals("one two three", rebuilt.text)
         assertEquals(3, rebuilt.settings.chunkSize)
         assertEquals(SpeedReadPlayerStatus.Paused, rebuilt.status)
+        assertTrue(rebuilt.settings.spritzEnabled)
+        assertFalse(rebuilt.settings.effectiveSpritzEnabled)
+        assertFalse(rebuilt.settings.isSpritzAvailable)
     }
 
     @Test

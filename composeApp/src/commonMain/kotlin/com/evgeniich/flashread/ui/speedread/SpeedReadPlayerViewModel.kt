@@ -183,7 +183,7 @@ class SpeedReadPlayerViewModel(
             analytics.log(
                 AnalyticsEvent.SpeedReadStart(
                     wpmBucket = AnalyticsBuckets.wpm(state.settings.wpm),
-                    spritzEnabled = state.settings.spritzEnabled,
+                    spritzEnabled = state.settings.effectiveSpritzEnabled,
                     source = if (book.id == ScratchSpeedReadBookId) {
                         AnalyticsEvent.SpeedReadStart.Source.Paste
                     } else {

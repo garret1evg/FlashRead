@@ -56,4 +56,16 @@ class SpeedReadSettingsTest {
         assertFalse(settings.spritzEnabled)
         assertTrue(settings.loopEnabled)
     }
+
+    @Test
+    fun spritzIsOnlyAvailableForSingleWordFlashes() {
+        val singleWord = SpeedReadSettings(chunkSize = 1, spritzEnabled = true)
+        assertTrue(singleWord.isSpritzAvailable)
+        assertTrue(singleWord.effectiveSpritzEnabled)
+
+        val multiWord = SpeedReadSettings(chunkSize = 3, spritzEnabled = true)
+        assertFalse(multiWord.isSpritzAvailable)
+        assertFalse(multiWord.effectiveSpritzEnabled)
+        assertTrue(multiWord.spritzEnabled)
+    }
 }

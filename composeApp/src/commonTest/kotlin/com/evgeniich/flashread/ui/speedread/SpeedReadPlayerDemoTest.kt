@@ -4,6 +4,7 @@ import com.evgeniich.flashread.core.speedread.SpeedReadPlayerStatus
 import com.evgeniich.flashread.core.speedread.orpParts
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class SpeedReadPlayerDemoTest {
@@ -17,12 +18,13 @@ class SpeedReadPlayerDemoTest {
     }
 
     @Test
-    fun multiWordDemoHighlightsALetterInsideTheGroup() {
-        val parts = orpParts(SpeedReadPlayerDemo.multiWord.text)
-        assertEquals("one two three", SpeedReadPlayerDemo.multiWord.text)
-        assertEquals(3, SpeedReadPlayerDemo.multiWord.settings.chunkSize)
-        assertTrue(parts.pivot.single().isLetter())
-        assertEquals(SpeedReadPlayerStatus.Playing, SpeedReadPlayerDemo.multiWord.status)
+    fun multiWordDemoKeepsSpritzOffAndShowsAPhraseChunk() {
+        val state = SpeedReadPlayerDemo.multiWord
+        assertEquals("one two three four", state.text)
+        assertEquals(4, state.settings.chunkSize)
+        assertFalse(state.settings.isSpritzAvailable)
+        assertFalse(state.settings.effectiveSpritzEnabled)
+        assertEquals(SpeedReadPlayerStatus.Playing, state.status)
     }
 
     @Test
