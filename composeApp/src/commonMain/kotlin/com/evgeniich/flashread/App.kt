@@ -41,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,7 +58,11 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.evgeniich.flashread.ads.BannerAdHost
+import com.evgeniich.flashread.ads.InterstitialAdHost
+import com.evgeniich.flashread.ads.InterstitialResult
+import com.evgeniich.flashread.ads.RewardedAdHost
 import com.evgeniich.flashread.ads.canShowBannerAds
+import com.evgeniich.flashread.ads.canShowInterstitialAds
 import com.evgeniich.flashread.analytics.Analytics
 import com.evgeniich.flashread.analytics.AnalyticsEvent
 import com.evgeniich.flashread.consent.showPrivacyOptionsForm
@@ -67,6 +72,10 @@ import com.evgeniich.flashread.data.repository.AppLanguageRepository
 import com.evgeniich.flashread.data.repository.AppThemeRepository
 import com.evgeniich.flashread.data.repository.KeepScreenOnRepository
 import com.evgeniich.flashread.locale.AppEnvironment
+import com.evgeniich.flashread.monetization.AdLevel
+import com.evgeniich.flashread.monetization.MonetizationManager
+import com.evgeniich.flashread.monetization.MonetizationPolicy
+import com.evgeniich.flashread.monetization.UsageTracker
 import com.evgeniich.flashread.navigation.AppRoute
 import com.evgeniich.flashread.navigation.AppScreen
 import com.evgeniich.flashread.navigation.instantNavContentTransform
@@ -75,7 +84,6 @@ import com.evgeniich.flashread.navigation.navigateToTopLevel
 import com.evgeniich.flashread.navigation.openReaderFromLibrary
 import com.evgeniich.flashread.navigation.popBack
 import com.evgeniich.flashread.navigation.pushIfNeeded
-import com.evgeniich.flashread.navigation.showsBannerAd
 import com.evgeniich.flashread.platform.ObserveExternalBookOpens
 import com.evgeniich.flashread.platform.applyPlatformTheme
 import com.evgeniich.flashread.platform.currentSystemLanguageTag
@@ -83,6 +91,7 @@ import com.evgeniich.flashread.platform.launchRouteForExternalBookOpen
 import com.evgeniich.flashread.platform.rememberBookImportLauncher
 import com.evgeniich.flashread.resources.Res
 import com.evgeniich.flashread.resources.*
+import com.evgeniich.flashread.ui.ads.RewardHintDialog
 import com.evgeniich.flashread.ui.components.AppLogo
 import com.evgeniich.flashread.ui.components.ScreenTitle
 import com.evgeniich.flashread.ui.library.BookEditorScreen
@@ -207,21 +216,98 @@ fun App() {
             appViewModel.consumePendingReaderNavigation()
         }
 
+        // Collect state to trigger recomposition when monetization state changes
+        val monetizationState by MonetizationManager.state.collectAsStateWithLifecycle()
+
+        // Track previous route to detect library arrivals from reading screens
+        var previousRoute by remember { mutableStateOf<AppRoute?>(null) }
+
+        // Guard to prevent duplicate hint/interstitial handling for the same Library arrival
+        var libraryArrivalHandled by remember { mutableStateOf(false) }
+
+        // Single flag so the Level 2 rewarded-ad hint cannot be shown twice at once
+        var showRewardHint by rememberSaveable { mutableStateOf(false) }
+
+        // Preload interstitial when Level2 and no reward active
+        LaunchedEffect(monetizationState.appliedLevel, monetizationState.isRewardActive) {
+            val shouldPreload = monetizationState.appliedLevel == AdLevel.Level2 &&
+                !monetizationState.isRewardActive &&
+                canShowInterstitialAds()
+            if (shouldPreload) {
+                InterstitialAdHost.getInstance().preload()
+            }
+        }
+
+        // Apply a pending ad level at a safe UI boundary (Settings, not during playback)
+        LaunchedEffect(currentRoute) {
+            if (currentRoute is AppRoute.Settings) {
+                MonetizationManager.applyLayoutLevel()
+            }
+        }
+
+        // If a reward is earned before a deferred hint is displayed, skip it
+        LaunchedEffect(showRewardHint, monetizationState.hasEverEarnedReward) {
+            if (showRewardHint && monetizationState.hasEverEarnedReward) {
+                showRewardHint = false
+            }
+        }
+
+        // Detect Library arrival from reading screens: apply layout, then hint or interstitial
+        LaunchedEffect(currentRoute) {
+            val previous = previousRoute
+            previousRoute = currentRoute
+
+            // Only trigger when arriving at Library
+            if (currentRoute !is AppRoute.Library) {
+                if (showRewardHint) {
+                    RewardedAdHost.getInstance().cancelPendingShow()
+                    showRewardHint = false
+                }
+                // Reset guard when leaving Library
+                if (previous is AppRoute.Library) {
+                    libraryArrivalHandled = false
+                }
+                return@LaunchedEffect
+            }
+
+            // Check if coming from a reading-related screen
+            val isFromReadingScreen = when (previous) {
+                is AppRoute.Reader,
+                is AppRoute.SpeedRead,
+                is AppRoute.SpeedReadPlayer,
+                -> true
+                else -> false
+            }
+
+            // Skip if not from reading screen or already handled this arrival
+            if (!isFromReadingScreen || libraryArrivalHandled) {
+                return@LaunchedEffect
+            }
+
+            // Mark this arrival as handled to prevent duplicates
+            libraryArrivalHandled = true
+
+            MonetizationManager.applyLayoutLevel()
+
+            if (MonetizationManager.shouldShowRewardHint()) {
+                showRewardHint = true
+                MonetizationManager.clearReadingActivity()
+            } else {
+                maybeShowInterstitialAfterReading(isHintBeingShown = showRewardHint)
+            }
+        }
+
         Scaffold(
             contentWindowInsets = WindowInsets.safeDrawing,
             containerColor = MaterialTheme.colorScheme.background,
             snackbarHost = { SnackbarHost(snackbarHostState) },
             bottomBar = {
                 if (showBottomBar) {
-                    val showBannerSlot = canShowBannerAds()
+                    val canShowBanner = canShowBannerAds() &&
+                        MonetizationManager.shouldShowBanner(currentRoute)
                     Column {
-                        if (showBannerSlot) {
-                            if (currentRoute.showsBannerAd) {
-                                BannerAdHost(modifier = Modifier.fillMaxWidth())
-                            } else {
-                                // Reserve banner height on Settings to avoid jump
-                                Spacer(Modifier.height(FlashReadDimens.bannerAdHeight))
-                            }
+                        if (canShowBanner) {
+                            BannerAdHost(modifier = Modifier.fillMaxWidth())
                             Spacer(Modifier.height(FlashReadDimens.space12))
                         }
                         NavigationBar(
@@ -410,6 +496,8 @@ fun App() {
                             onManagePrivacy = { showPrivacyOptionsForm() },
                             onOpenPrivacyPolicy = { backStack.pushIfNeeded(AppRoute.PrivacyPolicy) },
                             onOpenTerms = { backStack.pushIfNeeded(AppRoute.Terms) },
+                            isDeveloperModeUnlocked = monetizationState.developerModeUnlocked,
+                            monetizationState = monetizationState,
                         )
                     }
                     entry<AppRoute.PrivacyPolicy> {
@@ -456,6 +544,13 @@ fun App() {
                         )
                     }
                 },
+            )
+        }
+
+        if (showRewardHint && !monetizationState.hasEverEarnedReward) {
+            RewardHintDialog(
+                onDismiss = { showRewardHint = false },
+                onRewardEarned = { showRewardHint = false },
             )
         }
         }
@@ -686,4 +781,68 @@ private suspend fun AppMessage.toSnackbarText(): String = when (this) {
     is AppMessage.Imported -> getString(Res.string.snackbar_imported, title)
     is AppMessage.Deleted -> getString(Res.string.snackbar_deleted, title)
     is AppMessage.Error -> text
+}
+
+/**
+ * Attempts to show an interstitial ad after a reading session ends
+ * (when user returns to Library from a reading screen).
+ *
+ * Shows the ad only if:
+ * - Reading session had actual activity (scroll/tap in reader, play in speed read)
+ * - Level 2 applied with no active reward
+ * - Interstitial ads can be shown (consent, initialization)
+ * - Ad is preloaded and ready
+ * - All policy conditions are met (cooldown, caps, foreground)
+ *
+ * If ad cannot be shown (not ready, not eligible), the reading activity flag
+ * is cleared immediately to prevent accumulation of skipped opportunities.
+ */
+private fun maybeShowInterstitialAfterReading(isHintBeingShown: Boolean) {
+    val state = MonetizationManager.currentState
+
+    // Skip if no reading activity occurred
+    if (!state.readingSessionHadActivity) {
+        return
+    }
+
+    // Skip if interstitial ads cannot be shown on this platform
+    if (!canShowInterstitialAds()) {
+        MonetizationManager.clearReadingActivity()
+        return
+    }
+
+    val host = InterstitialAdHost.getInstance()
+
+    // Skip if ad is not ready (don't delay navigation, don't accumulate)
+    if (!host.isAdReady()) {
+        MonetizationManager.clearReadingActivity()
+        return
+    }
+
+    // Check full eligibility with all runtime context
+    val context = MonetizationPolicy.InterstitialContext(
+        isAdReady = true,
+        isAppInForeground = UsageTracker.isInForeground.value,
+        isHintBeingShown = isHintBeingShown,
+    )
+
+    if (!MonetizationManager.isInterstitialEligible(context)) {
+        MonetizationManager.clearReadingActivity()
+        return
+    }
+
+    // Show the ad
+    host.show { result ->
+        when (result) {
+            InterstitialResult.Shown -> {
+                // Record shown AFTER confirmed presentation
+                MonetizationManager.recordInterstitialShown()
+            }
+            else -> {
+                // Failed, NotReady, or Cancelled - don't record as shown
+            }
+        }
+        // Always clear activity after the attempt
+        MonetizationManager.clearReadingActivity()
+    }
 }

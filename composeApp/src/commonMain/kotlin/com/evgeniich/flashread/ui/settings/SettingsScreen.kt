@@ -16,6 +16,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -33,12 +35,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -49,11 +55,16 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.evgeniich.flashread.ads.RewardedAdHost
 import com.evgeniich.flashread.consent.isPrivacyOptionsRequired
+import com.evgeniich.flashread.ui.ads.RewardedAdOffer
 import com.evgeniich.flashread.core.locale.AppLanguage
 import com.evgeniich.flashread.core.theme.AppTheme
 import com.evgeniich.flashread.platform.AppInfo
@@ -64,10 +75,19 @@ import com.evgeniich.flashread.ui.theme.FlashReadDimens
 import com.evgeniich.flashread.ui.theme.FlashReadShapes
 import com.evgeniich.flashread.ui.theme.FlashReadTheme
 import com.evgeniich.flashread.ui.theme.flashReadSwitchColors
+import com.evgeniich.flashread.monetization.MonetizationManager
+import com.evgeniich.flashread.monetization.MonetizationState
+import com.evgeniich.flashread.monetization.TimeProvider
 import org.jetbrains.compose.resources.stringResource
 
 private val languagePickerOptions: List<AppLanguage> = listOf(AppLanguage.System) +
     AppLanguage.SUPPORTED_CODES.map { AppLanguage.Language(it) }
+
+/** Required consecutive taps on the logo to trigger developer unlock. */
+private const val DEV_UNLOCK_TAP_COUNT = 5
+
+/** Timeout in milliseconds after which tap count resets. */
+private const val DEV_UNLOCK_TAP_TIMEOUT_MS = 3000L
 
 @Composable
 fun SettingsScreen(
@@ -82,6 +102,8 @@ fun SettingsScreen(
     onOpenTerms: () -> Unit,
     modifier: Modifier = Modifier,
     versionName: String = AppInfo.versionName,
+    isDeveloperModeUnlocked: Boolean = false,
+    monetizationState: MonetizationState? = null,
 ) {
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
@@ -90,6 +112,44 @@ fun SettingsScreen(
     val themeLabel = stringResource(Res.string.settings_theme)
     val selectedThemeLabel = selectedTheme.label()
 
+    // Developer unlock gesture state
+    var devTapCount by remember { mutableIntStateOf(0) }
+    var devLastTapTimeMs by remember { mutableLongStateOf(0L) }
+    var showDeveloperPasswordDialog by remember { mutableStateOf(false) }
+
+    // Reset tap count and cancel any pending rewarded ad when leaving Settings
+    DisposableEffect(Unit) {
+        onDispose {
+            devTapCount = 0
+            devLastTapTimeMs = 0L
+            RewardedAdHost.getInstance().cancelPendingShow()
+        }
+    }
+
+    val onLogoTap: (() -> Unit)? = if (isDeveloperModeUnlocked) {
+        // Already unlocked, no gesture needed
+        null
+    } else {
+        {
+            val now = TimeProvider.currentTimeMs()
+            // Reset if timeout elapsed since last tap
+            if (devLastTapTimeMs > 0 && (now - devLastTapTimeMs) > DEV_UNLOCK_TAP_TIMEOUT_MS) {
+                devTapCount = 0
+            }
+            devLastTapTimeMs = now
+            devTapCount++
+            if (devTapCount >= DEV_UNLOCK_TAP_COUNT) {
+                // Prevent duplicate dialogs
+                if (!showDeveloperPasswordDialog) {
+                    showDeveloperPasswordDialog = true
+                }
+                // Reset count after firing
+                devTapCount = 0
+                devLastTapTimeMs = 0L
+            }
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -97,108 +157,147 @@ fun SettingsScreen(
             .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
             .padding(top = FlashReadDimens.space8),
     ) {
-        ScreenTitle(title = stringResource(Res.string.screen_settings))
-        Spacer(Modifier.height(FlashReadDimens.space16))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = FlashReadShapes.card,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        ) {
-            SettingsLinkRow(
-                icon = Icons.Outlined.Language,
-                label = languageLabel,
-                value = selectedLanguageLabel,
-                onClick = { showLanguageDialog = true },
-            )
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = FlashReadDimens.space16),
-                color = MaterialTheme.colorScheme.outline,
-            )
-            SettingsLinkRow(
-                icon = Icons.Outlined.Palette,
-                label = themeLabel,
-                value = selectedThemeLabel,
-                onClick = { showThemeDialog = true },
-            )
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = FlashReadDimens.space16),
-                color = MaterialTheme.colorScheme.outline,
-            )
-            SettingsSwitchRow(
-                icon = Icons.Outlined.LightMode,
-                label = stringResource(Res.string.settings_keep_screen_on),
-                subtitle = stringResource(Res.string.settings_keep_screen_on_subtitle),
-                checked = keepScreenOn,
-                onCheckedChange = onKeepScreenOnChange,
-            )
-        }
-        Spacer(Modifier.height(FlashReadDimens.space16))
-        Text(
-            text = stringResource(Res.string.settings_legal),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        ScreenTitle(
+            title = stringResource(Res.string.screen_settings),
+            onLogoClick = onLogoTap,
         )
-        Spacer(Modifier.height(FlashReadDimens.space8))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = FlashReadShapes.card,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        Spacer(Modifier.height(FlashReadDimens.space16))
+
+        // Scrollable content
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
         ) {
-            if (isPrivacyOptionsRequired()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = FlashReadShapes.card,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            ) {
                 SettingsLinkRow(
-                    icon = Icons.Outlined.PrivacyTip,
-                    label = stringResource(Res.string.settings_manage_privacy),
-                    onClick = onManagePrivacy,
+                    icon = Icons.Outlined.Language,
+                    label = languageLabel,
+                    value = selectedLanguageLabel,
+                    onClick = { showLanguageDialog = true },
                 )
                 HorizontalDivider(
                     modifier = Modifier.padding(horizontal = FlashReadDimens.space16),
                     color = MaterialTheme.colorScheme.outline,
                 )
+                SettingsLinkRow(
+                    icon = Icons.Outlined.Palette,
+                    label = themeLabel,
+                    value = selectedThemeLabel,
+                    onClick = { showThemeDialog = true },
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = FlashReadDimens.space16),
+                    color = MaterialTheme.colorScheme.outline,
+                )
+                SettingsSwitchRow(
+                    icon = Icons.Outlined.LightMode,
+                    label = stringResource(Res.string.settings_keep_screen_on),
+                    subtitle = stringResource(Res.string.settings_keep_screen_on_subtitle),
+                    checked = keepScreenOn,
+                    onCheckedChange = onKeepScreenOnChange,
+                )
             }
-            SettingsLinkRow(
-                icon = Icons.Outlined.Policy,
-                label = stringResource(Res.string.settings_privacy_policy),
-                onClick = onOpenPrivacyPolicy,
+            Spacer(Modifier.height(FlashReadDimens.space16))
+            if (monetizationState != null) {
+                RewardedAdsSettingsSection()
+            }
+            Text(
+                text = stringResource(Res.string.settings_legal),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = FlashReadDimens.space16),
-                color = MaterialTheme.colorScheme.outline,
+            Spacer(Modifier.height(FlashReadDimens.space8))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = FlashReadShapes.card,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            ) {
+                if (isPrivacyOptionsRequired()) {
+                    SettingsLinkRow(
+                        icon = Icons.Outlined.PrivacyTip,
+                        label = stringResource(Res.string.settings_manage_privacy),
+                        onClick = onManagePrivacy,
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = FlashReadDimens.space16),
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+                SettingsLinkRow(
+                    icon = Icons.Outlined.Policy,
+                    label = stringResource(Res.string.settings_privacy_policy),
+                    onClick = onOpenPrivacyPolicy,
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = FlashReadDimens.space16),
+                    color = MaterialTheme.colorScheme.outline,
+                )
+                SettingsLinkRow(
+                    icon = Icons.AutoMirrored.Outlined.Article,
+                    label = stringResource(Res.string.settings_terms),
+                    onClick = onOpenTerms,
+                )
+            }
+
+            // Developer section (only if unlocked)
+            if (isDeveloperModeUnlocked && monetizationState != null) {
+                Spacer(Modifier.height(FlashReadDimens.space16))
+                DeveloperMenu(
+                    state = monetizationState,
+                    onLockDeveloperMode = {
+                        MonetizationManager.lockDeveloperMode()
+                    },
+                    onSetActiveUsageTime = { totalMs ->
+                        MonetizationManager.setActiveUsageTime(totalMs)
+                    },
+                    onGrantReward = {
+                        MonetizationManager.applyReward()
+                    },
+                    onClearReward = {
+                        MonetizationManager.clearReward()
+                    },
+                    onSetUsageDays = { count ->
+                        MonetizationManager.setUsageDays(count)
+                    },
+                )
+            }
+
+            // App name and version at the bottom of scroll content
+            Spacer(Modifier.height(FlashReadDimens.space24))
+            Text(
+                text = stringResource(Res.string.app_name),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.CenterHorizontally),
             )
-            SettingsLinkRow(
-                icon = Icons.AutoMirrored.Outlined.Article,
-                label = stringResource(Res.string.settings_terms),
-                onClick = onOpenTerms,
+            Spacer(Modifier.height(FlashReadDimens.space4))
+            val versionLabel = stringResource(Res.string.settings_version, versionName)
+            val versionCd = stringResource(Res.string.settings_version_cd, versionName)
+            Text(
+                text = versionLabel,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = FlashReadDimens.space16)
+                    .semantics { contentDescription = versionCd },
             )
         }
-        Spacer(Modifier.weight(1f))
-        Text(
-            text = stringResource(Res.string.app_name),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.CenterHorizontally),
-        )
-        Spacer(Modifier.height(FlashReadDimens.space4))
-        val versionLabel = stringResource(Res.string.settings_version, versionName)
-        val versionCd = stringResource(Res.string.settings_version_cd, versionName)
-        Text(
-            text = versionLabel,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = FlashReadDimens.space16)
-                .semantics { contentDescription = versionCd },
-        )
     }
 
     if (showLanguageDialog) {
@@ -221,6 +320,38 @@ fun SettingsScreen(
                 onThemeSelected(theme)
             },
         )
+    }
+
+    if (showDeveloperPasswordDialog) {
+        DeveloperPasswordDialog(
+            onDismiss = { showDeveloperPasswordDialog = false },
+            onUnlocked = {
+                MonetizationManager.unlockDeveloperMode()
+                showDeveloperPasswordDialog = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun RewardedAdsSettingsSection() {
+    RewardedAdOffer { inner ->
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = FlashReadShapes.card,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(FlashReadDimens.space16),
+            ) {
+                inner()
+            }
+        }
+        Spacer(Modifier.height(FlashReadDimens.space16))
     }
 }
 
@@ -347,6 +478,89 @@ private fun ThemePickerDialog(
                 modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
             ) {
                 Text(stringResource(Res.string.action_close))
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = FlashReadShapes.card,
+    )
+}
+
+@Composable
+private fun DeveloperPasswordDialog(
+    onDismiss: () -> Unit,
+    onUnlocked: () -> Unit,
+) {
+    var password by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+
+    fun attemptUnlock() {
+        if (DEV_UNLOCK_PASSWORD.isNotEmpty() && password == DEV_UNLOCK_PASSWORD) {
+            onUnlocked()
+        } else {
+            showError = true
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Developer menu",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Enter the password to unlock developer settings.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(FlashReadDimens.space16))
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { newValue ->
+                        password = newValue
+                        // Clear error when user edits field
+                        if (showError) {
+                            showError = false
+                        }
+                    },
+                    label = { Text("Password") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.NumberPassword,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { attemptUnlock() },
+                    ),
+                    isError = showError,
+                    supportingText = if (showError) {
+                        { Text("Incorrect password.") }
+                    } else {
+                        null
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { attemptUnlock() },
+                modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
+            ) {
+                Text("Unlock")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
+            ) {
+                Text("Cancel")
             }
         },
         containerColor = MaterialTheme.colorScheme.surface,

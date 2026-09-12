@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
@@ -56,6 +57,41 @@ val stripKxml2XmlPull by tasks.registering(StripXmlPullJar::class) {
     outputJar.set(layout.buildDirectory.file("stripped-libs/kxml2-noxmlpull.jar"))
 }
 
+// Reads `dev.unlock.password` from root local.properties (gitignored).
+// If the property is missing, the generated password is empty and unlock fails.
+val generateDevUnlockConfig by tasks.registering {
+    val outputDir = layout.buildDirectory.dir("generated/devUnlock/kotlin")
+    val localPropertiesFile = rootProject.layout.projectDirectory.file("local.properties")
+    val passwordProvider = providers.fileContents(localPropertiesFile).asText
+        .map { text ->
+            Properties().apply { load(text.reader()) }
+                .getProperty("dev.unlock.password")
+                .orEmpty()
+        }
+        .orElse("")
+
+    inputs.property("devUnlockPassword", passwordProvider)
+    outputs.dir(outputDir)
+
+    doLast {
+        val dest = outputDir.get().asFile.resolve(
+            "com/evgeniich/flashread/ui/settings/DevUnlockConfig.kt",
+        )
+        dest.parentFile.mkdirs()
+        val escaped = passwordProvider.get()
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("$", "\${'$'}")
+        dest.writeText(
+            buildString {
+                appendLine("package com.evgeniich.flashread.ui.settings")
+                appendLine()
+                appendLine("internal const val DEV_UNLOCK_PASSWORD: String = \"$escaped\"")
+            },
+        )
+    }
+}
+
 kotlin {
     android {
         namespace = "com.evgeniich.flashread.shared"
@@ -92,26 +128,32 @@ kotlin {
             implementation(libs.firebase.crashlytics)
             implementation(libs.user.messaging.platform)
             implementation(libs.play.services.ads)
+            implementation(libs.security.crypto)
+            implementation(libs.androidx.lifecycle.process)
         }
         getByName("androidHostTest").dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kxml2)
         }
-        commonMain.dependencies {
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.foundation)
-            implementation(libs.compose.material3)
-            implementation(compose.materialIconsExtended)
-            implementation(libs.compose.ui)
-            implementation(libs.compose.components.resources)
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.viewmodelNavigation3)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.jetbrains.navigation3.runtime)
-            implementation(libs.jetbrains.navigation3.ui)
-            implementation(libs.coil.compose)
+        commonMain {
+            kotlin.srcDir(generateDevUnlockConfig)
+            dependencies {
+                implementation(libs.compose.runtime)
+                implementation(libs.compose.foundation)
+                implementation(libs.compose.material3)
+                implementation(compose.materialIconsExtended)
+                implementation(libs.compose.ui)
+                implementation(libs.compose.components.resources)
+                implementation(libs.compose.uiToolingPreview)
+                implementation(libs.androidx.lifecycle.viewmodelCompose)
+                implementation(libs.androidx.lifecycle.viewmodelNavigation3)
+                implementation(libs.androidx.lifecycle.runtimeCompose)
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.datetime)
+                implementation(libs.jetbrains.navigation3.runtime)
+                implementation(libs.jetbrains.navigation3.ui)
+                implementation(libs.coil.compose)
+            }
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

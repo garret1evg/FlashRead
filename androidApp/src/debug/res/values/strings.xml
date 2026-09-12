@@ -4,4 +4,8 @@
     
     <!-- Google sample banner unit. Debug builds must not use production ads. -->
     <string name="admob_banner_unit_id" translatable="false">ca-app-pub-3940256099942544/9214589741</string>
+    <!-- Google sample interstitial unit. Debug builds must not use production ads. -->
+    <string name="admob_interstitial_unit_id" translatable="false">ca-app-pub-3940256099942544/1033173712</string>
+    <!-- Google sample rewarded unit. Debug builds must not use production ads. -->
+    <string name="admob_rewarded_unit_id" translatable="false">ca-app-pub-3940256099942544/5224354917</string>
 </resources>

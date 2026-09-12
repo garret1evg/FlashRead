@@ -144,8 +144,16 @@ class AppNavigationTest {
         assertEquals(listOf(AppRoute.Library), backStack.toList())
     }
 
+    /**
+     * Tests that the legacy [AppRoute.showsBannerAd] property returns true only for
+     * Home and Library. This property is now superseded by [MonetizationPolicy.shouldShowBanner]
+     * which is the authoritative source for banner placement decisions based on ad level.
+     *
+     * The legacy property is kept for backwards compatibility but should not be used
+     * in new code. Use [MonetizationManager.shouldShowBanner] instead.
+     */
     @Test
-    fun bannerAd_isEligibleOnlyOnHomeAndLibrary() {
+    fun showsBannerAd_legacyProperty_trueOnlyForHomeAndLibrary() {
         assertTrue(AppRoute.Home.showsBannerAd)
         assertTrue(AppRoute.Library.showsBannerAd)
         assertFalse(AppRoute.Settings.showsBannerAd)
@@ -158,8 +166,12 @@ class AppNavigationTest {
         assertFalse(AppRoute.QuickSpeedRead.showsBannerAd)
     }
 
+    /**
+     * Tests legacy [AppRoute.showsBannerAd] behavior when switching between Home and Library.
+     * Note: Actual banner visibility is now determined by [MonetizationPolicy.shouldShowBanner].
+     */
     @Test
-    fun bannerAd_staysEligibleWhenSwitchingHomeAndLibrary() {
+    fun showsBannerAd_legacyProperty_staysEligibleWhenSwitchingHomeAndLibrary() {
         val backStack = mutableListOf<AppRoute>(AppRoute.Home)
         assertTrue(backStack.last().showsBannerAd)
         assertTrue(backStack.last().isTopLevel)
@@ -174,8 +186,13 @@ class AppNavigationTest {
         assertTrue(backStack.last().showsBannerAd)
     }
 
+    /**
+     * Tests legacy [AppRoute.showsBannerAd] behavior on Settings screen.
+     * Note: Actual banner visibility is now determined by [MonetizationPolicy.shouldShowBanner],
+     * which may show banners on Settings at Level1+.
+     */
     @Test
-    fun bannerAd_hidesOnSettingsButBottomBarStays() {
+    fun showsBannerAd_legacyProperty_hidesOnSettingsButBottomBarStays() {
         val backStack = mutableListOf<AppRoute>(AppRoute.Home)
         backStack.navigateToTopLevel(AppRoute.Settings)
         assertEquals(listOf(AppRoute.Settings), backStack.toList())
@@ -183,8 +200,13 @@ class AppNavigationTest {
         assertFalse(backStack.last().showsBannerAd)
     }
 
+    /**
+     * Tests legacy [AppRoute.showsBannerAd] behavior on nested screens.
+     * Note: Actual banner visibility is now determined by [MonetizationPolicy.shouldShowBanner],
+     * which may show banners on Reader at Level1+.
+     */
     @Test
-    fun bannerAd_hidesOnNestedScreensAndReturnsWithLibrary() {
+    fun showsBannerAd_legacyProperty_hidesOnNestedScreensAndReturnsWithLibrary() {
         val backStack = mutableListOf<AppRoute>(AppRoute.Library)
         assertTrue(backStack.last().showsBannerAd)
 

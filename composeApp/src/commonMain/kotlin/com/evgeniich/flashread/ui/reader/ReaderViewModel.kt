@@ -17,6 +17,7 @@ import com.evgeniich.flashread.core.speedread.wordAtParagraphOffset
 import com.evgeniich.flashread.core.speedread.wordHighlightAtContentOffset
 import com.evgeniich.flashread.data.repository.ReaderTextSettingsRepository
 import com.evgeniich.flashread.data.repository.ReadingSessionRepository
+import com.evgeniich.flashread.monetization.MonetizationManager
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -104,6 +105,14 @@ class ReaderViewModel(
             return
         }
         val safeParagraphIndex = paragraphIndex.coerceAtLeast(0)
+
+        // Record reading activity if paragraph changed from initial position
+        // This detects actual scrolling (not just restore)
+        val initialIndex = _document.value?.initialParagraphIndex ?: 0
+        if (safeParagraphIndex != initialIndex) {
+            MonetizationManager.recordReadingActivity()
+        }
+
         val wordLoc = firstWordInParagraph(book.content, safeParagraphIndex)
         if (wordLoc != null) {
             _startWord.value = ReaderStartWord(
@@ -126,6 +135,10 @@ class ReaderViewModel(
 
     fun selectWord(paragraphIndex: Int, localCharOffset: Int) {
         val wordLoc = wordAtParagraphOffset(book.content, paragraphIndex, localCharOffset) ?: return
+
+        // Word tap always counts as actual reading
+        MonetizationManager.recordReadingActivity()
+
         _startWord.value = ReaderStartWord(
             paragraphIndex = wordLoc.paragraphIndex,
             localStart = wordLoc.localStart,

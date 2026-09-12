@@ -2,4 +2,8 @@
     <string name="app_name">FlashReader</string>
     <!-- TODO: Replace with production ad unit ID from AdMob Console -->
     <string name="admob_banner_unit_id" translatable="false">ca-app-pub-3940256099942544/9214589741</string>
+    <!-- TODO: Replace with production ad unit ID from AdMob Console -->
+    <string name="admob_interstitial_unit_id" translatable="false">ca-app-pub-3940256099942544/1033173712</string>
+    <!-- TODO: Replace with production ad unit ID from AdMob Console -->
+    <string name="admob_rewarded_unit_id" translatable="false">ca-app-pub-3940256099942544/5224354917</string>
 </resources>

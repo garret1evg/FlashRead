@@ -75,11 +75,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.evgeniich.flashread.ads.BannerAdHost
+import com.evgeniich.flashread.ads.canShowBannerAds
 import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.core.reading.ReaderAlignment
 import com.evgeniich.flashread.core.reading.ReaderTextDefaults
 import com.evgeniich.flashread.core.reading.ReaderTextSettings
 import com.evgeniich.flashread.core.reading.bookProgressPercent
+import com.evgeniich.flashread.monetization.MonetizationManager
+import com.evgeniich.flashread.navigation.AppRoute
 import com.evgeniich.flashread.resources.Res
 import com.evgeniich.flashread.resources.*
 import com.evgeniich.flashread.ui.library.MaterialTitleFormatter
@@ -133,6 +137,10 @@ fun ReaderScreen(
     val backLabel = stringResource(Res.string.action_back)
     val textSettingsLabel = stringResource(Res.string.reader_text_settings)
     val openSpeedReadLabel = stringResource(Res.string.reader_open_speed_read)
+    // Collect state to trigger recomposition when monetization state changes
+    @Suppress("UNUSED_VARIABLE")
+    val monetizationState by MonetizationManager.state.collectAsStateWithLifecycle()
+    val showBanner = canShowBannerAds() && MonetizationManager.shouldShowBanner(AppRoute.Reader)
 
     LaunchedEffect(isActiveRoute, document) {
         if (isActiveRoute && document != null) {
@@ -262,7 +270,7 @@ fun ReaderScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
-                .padding(top = FlashReadDimens.space12, bottom = FlashReadDimens.space16)
+                .padding(top = FlashReadDimens.space12)
                 .heightIn(min = FlashReadDimens.minTouchTarget)
                 .semantics { contentDescription = openSpeedReadLabel },
             shape = FlashReadShapes.button,
@@ -278,6 +286,11 @@ fun ReaderScreen(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        if (showBanner) {
+            Spacer(Modifier.height(FlashReadDimens.space12))
+            BannerAdHost(modifier = Modifier.fillMaxWidth())
+        }
+        Spacer(Modifier.height(FlashReadDimens.space16))
     }
 
     if (showTextSettings) {

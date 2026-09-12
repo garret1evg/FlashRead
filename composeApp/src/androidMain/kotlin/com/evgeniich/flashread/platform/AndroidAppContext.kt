@@ -8,6 +8,10 @@ import android.os.Bundle
 import com.evgeniich.flashread.analytics.applyAnalyticsConsent
 import com.evgeniich.flashread.crash.CrashlyticsTree
 import com.evgeniich.flashread.crash.applyCrashlyticsConsent
+import com.evgeniich.flashread.monetization.AppLifecycleTracker
+import com.evgeniich.flashread.monetization.MonetizationManager
+import com.evgeniich.flashread.monetization.MonetizationStorage
+import com.evgeniich.flashread.monetization.UsageTracker
 import com.google.firebase.FirebaseApp
 import timber.log.Timber
 import java.lang.ref.WeakReference
@@ -27,8 +31,24 @@ object AndroidAppContext {
         plantTimberIfNeeded(applicationContext)
         applyAnalyticsConsent(applicationContext)
         applyCrashlyticsConsent(applicationContext)
+        AppLifecycleTracker.init()
+        UsageTracker.init()
+        initMonetizationManager()
         (applicationContext as? Application ?: context as? Application)
             ?.let(CurrentActivityTracker::register)
+    }
+
+    private fun initMonetizationManager() {
+        // Load initial state from storage
+        val initialState = MonetizationStorage.load()
+        MonetizationManager.initWithState(initialState)
+
+        // Wire up persistence callback
+        MonetizationManager.onStatePersist = { state ->
+            MonetizationStorage.save(state)
+        }
+
+        MonetizationManager.init()
     }
 
     private fun plantTimberIfNeeded(context: Context) {

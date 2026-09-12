@@ -2,6 +2,8 @@ package com.evgeniich.flashread.core.speedread
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class SpeedReadFlashWrapTest {
 
@@ -62,6 +64,43 @@ class SpeedReadFlashWrapTest {
         assertEquals(
             "one two",
             wrapFlashText("one two", maxWidthPx = 0, measureWidthPx = { it.length }),
+        )
+    }
+
+    @Test
+    fun spritzKeepsWordThatFitsAroundPivot() {
+        assertFalse(
+            spritzWordOverflows(
+                wordWidthPx = 80f,
+                pivotCenterInWordPx = 30f,
+                containerWidthPx = 200,
+                paddingPx = 16,
+            ),
+        )
+    }
+
+    @Test
+    fun spritzOverflowsWhenTailExtendsPastRightPadding() {
+        // Pivot near the start: most of the word sits to the right of center.
+        assertTrue(
+            spritzWordOverflows(
+                wordWidthPx = 160f,
+                pivotCenterInWordPx = 20f,
+                containerWidthPx = 200,
+                paddingPx = 16,
+            ),
+        )
+    }
+
+    @Test
+    fun spritzOverflowsWhenPrefixExtendsPastLeftPadding() {
+        assertTrue(
+            spritzWordOverflows(
+                wordWidthPx = 160f,
+                pivotCenterInWordPx = 140f,
+                containerWidthPx = 200,
+                paddingPx = 16,
+            ),
         )
     }
 }

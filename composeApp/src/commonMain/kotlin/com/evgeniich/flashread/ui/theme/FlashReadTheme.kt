@@ -68,6 +68,12 @@ object FlashReadDimens {
     val coverThumbHeight = 72.dp
     /** Approximate height of an adaptive banner ad to reserve space. */
     val bannerAdHeight = 50.dp
+    /**
+     * Reserved height for the rewarded-ad offer under speed-read player controls.
+     * Fits [minTouchTarget] button plus one bodyMedium subtitle line so the ORP word
+     * does not move when the offer appears or shows "Ads paused until …".
+     */
+    val rewardedAdOfferSlotHeight = minTouchTarget + space8 + 20.dp
 }
 
 object FlashReadShapes {

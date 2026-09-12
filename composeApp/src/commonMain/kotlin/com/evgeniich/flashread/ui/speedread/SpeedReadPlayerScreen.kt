@@ -53,6 +53,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,6 +62,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.keepScreenOn
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -84,6 +86,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.evgeniich.flashread.ads.BannerAdHost
+import com.evgeniich.flashread.ads.RewardedAdHost
+import com.evgeniich.flashread.ads.canShowBannerAds
 import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.core.speedread.SpeedReadDefaults
 import com.evgeniich.flashread.core.speedread.SpeedReadPlayerStatus
@@ -91,9 +96,13 @@ import com.evgeniich.flashread.core.speedread.SpeedReadPlayerViewState
 import com.evgeniich.flashread.core.speedread.SpeedReadPosition
 import com.evgeniich.flashread.core.speedread.SpeedReadSettings
 import com.evgeniich.flashread.core.speedread.orpParts
+import com.evgeniich.flashread.core.speedread.spritzWordOverflows
 import com.evgeniich.flashread.core.speedread.wrapFlashText
+import com.evgeniich.flashread.monetization.MonetizationManager
+import com.evgeniich.flashread.navigation.AppRoute
 import com.evgeniich.flashread.resources.Res
 import com.evgeniich.flashread.resources.*
+import com.evgeniich.flashread.ui.ads.RewardedAdOffer
 import com.evgeniich.flashread.ui.theme.FlashReadDimens
 import com.evgeniich.flashread.ui.theme.FlashReadShapes
 import com.evgeniich.flashread.ui.theme.FlashReadTheme
@@ -115,6 +124,33 @@ fun SpeedReadPlayerScreen(
 ) {
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
 
+    // Collect state to trigger recomposition when monetization state changes
+    @Suppress("UNUSED_VARIABLE")
+    val monetizationState by MonetizationManager.state.collectAsStateWithLifecycle()
+
+    // Freeze banner visibility at playback start to prevent layout changes mid-playback.
+    // - L1 play: snapshot false → hidden
+    // - L2 play: snapshot true → shown (unless reward active)
+    // - Reward granted mid-play: currentShowBanner becomes false → immediately hidden
+    // - Reward expires mid-play: frozen stays false if reward was active at start → stays hidden until pause
+    val currentShowBanner = canShowBannerAds() &&
+        MonetizationManager.shouldShowBanner(AppRoute.SpeedReadPlayer, viewState.isPlaying)
+
+    var frozenPlayingBanner by remember { mutableStateOf(false) }
+    val wasPlaying = remember { mutableStateOf(false) }
+    if (viewState.isPlaying && !wasPlaying.value) {
+        // Snapshot banner state when playback starts
+        frozenPlayingBanner = currentShowBanner
+    }
+    wasPlaying.value = viewState.isPlaying
+
+    // While playing: allow hide (reward granted) but not introduce (threshold/expiry mid-play)
+    val showBanner = if (viewState.isPlaying) {
+        frozenPlayingBanner && currentShowBanner
+    } else {
+        currentShowBanner
+    }
+
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         viewModel.onHostStop()
     }
@@ -124,13 +160,27 @@ fun SpeedReadPlayerScreen(
     }
 
     DisposableEffect(viewModel) {
-        onDispose { viewModel.persistNow() }
+        onDispose {
+            viewModel.persistNow()
+            RewardedAdHost.getInstance().cancelPendingShow()
+        }
+    }
+
+    LaunchedEffect(viewState.isPlaying) {
+        if (viewState.isPlaying) {
+            RewardedAdHost.getInstance().cancelPendingShow()
+        } else {
+            MonetizationManager.applyLayoutLevel()
+        }
     }
 
     SpeedReadPlayerPane(
         state = viewState,
+        showBanner = showBanner,
+        showRewardedOffer = !viewState.isPlaying,
         onClose = {
             viewModel.persistNow()
+            RewardedAdHost.getInstance().cancelPendingShow()
             onClose()
         },
         onRestart = viewModel::restart,
@@ -148,6 +198,8 @@ fun SpeedReadPlayerScreen(
 @Composable
 internal fun SpeedReadPlayerPane(
     state: SpeedReadPlayerViewState,
+    showBanner: Boolean,
+    showRewardedOffer: Boolean = false,
     onClose: () -> Unit,
     onRestart: () -> Unit,
     onTogglePlayPause: () -> Unit,
@@ -198,6 +250,16 @@ internal fun SpeedReadPlayerPane(
                     textSize = state.settings.textSize,
                     modifier = Modifier.fillMaxWidth(),
                 )
+            }
+            if (showBanner) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(FlashReadDimens.bannerAdHeight),
+                ) {
+
+                    BannerAdHost(modifier = Modifier.fillMaxWidth())
+                }
             }
             PlayerBottomBar(
                 state = state,
@@ -413,20 +475,53 @@ private fun OrpWordFrame(
             FlashReadDimens.screenHorizontalPadding.roundToPx()
         }
         val maxTextWidth = (constraints.maxWidth - paddingPx * 2).coerceAtLeast(0)
+        val centerX = constraints.maxWidth / 2f
 
-        // Check if text is too wide for single line (for long words)
-        val textWidthPx = remember(text, textStyle) {
-            if (text.isEmpty()) 0 else {
+        val spritzParts = remember(text, spritzEnabled) {
+            orpParts(text, spritzEnabled)
+        }
+        val spritzAnnotated = remember(text, spritzParts.pivotIndex, onSurface, pivotColor) {
+            buildAnnotatedString {
+                if (text.isEmpty()) return@buildAnnotatedString
+                append(text)
+                addStyle(SpanStyle(color = onSurface), 0, text.length)
+                val pivotIndex = spritzParts.pivotIndex
+                if (pivotIndex != null && pivotIndex in text.indices) {
+                    addStyle(SpanStyle(color = pivotColor), pivotIndex, pivotIndex + 1)
+                }
+            }
+        }
+        val singleLineLayout = remember(text, textStyle, spritzAnnotated) {
+            if (text.isEmpty()) null else {
                 textMeasurer.measure(
-                    text = text,
+                    text = spritzAnnotated,
                     style = textStyle,
                     maxLines = 1,
                     softWrap = false,
                     overflow = TextOverflow.Visible,
-                ).size.width
+                )
             }
         }
-        val needsWrapping = wrapToTwoLines || textWidthPx > maxTextWidth
+        val textWidthPx = singleLineLayout?.size?.width ?: 0
+        val spritzOverflows = if (spritzEnabled && singleLineLayout != null) {
+            val pivotCenterInWord = if (
+                spritzParts.pivotIndex != null && spritzParts.pivotIndex in text.indices
+            ) {
+                val box = singleLineLayout.getBoundingBox(spritzParts.pivotIndex)
+                box.left + box.width / 2f
+            } else {
+                singleLineLayout.size.width / 2f
+            }
+            spritzWordOverflows(
+                wordWidthPx = singleLineLayout.size.width.toFloat(),
+                pivotCenterInWordPx = pivotCenterInWord,
+                containerWidthPx = constraints.maxWidth,
+                paddingPx = paddingPx,
+            )
+        } else {
+            false
+        }
+        val needsWrapping = wrapToTwoLines || textWidthPx > maxTextWidth || spritzOverflows
 
         val parts = remember(text, spritzEnabled, needsWrapping) {
             orpParts(text, spritzEnabled && !needsWrapping)
@@ -452,7 +547,7 @@ private fun OrpWordFrame(
         if (text.isEmpty()) return@BoxWithConstraints
 
         if (needsWrapping) {
-            val displayText = remember(text, maxTextWidth) {
+            val displayText = remember(text, maxTextWidth, textStyle) {
                 wrapFlashText(
                     text = text,
                     maxWidthPx = maxTextWidth,
@@ -482,8 +577,7 @@ private fun OrpWordFrame(
                 onTextLayout = { wrappedTextHeightPx = it.size.height.toFloat() },
             )
         } else {
-            val centerX = constraints.maxWidth / 2f
-            val layout = textMeasurer.measure(
+            val layout = singleLineLayout ?: textMeasurer.measure(
                 text = annotated,
                 style = textStyle,
                 maxLines = 1,
@@ -937,6 +1031,7 @@ private fun PlayerPreview(state: SpeedReadPlayerViewState, dark: Boolean) {
     FlashReadTheme(darkTheme = dark) {
         SpeedReadPlayerPane(
             state = state,
+            showBanner = false,
             onClose = {},
             onRestart = {},
             onTogglePlayPause = {},

@@ -112,6 +112,13 @@
     <string name="settings_theme_system">System</string>
     <string name="settings_keep_screen_on">Keep screen on</string>
     <string name="settings_keep_screen_on_subtitle">Prevents the screen from turning off during speed reading</string>
+    <string name="settings_watch_ad">Watch an ad for 2 hours without ads</string>
+    <string name="settings_ads_paused_until">Ads paused until %1$s</string>
+    <string name="settings_ads_paused_until_date">Ads paused until %1$s %2$s</string>
+    <string name="settings_ad_loading">Loading ad…</string>
+    <string name="reward_hint_title">Temporarily disable ads</string>
+    <string name="reward_hint_body">Watch an ad to turn off advertising for 2 hours. You can also do this later in Settings.</string>
+    <string name="reward_hint_dismiss">Not now</string>
     <string name="language_en">English</string>
     <string name="language_es">Español</string>
     <string name="language_pt">Português</string>

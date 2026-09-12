@@ -72,3 +72,21 @@ private fun wrapLongWord(
 
     return lines.joinToString("\n")
 }
+
+/**
+ * Spritz aligns the pivot letter to the horizontal center. A word can still
+ * overflow even when its total width is less than the container, because most
+ * of the letters sit after the ORP.
+ */
+internal fun spritzWordOverflows(
+    wordWidthPx: Float,
+    pivotCenterInWordPx: Float,
+    containerWidthPx: Int,
+    paddingPx: Int,
+): Boolean {
+    if (wordWidthPx <= 0f || containerWidthPx <= 0) return false
+    val centerX = containerWidthPx / 2f
+    val wordLeft = centerX - pivotCenterInWordPx
+    val wordRight = wordLeft + wordWidthPx
+    return wordLeft < paddingPx || wordRight > containerWidthPx - paddingPx
+}

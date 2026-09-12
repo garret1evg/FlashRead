@@ -1,6 +1,8 @@
 package com.evgeniich.flashread.ui.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +34,7 @@ fun AppLogo(
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
     contentDescription: String? = stringResource(Res.string.app_name),
+    onClick: (() -> Unit)? = null,
 ) {
     val colorFilter = if (LocalAppTheme.current == AppTheme.Sepia) {
         ColorFilter.tint(
@@ -40,13 +44,23 @@ fun AppLogo(
     } else {
         null
     }
+    val clickableModifier = if (onClick != null) {
+        Modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            onClick = onClick,
+        )
+    } else {
+        Modifier
+    }
     Image(
         painter = painterResource(Res.drawable.app_logo),
         contentDescription = contentDescription,
         colorFilter = colorFilter,
         modifier = modifier
             .size(size)
-            .clip(CircleShape),
+            .clip(CircleShape)
+            .then(clickableModifier),
     )
 }
 
@@ -54,12 +68,13 @@ fun AppLogo(
 fun ScreenTitle(
     title: String,
     modifier: Modifier = Modifier,
+    onLogoClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AppLogo(size = 36.dp)
+        AppLogo(size = 36.dp, onClick = onLogoClick)
         Spacer(Modifier.width(FlashReadDimens.space12))
         Text(
             text = title,

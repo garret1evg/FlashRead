@@ -19,6 +19,7 @@ import com.evgeniich.flashread.core.speedread.SpeedReadSessionTotals
 import com.evgeniich.flashread.core.speedread.SpeedReadSettings
 import com.evgeniich.flashread.data.repository.ReadingSessionRepository
 import com.evgeniich.flashread.data.repository.SpeedReadSettingsRepository
+import com.evgeniich.flashread.monetization.MonetizationManager
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import kotlinx.coroutines.CoroutineDispatcher
@@ -180,6 +181,10 @@ class SpeedReadPlayerViewModel(
         if (state.isPlaying && !sessionStarted) {
             sessionStarted = true
             playStartedAt = TimeSource.Monotonic.markNow()
+
+            // First play action counts as actual reading for monetization
+            MonetizationManager.recordReadingActivity()
+
             analytics.log(
                 AnalyticsEvent.SpeedReadStart(
                     wpmBucket = AnalyticsBuckets.wpm(state.settings.wpm),
