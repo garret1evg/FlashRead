@@ -379,52 +379,75 @@ private fun OrpWordFrame(
     val onSurface = MaterialTheme.colorScheme.onSurface
     val pivotColor = MaterialTheme.colorScheme.primary
     val markerColor = MaterialTheme.colorScheme.outline
-    val parts = remember(text, spritzEnabled) { orpParts(text, spritzEnabled) }
     val textStyle = MaterialTheme.typography.headlineLarge.copy(
         fontSize = PlayerWordSize,
         fontWeight = FontWeight.Medium,
         color = onSurface,
         letterSpacing = 0.sp,
     )
-    val annotated = remember(text, parts.pivotIndex, onSurface, pivotColor) {
-        buildAnnotatedString {
-            if (text.isEmpty()) return@buildAnnotatedString
-            append(text)
-            addStyle(SpanStyle(color = onSurface), 0, text.length)
-            val pivotIndex = parts.pivotIndex
-            if (pivotIndex != null && pivotIndex in text.indices) {
-                addStyle(SpanStyle(color = pivotColor), pivotIndex, pivotIndex + 1)
-            }
-        }
-    }
 
     BoxWithConstraints(
         modifier = modifier.height(OrpFrameHeight),
         contentAlignment = Alignment.Center,
     ) {
-        var wrappedTextHeightPx by remember(text, wrapToTwoLines) { mutableStateOf(0f) }
+        val paddingPx = with(LocalDensity.current) {
+            FlashReadDimens.screenHorizontalPadding.roundToPx()
+        }
+        val maxTextWidth = (constraints.maxWidth - paddingPx * 2).coerceAtLeast(0)
+
+        // Check if text is too wide for single line (for long words)
+        val textWidthPx = remember(text, textStyle) {
+            if (text.isEmpty()) 0 else {
+                textMeasurer.measure(
+                    text = text,
+                    style = textStyle,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Visible,
+                ).size.width
+            }
+        }
+        val needsWrapping = wrapToTwoLines || textWidthPx > maxTextWidth
+
+        val parts = remember(text, spritzEnabled, needsWrapping) {
+            orpParts(text, spritzEnabled && !needsWrapping)
+        }
+        val annotated = remember(text, parts.pivotIndex, onSurface, pivotColor) {
+            buildAnnotatedString {
+                if (text.isEmpty()) return@buildAnnotatedString
+                append(text)
+                addStyle(SpanStyle(color = onSurface), 0, text.length)
+                val pivotIndex = parts.pivotIndex
+                if (pivotIndex != null && pivotIndex in text.indices) {
+                    addStyle(SpanStyle(color = pivotColor), pivotIndex, pivotIndex + 1)
+                }
+            }
+        }
+
+        var wrappedTextHeightPx by remember(text, needsWrapping) { mutableStateOf(0f) }
         FlashFocusMarkers(
             color = markerColor,
-            textHeightPx = if (wrapToTwoLines) wrappedTextHeightPx else 0f,
+            textHeightPx = if (needsWrapping) wrappedTextHeightPx else 0f,
         )
 
         if (text.isEmpty()) return@BoxWithConstraints
 
-        if (wrapToTwoLines) {
-            val paddingPx = with(LocalDensity.current) {
-                FlashReadDimens.screenHorizontalPadding.roundToPx()
-            }
-            val maxTextWidth = (constraints.maxWidth - paddingPx * 2).coerceAtLeast(0)
+        if (needsWrapping) {
             val displayText = remember(text, maxTextWidth) {
-                wrapFlashText(text, maxTextWidth) { line ->
-                    textMeasurer.measure(
-                        text = line,
-                        style = textStyle,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Visible,
-                    ).size.width
-                }
+                wrapFlashText(
+                    text = text,
+                    maxWidthPx = maxTextWidth,
+                    measureWidthPx = { line ->
+                        textMeasurer.measure(
+                            text = line,
+                            style = textStyle,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Visible,
+                        ).size.width
+                    },
+                    maxLines = 3,
+                )
             }
             Text(
                 text = displayText,
@@ -432,7 +455,7 @@ private fun OrpWordFrame(
                     textAlign = TextAlign.Center,
                     lineHeight = PlayerWordLineHeight,
                 ),
-                maxLines = 2,
+                maxLines = 3,
                 overflow = TextOverflow.Clip,
                 modifier = Modifier
                     .fillMaxWidth()
