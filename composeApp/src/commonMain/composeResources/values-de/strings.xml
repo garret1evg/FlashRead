@@ -92,6 +92,7 @@
     <string name="loop">Wiederholen</string>
     <string name="loop_subtitle_setup">Den Text nach dem Ende von vorn wiederholen</string>
     <string name="loop_subtitle_player">Den Text nach dem Ende neu starten</string>
+    <string name="player_text_size">Textgröße</string>
     <string name="start_speed_read">Schnelllesen starten</string>
 
     <string name="player_progress_cd">Fortschritt %1$s von %2$s</string>

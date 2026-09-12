@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.AlertDialog
@@ -101,8 +102,6 @@ import kotlin.math.roundToInt
 import org.jetbrains.compose.resources.stringResource
 
 private val OrpFrameHeight = 168.dp
-private val PlayerWordSize = 34.sp
-private val PlayerWordLineHeight = 42.sp
 
 @Composable
 fun SpeedReadPlayerScreen(
@@ -158,6 +157,7 @@ internal fun SpeedReadPlayerPane(
     modifier: Modifier = Modifier,
 ) {
     var showWpmSheet by remember { mutableStateOf(false) }
+    var showTextSizeSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showRestartConfirm by remember { mutableStateOf(false) }
     val enabled = !state.isEmpty
@@ -175,6 +175,7 @@ internal fun SpeedReadPlayerPane(
         ) {
             PlayerTopBar(
                 onClose = onClose,
+                onTextSize = { showTextSizeSheet = true },
                 onSettings = { showSettingsSheet = true },
             )
             Box(
@@ -194,6 +195,7 @@ internal fun SpeedReadPlayerPane(
                     text = state.text,
                     spritzEnabled = state.settings.effectiveSpritzEnabled,
                     wrapToTwoLines = !state.settings.isSpritzAvailable,
+                    textSize = state.settings.textSize,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -214,6 +216,13 @@ internal fun SpeedReadPlayerPane(
             wpm = state.settings.wpm,
             onWpmChange = { onSettingsChange(state.settings.copy(wpm = it)) },
             onDismiss = { showWpmSheet = false },
+        )
+    }
+    if (showTextSizeSheet) {
+        PlayerTextSizeSheet(
+            textSize = state.settings.textSize,
+            onTextSizeChange = { onSettingsChange(state.settings.copy(textSize = it)) },
+            onDismiss = { showTextSizeSheet = false },
         )
     }
     if (showSettingsSheet) {
@@ -240,9 +249,11 @@ internal fun SpeedReadPlayerPane(
 @Composable
 private fun PlayerTopBar(
     onClose: () -> Unit,
+    onTextSize: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val textSizeLabel = stringResource(Res.string.player_text_size)
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -255,6 +266,11 @@ private fun PlayerTopBar(
             contentDescription = stringResource(Res.string.action_close),
         )
         Spacer(Modifier.weight(1f))
+        PlayerIconButton(
+            onClick = onTextSize,
+            imageVector = Icons.Outlined.TextFields,
+            contentDescription = textSizeLabel,
+        )
         PlayerIconButton(
             onClick = onSettings,
             imageVector = Icons.Filled.Settings,
@@ -373,14 +389,17 @@ private fun OrpWordFrame(
     text: String,
     spritzEnabled: Boolean,
     wrapToTwoLines: Boolean,
+    textSize: Int,
     modifier: Modifier = Modifier,
 ) {
     val textMeasurer = rememberTextMeasurer()
     val onSurface = MaterialTheme.colorScheme.onSurface
     val pivotColor = MaterialTheme.colorScheme.primary
     val markerColor = MaterialTheme.colorScheme.outline
+    val fontSize = textSize.sp
+    val lineHeight = (textSize + 8).sp
     val textStyle = MaterialTheme.typography.headlineLarge.copy(
-        fontSize = PlayerWordSize,
+        fontSize = fontSize,
         fontWeight = FontWeight.Medium,
         color = onSurface,
         letterSpacing = 0.sp,
@@ -453,7 +472,7 @@ private fun OrpWordFrame(
                 text = displayText,
                 style = textStyle.copy(
                     textAlign = TextAlign.Center,
-                    lineHeight = PlayerWordLineHeight,
+                    lineHeight = lineHeight,
                 ),
                 maxLines = 3,
                 overflow = TextOverflow.Clip,
@@ -607,6 +626,51 @@ private fun PlayerWpmSheet(
                     )
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PlayerTextSizeSheet(
+    textSize: Int,
+    onTextSizeChange: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = FlashReadShapes.sheet,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
+                .padding(bottom = FlashReadDimens.space24),
+        ) {
+            Text(
+                text = "$textSize sp",
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = stringResource(Res.string.player_text_size),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(FlashReadDimens.space12))
+            val textSizeCd = stringResource(Res.string.reader_font_size_cd, textSize)
+            Slider(
+                value = textSize.toFloat(),
+                onValueChange = { value -> onTextSizeChange(SpeedReadDefaults.snapTextSize(value.roundToInt())) },
+                valueRange = SpeedReadDefaults.MIN_TEXT_SIZE.toFloat()..SpeedReadDefaults.MAX_TEXT_SIZE.toFloat(),
+                steps = SpeedReadDefaults.TEXT_SIZE_SLIDER_STEPS,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = FlashReadDimens.minTouchTarget)
+                    .semantics { contentDescription = textSizeCd },
+            )
         }
     }
 }

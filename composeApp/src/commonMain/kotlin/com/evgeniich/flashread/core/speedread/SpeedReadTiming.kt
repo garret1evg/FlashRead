@@ -12,6 +12,11 @@ object SpeedReadDefaults {
     const val DEFAULT_CHUNK_SIZE = 1
     const val DEFAULT_SPRITZ_ENABLED = true
     const val DEFAULT_LOOP_ENABLED = false
+    const val MIN_TEXT_SIZE = 24
+    const val MAX_TEXT_SIZE = 48
+    const val TEXT_SIZE_STEP = 2
+    const val DEFAULT_TEXT_SIZE = 34
+    val TEXT_SIZE_SLIDER_STEPS = (MAX_TEXT_SIZE - MIN_TEXT_SIZE) / TEXT_SIZE_STEP - 1
     val WPM_PRESETS = listOf(250, 400, 600, 800)
     val CHUNK_SIZES = (MIN_CHUNK_SIZE..MAX_CHUNK_SIZE).toList()
     val WPM_SLIDER_STEPS = (MAX_WPM - MIN_WPM) / WPM_STEP - 1
@@ -21,6 +26,13 @@ object SpeedReadDefaults {
         val offset = clamped - MIN_WPM
         val snappedOffset = ((offset + WPM_STEP / 2) / WPM_STEP) * WPM_STEP
         return (MIN_WPM + snappedOffset).coerceIn(MIN_WPM, MAX_WPM)
+    }
+
+    fun snapTextSize(size: Int): Int {
+        val clamped = size.coerceIn(MIN_TEXT_SIZE, MAX_TEXT_SIZE)
+        val offset = clamped - MIN_TEXT_SIZE
+        val snappedOffset = ((offset + TEXT_SIZE_STEP / 2) / TEXT_SIZE_STEP) * TEXT_SIZE_STEP
+        return (MIN_TEXT_SIZE + snappedOffset).coerceIn(MIN_TEXT_SIZE, MAX_TEXT_SIZE)
     }
 }
 

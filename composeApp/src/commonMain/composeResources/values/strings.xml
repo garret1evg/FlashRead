@@ -92,6 +92,7 @@
     <string name="loop">Loop</string>
     <string name="loop_subtitle_setup">Repeat the text from the beginning when it ends</string>
     <string name="loop_subtitle_player">Restart the text when it ends</string>
+    <string name="player_text_size">Text size</string>
     <string name="start_speed_read">Start speed read</string>
 
     <string name="player_progress_cd">Progress %1$s of %2$s</string>

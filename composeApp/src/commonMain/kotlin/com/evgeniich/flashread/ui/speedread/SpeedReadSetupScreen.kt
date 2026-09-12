@@ -394,6 +394,37 @@ private fun ExpertSettingsSection(
                     checked = settings.loopEnabled,
                     onCheckedChange = { onSettingsChange(settings.copy(loopEnabled = it)) },
                 )
+
+                Spacer(Modifier.height(FlashReadDimens.space16))
+                val textSizeCd = stringResource(Res.string.reader_font_size_cd, settings.textSize)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(Res.string.player_text_size),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Text(
+                        text = "${settings.textSize} sp",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Slider(
+                    value = settings.textSize.toFloat(),
+                    onValueChange = { value ->
+                        onSettingsChange(settings.copy(textSize = SpeedReadDefaults.snapTextSize(value.roundToInt())))
+                    },
+                    valueRange = SpeedReadDefaults.MIN_TEXT_SIZE.toFloat()..SpeedReadDefaults.MAX_TEXT_SIZE.toFloat(),
+                    steps = SpeedReadDefaults.TEXT_SIZE_SLIDER_STEPS,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = FlashReadDimens.minTouchTarget)
+                        .semantics { contentDescription = textSizeCd },
+                )
             }
         }
     }

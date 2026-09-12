@@ -92,6 +92,7 @@
     <string name="loop">Repetir</string>
     <string name="loop_subtitle_setup">Repetir o texto desde o início quando terminar</string>
     <string name="loop_subtitle_player">Recomeçar o texto quando terminar</string>
+    <string name="player_text_size">Tamanho do texto</string>
     <string name="start_speed_read">Iniciar leitura rápida</string>
 
     <string name="player_progress_cd">Progresso %1$s de %2$s</string>

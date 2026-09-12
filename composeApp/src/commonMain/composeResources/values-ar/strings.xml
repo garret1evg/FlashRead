@@ -92,6 +92,7 @@
     <string name="loop">تكرار</string>
     <string name="loop_subtitle_setup">تكرار النص من البداية بعد انتهائه</string>
     <string name="loop_subtitle_player">إعادة النص من البداية بعد انتهائه</string>
+    <string name="player_text_size">حجم النص</string>
     <string name="start_speed_read">بدء القراءة السريعة</string>
 
     <string name="player_progress_cd">التقدم %1$s من %2$s</string>

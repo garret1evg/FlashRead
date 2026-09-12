@@ -92,6 +92,7 @@
     <string name="loop">Повтор</string>
     <string name="loop_subtitle_setup">Безперервно повторювати текст з початку після закінчення</string>
     <string name="loop_subtitle_player">Починати текст знову після закінчення</string>
+    <string name="player_text_size">Розмір тексту</string>
     <string name="start_speed_read">Почати швидкочитання</string>
 
     <string name="player_progress_cd">Прогрес %1$s із %2$s</string>
