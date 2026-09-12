@@ -4,6 +4,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
+import androidx.compose.material3.SwitchColors
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -143,6 +145,20 @@ private val FlashReadMaterialShapes = Shapes(
 )
 
 val LocalAppTheme = staticCompositionLocalOf { AppTheme.Light }
+
+@Composable
+fun flashReadSwitchColors(): SwitchColors {
+    val scheme = MaterialTheme.colorScheme
+    val isDark = LocalAppTheme.current == AppTheme.Dark
+    return SwitchDefaults.colors(
+        checkedThumbColor = scheme.onPrimary,
+        checkedTrackColor = scheme.primary,
+        checkedBorderColor = Color.Transparent,
+        uncheckedThumbColor = if (isDark) scheme.onSurfaceVariant else scheme.surface,
+        uncheckedTrackColor = scheme.onSurface.copy(alpha = if (isDark) 0.24f else 0.32f),
+        uncheckedBorderColor = scheme.onSurfaceVariant.copy(alpha = if (isDark) 0.70f else 0.55f),
+    )
+}
 
 fun AppTheme.splashBackground(systemDark: Boolean): Color = when (resolve(systemDark)) {
     AppTheme.Dark -> FlashReadDarkColors.background

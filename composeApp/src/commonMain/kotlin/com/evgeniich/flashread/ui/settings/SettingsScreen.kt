@@ -63,6 +63,7 @@ import com.evgeniich.flashread.ui.components.ScreenTitle
 import com.evgeniich.flashread.ui.theme.FlashReadDimens
 import com.evgeniich.flashread.ui.theme.FlashReadShapes
 import com.evgeniich.flashread.ui.theme.FlashReadTheme
+import com.evgeniich.flashread.ui.theme.flashReadSwitchColors
 import org.jetbrains.compose.resources.stringResource
 
 private val languagePickerOptions: List<AppLanguage> = listOf(AppLanguage.System) +
@@ -441,6 +442,7 @@ private fun SettingsSwitchRow(
             Switch(
                 checked = checked,
                 onCheckedChange = null,
+                colors = flashReadSwitchColors(),
             )
         },
         modifier = Modifier

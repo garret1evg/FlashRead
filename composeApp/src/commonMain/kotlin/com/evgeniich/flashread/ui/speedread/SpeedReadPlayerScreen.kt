@@ -96,6 +96,7 @@ import com.evgeniich.flashread.resources.*
 import com.evgeniich.flashread.ui.theme.FlashReadDimens
 import com.evgeniich.flashread.ui.theme.FlashReadShapes
 import com.evgeniich.flashread.ui.theme.FlashReadTheme
+import com.evgeniich.flashread.ui.theme.flashReadSwitchColors
 import kotlin.math.roundToInt
 import org.jetbrains.compose.resources.stringResource
 
@@ -746,6 +747,7 @@ private fun PlayerSwitchRow(
         Switch(
             checked = checked,
             onCheckedChange = null,
+            colors = flashReadSwitchColors(),
         )
     }
 }
