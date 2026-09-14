@@ -112,6 +112,8 @@
     <string name="settings_theme_system">النظام</string>
     <string name="settings_keep_screen_on">إبقاء الشاشة قيد التشغيل</string>
     <string name="settings_keep_screen_on_subtitle">يمنع إطفاء الشاشة أثناء القراءة السريعة</string>
+    <string name="settings_auto_rotate">تدوير الشاشة تلقائيًا</string>
+    <string name="settings_auto_rotate_subtitle">السماح بتدوير الشاشة عند تدوير الجهاز</string>
     <string name="language_en">English</string>
     <string name="language_es">Español</string>
     <string name="language_pt">Português</string>

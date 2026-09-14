@@ -112,6 +112,8 @@
     <string name="settings_theme_system">System</string>
     <string name="settings_keep_screen_on">Bildschirm anlassen</string>
     <string name="settings_keep_screen_on_subtitle">Verhindert, dass der Bildschirm beim Schnelllesen ausgeht</string>
+    <string name="settings_auto_rotate">Bildschirm automatisch drehen</string>
+    <string name="settings_auto_rotate_subtitle">Bildschirm drehen, wenn das Gerät gedreht wird</string>
     <string name="language_en">English</string>
     <string name="language_es">Español</string>
     <string name="language_pt">Português</string>

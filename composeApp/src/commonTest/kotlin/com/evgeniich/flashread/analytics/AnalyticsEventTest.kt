@@ -166,6 +166,7 @@ class AnalyticsEventTest {
         assertEquals("spritz_enabled", AnalyticsEvent.SettingsChange.SettingName.SpritzEnabled.value)
         assertEquals("loop_enabled", AnalyticsEvent.SettingsChange.SettingName.LoopEnabled.value)
         assertEquals("keep_screen_on", AnalyticsEvent.SettingsChange.SettingName.KeepScreenOn.value)
+        assertEquals("auto_rotate", AnalyticsEvent.SettingsChange.SettingName.AutoRotate.value)
     }
 
     @Test

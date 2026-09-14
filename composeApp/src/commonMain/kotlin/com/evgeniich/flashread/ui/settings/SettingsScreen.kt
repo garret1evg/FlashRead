@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Policy
 import androidx.compose.material.icons.outlined.PrivacyTip
+import androidx.compose.material.icons.outlined.ScreenRotation
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -97,6 +98,8 @@ fun SettingsScreen(
     onThemeSelected: (AppTheme) -> Unit,
     keepScreenOn: Boolean,
     onKeepScreenOnChange: (Boolean) -> Unit,
+    autoRotate: Boolean,
+    onAutoRotateChange: (Boolean) -> Unit,
     onManagePrivacy: () -> Unit,
     onOpenPrivacyPolicy: () -> Unit,
     onOpenTerms: () -> Unit,
@@ -202,6 +205,17 @@ fun SettingsScreen(
                     subtitle = stringResource(Res.string.settings_keep_screen_on_subtitle),
                     checked = keepScreenOn,
                     onCheckedChange = onKeepScreenOnChange,
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = FlashReadDimens.space16),
+                    color = MaterialTheme.colorScheme.outline,
+                )
+                SettingsSwitchRow(
+                    icon = Icons.Outlined.ScreenRotation,
+                    label = stringResource(Res.string.settings_auto_rotate),
+                    subtitle = stringResource(Res.string.settings_auto_rotate_subtitle),
+                    checked = autoRotate,
+                    onCheckedChange = onAutoRotateChange,
                 )
             }
             Spacer(Modifier.height(FlashReadDimens.space16))
@@ -708,6 +722,8 @@ private fun SettingsScreenPreview() {
             onThemeSelected = {},
             keepScreenOn = true,
             onKeepScreenOnChange = {},
+            autoRotate = false,
+            onAutoRotateChange = {},
             onManagePrivacy = {},
             onOpenPrivacyPolicy = {},
             onOpenTerms = {},

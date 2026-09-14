@@ -182,6 +182,7 @@ sealed class AnalyticsEvent {
             SpritzEnabled("spritz_enabled"),
             LoopEnabled("loop_enabled"),
             KeepScreenOn("keep_screen_on"),
+            AutoRotate("auto_rotate"),
         }
 
         companion object {

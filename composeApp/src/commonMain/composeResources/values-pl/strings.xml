@@ -112,6 +112,8 @@
     <string name="settings_theme_system">Systemowy</string>
     <string name="settings_keep_screen_on">Nie wyłączaj ekranu</string>
     <string name="settings_keep_screen_on_subtitle">Zapobiega wyłączaniu ekranu podczas szybkiego czytania</string>
+    <string name="settings_auto_rotate">Automatyczny obrót ekranu</string>
+    <string name="settings_auto_rotate_subtitle">Pozwól ekranowi obracać się przy obracaniu urządzenia</string>
     <string name="language_en">English</string>
     <string name="language_es">Español</string>
     <string name="language_pt">Português</string>

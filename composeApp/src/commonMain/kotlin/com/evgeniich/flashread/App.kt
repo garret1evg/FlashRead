@@ -70,6 +70,7 @@ import com.evgeniich.flashread.core.locale.resolveLocaleOverride
 import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.data.repository.AppLanguageRepository
 import com.evgeniich.flashread.data.repository.AppThemeRepository
+import com.evgeniich.flashread.data.repository.AutoRotateRepository
 import com.evgeniich.flashread.data.repository.KeepScreenOnRepository
 import com.evgeniich.flashread.locale.AppEnvironment
 import com.evgeniich.flashread.monetization.AdLevel
@@ -86,6 +87,7 @@ import com.evgeniich.flashread.navigation.popBack
 import com.evgeniich.flashread.navigation.pushIfNeeded
 import com.evgeniich.flashread.platform.ObserveExternalBookOpens
 import com.evgeniich.flashread.platform.applyPlatformTheme
+import com.evgeniich.flashread.platform.applyScreenOrientation
 import com.evgeniich.flashread.platform.currentSystemLanguageTag
 import com.evgeniich.flashread.platform.launchRouteForExternalBookOpen
 import com.evgeniich.flashread.platform.rememberBookImportLauncher
@@ -120,6 +122,8 @@ fun App() {
     var appTheme by remember { mutableStateOf(themeRepository.load()) }
     val keepScreenOnRepository = remember { KeepScreenOnRepository() }
     var keepScreenOn by remember { mutableStateOf(keepScreenOnRepository.load()) }
+    val autoRotateRepository = remember { AutoRotateRepository() }
+    var autoRotate by remember { mutableStateOf(autoRotateRepository.load()) }
     val systemLanguageTag = remember { currentSystemLanguageTag() }
     val localeOverride = resolveLocaleOverride(appLanguage, systemLanguageTag)
     val backStack = remember {
@@ -144,6 +148,10 @@ fun App() {
 
         LaunchedEffect(appTheme) {
             applyPlatformTheme(appTheme)
+        }
+
+        LaunchedEffect(autoRotate) {
+            applyScreenOrientation(autoRotate)
         }
 
         LaunchedEffect(appViewModel) {
@@ -492,6 +500,19 @@ fun App() {
                                 }
                                 keepScreenOnRepository.save(enabled)
                                 keepScreenOn = enabled
+                            },
+                            autoRotate = autoRotate,
+                            onAutoRotateChange = { enabled ->
+                                if (enabled != autoRotate) {
+                                    Analytics.log(
+                                        AnalyticsEvent.SettingsChange(
+                                            settingName = AnalyticsEvent.SettingsChange.SettingName.AutoRotate,
+                                            settingValue = enabled.toString(),
+                                        ),
+                                    )
+                                }
+                                autoRotateRepository.save(enabled)
+                                autoRotate = enabled
                             },
                             onManagePrivacy = { showPrivacyOptionsForm() },
                             onOpenPrivacyPolicy = { backStack.pushIfNeeded(AppRoute.PrivacyPolicy) },
