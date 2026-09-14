@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -72,6 +73,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -855,11 +857,13 @@ private fun PlayerIconButton(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PlayerWpmSheet(
-    wpm: Int,
-    onWpmChange: (Int) -> Unit,
+private fun PlayerModalSheet(
     onDismiss: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
+    val maxBodyHeight = with(LocalDensity.current) {
+        (LocalWindowInfo.current.containerSize.height / 3f).toDp()
+    }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -869,94 +873,93 @@ private fun PlayerWpmSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(max = maxBodyHeight)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
                 .padding(bottom = FlashReadDimens.space24),
+            content = content,
+        )
+    }
+}
+
+@Composable
+private fun PlayerWpmSheet(
+    wpm: Int,
+    onWpmChange: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    PlayerModalSheet(onDismiss = onDismiss) {
+        Text(
+            text = stringResource(Res.string.wpm_value, wpm),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = stringResource(Res.string.wpm_label),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(FlashReadDimens.space12))
+        val wpmSliderCd = stringResource(Res.string.wpm_slider_cd)
+        Slider(
+            value = wpm.toFloat(),
+            onValueChange = { value -> onWpmChange(SpeedReadDefaults.snapWpm(value.roundToInt())) },
+            valueRange = SpeedReadDefaults.MIN_WPM.toFloat()..SpeedReadDefaults.MAX_WPM.toFloat(),
+            steps = SpeedReadDefaults.WPM_SLIDER_STEPS,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = FlashReadDimens.minTouchTarget)
+                .semantics { contentDescription = wpmSliderCd },
+        )
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(FlashReadDimens.space8),
+            verticalArrangement = Arrangement.spacedBy(FlashReadDimens.space8),
         ) {
-            Text(
-                text = stringResource(Res.string.wpm_value, wpm),
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = stringResource(Res.string.wpm_label),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(FlashReadDimens.space12))
-            val wpmSliderCd = stringResource(Res.string.wpm_slider_cd)
-            Slider(
-                value = wpm.toFloat(),
-                onValueChange = { value -> onWpmChange(SpeedReadDefaults.snapWpm(value.roundToInt())) },
-                valueRange = SpeedReadDefaults.MIN_WPM.toFloat()..SpeedReadDefaults.MAX_WPM.toFloat(),
-                steps = SpeedReadDefaults.WPM_SLIDER_STEPS,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = FlashReadDimens.minTouchTarget)
-                    .semantics { contentDescription = wpmSliderCd },
-            )
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(FlashReadDimens.space8),
-                verticalArrangement = Arrangement.spacedBy(FlashReadDimens.space8),
-            ) {
-                SpeedReadDefaults.WPM_PRESETS.forEach { preset ->
-                    val presetCd = stringResource(Res.string.wpm_preset_cd, preset)
-                    FilterChip(
-                        selected = wpm == preset,
-                        onClick = { onWpmChange(preset) },
-                        label = { Text("$preset") },
-                        modifier = Modifier.semantics {
-                            contentDescription = presetCd
-                        },
-                    )
-                }
+            SpeedReadDefaults.WPM_PRESETS.forEach { preset ->
+                val presetCd = stringResource(Res.string.wpm_preset_cd, preset)
+                FilterChip(
+                    selected = wpm == preset,
+                    onClick = { onWpmChange(preset) },
+                    label = { Text("$preset") },
+                    modifier = Modifier.semantics {
+                        contentDescription = presetCd
+                    },
+                )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PlayerTextSizeSheet(
     textSize: Int,
     onTextSizeChange: (Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = FlashReadShapes.sheet,
-    ) {
-        Column(
+    PlayerModalSheet(onDismiss = onDismiss) {
+        Text(
+            text = "$textSize sp",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = stringResource(Res.string.player_text_size),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(FlashReadDimens.space12))
+        val textSizeCd = stringResource(Res.string.reader_font_size_cd, textSize)
+        Slider(
+            value = textSize.toFloat(),
+            onValueChange = { value -> onTextSizeChange(SpeedReadDefaults.snapTextSize(value.roundToInt())) },
+            valueRange = SpeedReadDefaults.MIN_TEXT_SIZE.toFloat()..SpeedReadDefaults.MAX_TEXT_SIZE.toFloat(),
+            steps = SpeedReadDefaults.TEXT_SIZE_SLIDER_STEPS,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
-                .padding(bottom = FlashReadDimens.space24),
-        ) {
-            Text(
-                text = "$textSize sp",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = stringResource(Res.string.player_text_size),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(FlashReadDimens.space12))
-            val textSizeCd = stringResource(Res.string.reader_font_size_cd, textSize)
-            Slider(
-                value = textSize.toFloat(),
-                onValueChange = { value -> onTextSizeChange(SpeedReadDefaults.snapTextSize(value.roundToInt())) },
-                valueRange = SpeedReadDefaults.MIN_TEXT_SIZE.toFloat()..SpeedReadDefaults.MAX_TEXT_SIZE.toFloat(),
-                steps = SpeedReadDefaults.TEXT_SIZE_SLIDER_STEPS,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = FlashReadDimens.minTouchTarget)
-                    .semantics { contentDescription = textSizeCd },
-            )
-        }
+                .heightIn(min = FlashReadDimens.minTouchTarget)
+                .semantics { contentDescription = textSizeCd },
+        )
     }
 }
 
@@ -969,111 +972,98 @@ private fun PlayerSettingsSheet(
     onSettingsChange: (SpeedReadSettings) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = FlashReadShapes.sheet,
-    ) {
-        Column(
+    PlayerModalSheet(onDismiss = onDismiss) {
+        Text(
+            text = stringResource(Res.string.player_settings),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(FlashReadDimens.space16))
+        Text(
+            text = stringResource(Res.string.words_per_flash),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Spacer(Modifier.height(FlashReadDimens.space8))
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            SpeedReadDefaults.CHUNK_SIZES.forEachIndexed { index, size ->
+                SegmentedButton(
+                    selected = settings.chunkSize == size,
+                    onClick = { onSettingsChange(settings.copy(chunkSize = size)) },
+                    shape = SegmentedButtonDefaults.itemShape(
+                        index = index,
+                        count = SpeedReadDefaults.CHUNK_SIZES.size,
+                    ),
+                    modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
+                ) {
+                    Text(text = size.toString())
+                }
+            }
+        }
+        Spacer(Modifier.height(FlashReadDimens.space8))
+        Text(
+            text = stringResource(Res.string.context_display),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Spacer(Modifier.height(FlashReadDimens.space8))
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            ContextMode.entries.forEachIndexed { index, mode ->
+                val label = when (mode) {
+                    ContextMode.Off -> stringResource(Res.string.context_mode_off)
+                    ContextMode.WhenPaused -> stringResource(Res.string.context_mode_when_paused)
+                    ContextMode.Always -> stringResource(Res.string.context_mode_always)
+                }
+                SegmentedButton(
+                    selected = settings.contextMode == mode,
+                    onClick = { onSettingsChange(settings.copy(contextMode = mode)) },
+                    shape = SegmentedButtonDefaults.itemShape(
+                        index = index,
+                        count = ContextMode.entries.size,
+                    ),
+                    modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(FlashReadDimens.space8))
+        if (settings.isSpritzAvailable) {
+            PlayerSwitchRow(
+                title = stringResource(Res.string.spritz),
+                subtitle = stringResource(Res.string.spritz_subtitle_player),
+                checked = settings.spritzEnabled,
+                onCheckedChange = { onSettingsChange(settings.copy(spritzEnabled = it)) },
+            )
+        }
+        PlayerSwitchRow(
+            title = stringResource(Res.string.loop),
+            subtitle = stringResource(Res.string.loop_subtitle_player),
+            checked = settings.loopEnabled,
+            onCheckedChange = { onSettingsChange(settings.copy(loopEnabled = it)) },
+        )
+        Spacer(Modifier.height(FlashReadDimens.space8))
+        val restartLabel = stringResource(Res.string.action_restart)
+        TextButton(
+            onClick = onRestartClick,
+            enabled = restartEnabled,
+            contentPadding = PaddingValues(horizontal = 0.dp),
             modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = FlashReadDimens.screenHorizontalPadding)
-                .padding(bottom = FlashReadDimens.space24),
+                .heightIn(min = FlashReadDimens.minTouchTarget)
+                .semantics { contentDescription = restartLabel },
         ) {
             Text(
-                text = stringResource(Res.string.player_settings),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
+                text = restartLabel,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            Spacer(Modifier.height(FlashReadDimens.space16))
-            Text(
-                text = stringResource(Res.string.words_per_flash),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Spacer(Modifier.height(FlashReadDimens.space8))
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                SpeedReadDefaults.CHUNK_SIZES.forEachIndexed { index, size ->
-                    SegmentedButton(
-                        selected = settings.chunkSize == size,
-                        onClick = { onSettingsChange(settings.copy(chunkSize = size)) },
-                        shape = SegmentedButtonDefaults.itemShape(
-                            index = index,
-                            count = SpeedReadDefaults.CHUNK_SIZES.size,
-                        ),
-                        modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
-                    ) {
-                        Text(text = size.toString())
-                    }
-                }
-            }
-            Spacer(Modifier.height(FlashReadDimens.space8))
-            Text(
-                text = stringResource(Res.string.context_display),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Spacer(Modifier.height(FlashReadDimens.space8))
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                ContextMode.entries.forEachIndexed { index, mode ->
-                    val label = when (mode) {
-                        ContextMode.Off -> stringResource(Res.string.context_mode_off)
-                        ContextMode.WhenPaused -> stringResource(Res.string.context_mode_when_paused)
-                        ContextMode.Always -> stringResource(Res.string.context_mode_always)
-                    }
-                    SegmentedButton(
-                        selected = settings.contextMode == mode,
-                        onClick = { onSettingsChange(settings.copy(contextMode = mode)) },
-                        shape = SegmentedButtonDefaults.itemShape(
-                            index = index,
-                            count = ContextMode.entries.size,
-                        ),
-                        modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
-                    ) {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelMedium,
-                            textAlign = TextAlign.Center,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-            }
-            Spacer(Modifier.height(FlashReadDimens.space8))
-            if (settings.isSpritzAvailable) {
-                PlayerSwitchRow(
-                    title = stringResource(Res.string.spritz),
-                    subtitle = stringResource(Res.string.spritz_subtitle_player),
-                    checked = settings.spritzEnabled,
-                    onCheckedChange = { onSettingsChange(settings.copy(spritzEnabled = it)) },
-                )
-            }
-            PlayerSwitchRow(
-                title = stringResource(Res.string.loop),
-                subtitle = stringResource(Res.string.loop_subtitle_player),
-                checked = settings.loopEnabled,
-                onCheckedChange = { onSettingsChange(settings.copy(loopEnabled = it)) },
-            )
-            Spacer(Modifier.height(FlashReadDimens.space8))
-            val restartLabel = stringResource(Res.string.action_restart)
-            TextButton(
-                onClick = onRestartClick,
-                enabled = restartEnabled,
-                contentPadding = PaddingValues(horizontal = 0.dp),
-                modifier = Modifier
-                    .heightIn(min = FlashReadDimens.minTouchTarget)
-                    .semantics { contentDescription = restartLabel },
-            ) {
-                Text(
-                    text = restartLabel,
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
         }
     }
 }
