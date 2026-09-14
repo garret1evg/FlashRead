@@ -55,6 +55,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -62,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.evgeniich.flashread.core.model.Book
+import com.evgeniich.flashread.core.speedread.ContextMode
 import com.evgeniich.flashread.core.speedread.SpeedReadDefaults
 import com.evgeniich.flashread.core.speedread.SpeedReadSettings
 import com.evgeniich.flashread.resources.Res
@@ -375,6 +377,40 @@ private fun ExpertSettingsSection(
                                 },
                         ) {
                             Text(text = size.toString())
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(FlashReadDimens.space16))
+                Text(
+                    text = stringResource(Res.string.context_display),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Spacer(Modifier.height(FlashReadDimens.space8))
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    ContextMode.entries.forEachIndexed { index, mode ->
+                        val label = when (mode) {
+                            ContextMode.Off -> stringResource(Res.string.context_mode_off)
+                            ContextMode.WhenPaused -> stringResource(Res.string.context_mode_when_paused)
+                            ContextMode.Always -> stringResource(Res.string.context_mode_always)
+                        }
+                        SegmentedButton(
+                            selected = settings.contextMode == mode,
+                            onClick = { onSettingsChange(settings.copy(contextMode = mode)) },
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = ContextMode.entries.size,
+                            ),
+                            modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelMedium,
+                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
                         }
                     }
                 }

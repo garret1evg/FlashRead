@@ -6,6 +6,7 @@ data class SpeedReadSettings(
     val spritzEnabled: Boolean = SpeedReadDefaults.DEFAULT_SPRITZ_ENABLED,
     val loopEnabled: Boolean = SpeedReadDefaults.DEFAULT_LOOP_ENABLED,
     val textSize: Int = SpeedReadDefaults.DEFAULT_TEXT_SIZE,
+    val contextMode: ContextMode = ContextMode.DEFAULT,
 ) {
     val isSpritzAvailable: Boolean
         get() = chunkSize <= SpeedReadDefaults.MIN_CHUNK_SIZE

@@ -86,6 +86,10 @@
     <string name="wpm_preset_cd">Ustawienie %1$d słów na minutę</string>
     <string name="expert_settings">Ustawienia eksperckie</string>
     <string name="words_per_flash">Słów na błysk</string>
+    <string name="context_display">Kontekst</string>
+    <string name="context_mode_off">Wył.</string>
+    <string name="context_mode_when_paused">Na pauzie</string>
+    <string name="context_mode_always">Zawsze</string>
     <string name="spritz">Spritz</string>
     <string name="spritz_subtitle_setup">Podświetl optymalny punkt rozpoznawania w każdym słowie</string>
     <string name="spritz_subtitle_player">Podświetl literę osiową</string>

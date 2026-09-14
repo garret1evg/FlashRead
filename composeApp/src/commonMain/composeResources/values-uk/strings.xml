@@ -86,6 +86,10 @@
     <string name="wpm_preset_cd">Предустановлення %1$d слів на хвилину</string>
     <string name="expert_settings">Експертні налаштування</string>
     <string name="words_per_flash">Слів за показ</string>
+    <string name="context_display">Контекст</string>
+    <string name="context_mode_off">Вимк</string>
+    <string name="context_mode_when_paused">На паузі</string>
+    <string name="context_mode_always">Завжди</string>
     <string name="spritz">Spritz</string>
     <string name="spritz_subtitle_setup">Підсвічувати оптимальну точку розпізнавання в слові</string>
     <string name="spritz_subtitle_player">Підсвічувати опорну літеру</string>

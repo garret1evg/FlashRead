@@ -55,7 +55,7 @@ private fun AdaptiveBannerAdView(adWidthDp: Int) {
     val orientation = LocalConfiguration.current.orientation
 
     val adSize = remember(adWidthDp, orientation) {
-        AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, adWidthDp)
+        anchoredAdaptiveBannerAdSize(context, adWidthDp)
     }
     if (adSize == AdSize.INVALID) {
         Timber.w("Invalid adaptive banner size for width %sdp", adWidthDp)
@@ -144,6 +144,27 @@ private fun resolveAdWidthDp(maxWidth: Dp): Int {
 
 actual fun canShowBannerAds(): Boolean {
     return AdMobManager.isInitialized && ConsentManager.canRequestAds()
+}
+
+@Composable
+actual fun rememberReservedBannerAdHeight(availableWidthDp: Int): Dp {
+    val context = LocalContext.current
+    val orientation = LocalConfiguration.current.orientation
+    val widthDp = if (availableWidthDp > 0) {
+        availableWidthDp
+    } else {
+        resolveAdWidthDp(Dp.Unspecified)
+    }
+    val heightDp = remember(widthDp, orientation) {
+        val adSize = anchoredAdaptiveBannerAdSize(context, widthDp)
+        if (adSize == AdSize.INVALID) 0 else adSize.height
+    }
+    return heightDp.dp
+}
+
+private fun anchoredAdaptiveBannerAdSize(context: Context, adWidthDp: Int): AdSize {
+    if (adWidthDp <= 0) return AdSize.INVALID
+    return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, adWidthDp)
 }
 
 /**

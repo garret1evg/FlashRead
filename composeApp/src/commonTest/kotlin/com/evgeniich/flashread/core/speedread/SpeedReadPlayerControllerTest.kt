@@ -2,6 +2,7 @@ package com.evgeniich.flashread.core.speedread
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class SpeedReadPlayerControllerTest {
@@ -154,18 +155,82 @@ class SpeedReadPlayerControllerTest {
         assertEquals(1, remainingMsToMinutes(60_000))
         assertEquals(2, remainingMsToMinutes(60_001))
     }
+
+    @Test
+    fun defaultWhenPausedShowsContextOnlyWhileNotPlaying() {
+        val controller = controller("one two")
+        assertEquals(ContextMode.WhenPaused, controller.viewState.settings.contextMode)
+        assertTrue(controller.viewState.isContextVisible)
+        assertTrue(controller.viewState.shouldExtractContext)
+
+        controller.play()
+        assertEquals(SpeedReadPlayerStatus.Playing, controller.viewState.status)
+        assertFalse(controller.viewState.isContextVisible)
+        assertFalse(controller.viewState.shouldExtractContext)
+
+        controller.pause()
+        assertTrue(controller.viewState.isContextVisible)
+        assertTrue(controller.viewState.shouldExtractContext)
+
+        controller.play()
+        controller.onTick()
+        controller.onTick()
+        assertEquals(SpeedReadPlayerStatus.Finished, controller.viewState.status)
+        assertTrue(controller.viewState.isContextVisible)
+        assertTrue(controller.viewState.shouldExtractContext)
+    }
+
+    @Test
+    fun offNeverShowsContext() {
+        val controller = controller("one two", contextMode = ContextMode.Off)
+        assertFalse(controller.viewState.isContextVisible)
+        assertFalse(controller.viewState.shouldExtractContext)
+
+        controller.play()
+        assertEquals(SpeedReadPlayerStatus.Playing, controller.viewState.status)
+        assertFalse(controller.viewState.isContextVisible)
+        assertFalse(controller.viewState.shouldExtractContext)
+
+        controller.pause()
+        assertFalse(controller.viewState.isContextVisible)
+        assertFalse(controller.viewState.shouldExtractContext)
+
+        controller.play()
+        controller.onTick()
+        controller.onTick()
+        assertEquals(SpeedReadPlayerStatus.Finished, controller.viewState.status)
+        assertFalse(controller.viewState.isContextVisible)
+        assertFalse(controller.viewState.shouldExtractContext)
+    }
+
+    @Test
+    fun alwaysShowsContextWhilePlaying() {
+        val controller = controller("one two", contextMode = ContextMode.Always)
+        assertTrue(controller.viewState.isContextVisible)
+        assertTrue(controller.viewState.shouldExtractContext)
+
+        controller.play()
+        assertEquals(SpeedReadPlayerStatus.Playing, controller.viewState.status)
+        assertTrue(controller.viewState.isContextVisible)
+        assertTrue(controller.viewState.shouldExtractContext)
+    }
 }
 
 private fun controller(
     content: String,
     chunkSize: Int = 1,
     wpm: Int = 300,
+    contextMode: ContextMode = ContextMode.DEFAULT,
 ): SpeedReadPlayerController {
     val playback = SpeedReadPlayback(content, chunkSize)
     return SpeedReadPlayerController(
         playback = playback,
         totals = playback.sessionTotals(),
         initialPosition = playback.startPosition(0),
-        initialSettings = SpeedReadSettings(wpm = wpm, chunkSize = chunkSize),
+        initialSettings = SpeedReadSettings(
+            wpm = wpm,
+            chunkSize = chunkSize,
+            contextMode = contextMode,
+        ),
     )
 }

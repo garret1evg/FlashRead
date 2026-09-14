@@ -86,6 +86,10 @@
     <string name="wpm_preset_cd">%1$d words per minute preset</string>
     <string name="expert_settings">Expert settings</string>
     <string name="words_per_flash">Words per flash</string>
+    <string name="context_display">Context</string>
+    <string name="context_mode_off">Off</string>
+    <string name="context_mode_when_paused">When paused</string>
+    <string name="context_mode_always">Always</string>
     <string name="spritz">Spritz</string>
     <string name="spritz_subtitle_setup">Highlight the optimal recognition point in each word</string>
     <string name="spritz_subtitle_player">Highlight the pivot letter</string>

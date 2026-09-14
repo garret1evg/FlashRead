@@ -86,6 +86,10 @@
     <string name="wpm_preset_cd">%1$d शब्द प्रति मिनट का प्रीसेट</string>
     <string name="expert_settings">विशेषज्ञ सेटिंग्स</string>
     <string name="words_per_flash">प्रति फ़्लैश शब्द</string>
+    <string name="context_display">संदर्भ</string>
+    <string name="context_mode_off">बंद</string>
+    <string name="context_mode_when_paused">रुकने पर</string>
+    <string name="context_mode_always">हमेशा</string>
     <string name="spritz">Spritz</string>
     <string name="spritz_subtitle_setup">प्रत्येक शब्द में इष्टतम पहचान बिंदु को हाइलाइट करें</string>
     <string name="spritz_subtitle_player">आधार अक्षर को हाइलाइट करें</string>

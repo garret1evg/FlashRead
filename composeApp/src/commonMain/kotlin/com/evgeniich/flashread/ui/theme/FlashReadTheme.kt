@@ -66,8 +66,18 @@ object FlashReadDimens {
     val typeIconSize = 40.dp
     val coverThumbWidth = 48.dp
     val coverThumbHeight = 72.dp
-    /** Approximate height of an adaptive banner ad to reserve space. */
+    /**
+     * Approximate fallback banner height. The speed-read player reserves
+     * [com.evgeniich.flashread.ads.rememberReservedBannerAdHeight] from the
+     * platform AdSize instead of this constant.
+     */
     val bannerAdHeight = 50.dp
+    /** Reserved height for two packed context lines (~18.sp / 24.sp line height). */
+    val contextSlotHeight = 56.dp
+    /** Decorative gap between a context slot and the active-word frame. */
+    val contextGap = 36.dp
+    /** Floor for [contextGap] on compact screens before dropping to one context line. */
+    val contextGapMin = 16.dp
     /**
      * Reserved height for the rewarded-ad offer under speed-read player controls.
      * Fits [minTouchTarget] button plus one bodyMedium subtitle line so the ORP word

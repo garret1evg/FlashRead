@@ -86,6 +86,10 @@
     <string name="wpm_preset_cd">Preajuste de %1$d palabras por minuto</string>
     <string name="expert_settings">Ajustes expertos</string>
     <string name="words_per_flash">Palabras por destello</string>
+    <string name="context_display">Contexto</string>
+    <string name="context_mode_off">Desactivado</string>
+    <string name="context_mode_when_paused">En pausa</string>
+    <string name="context_mode_always">Siempre</string>
     <string name="spritz">Spritz</string>
     <string name="spritz_subtitle_setup">Resaltar el punto óptimo de reconocimiento de cada palabra</string>
     <string name="spritz_subtitle_player">Resaltar la letra de apoyo</string>

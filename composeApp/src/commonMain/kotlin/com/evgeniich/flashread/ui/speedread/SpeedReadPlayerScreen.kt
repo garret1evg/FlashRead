@@ -73,6 +73,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -81,6 +82,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -89,8 +91,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.evgeniich.flashread.ads.BannerAdHost
 import com.evgeniich.flashread.ads.RewardedAdHost
 import com.evgeniich.flashread.ads.canShowBannerAds
+import com.evgeniich.flashread.ads.rememberReservedBannerAdHeight
 import com.evgeniich.flashread.core.model.Book
+import com.evgeniich.flashread.core.speedread.ContextMode
+import com.evgeniich.flashread.core.speedread.ContextWindow
 import com.evgeniich.flashread.core.speedread.SpeedReadDefaults
+import com.evgeniich.flashread.core.speedread.extractSpeedReadContext
 import com.evgeniich.flashread.core.speedread.SpeedReadPlayerStatus
 import com.evgeniich.flashread.core.speedread.SpeedReadPlayerViewState
 import com.evgeniich.flashread.core.speedread.SpeedReadPosition
@@ -111,6 +117,8 @@ import kotlin.math.roundToInt
 import org.jetbrains.compose.resources.stringResource
 
 private val OrpFrameHeight = 168.dp
+private val ContextFontSize = 18.sp
+private val ContextLineHeight = 24.sp
 
 @Composable
 fun SpeedReadPlayerScreen(
@@ -151,6 +159,18 @@ fun SpeedReadPlayerScreen(
         currentShowBanner
     }
 
+    // Monetization snapshot for this screen visit: ad-free / reward at entry never
+    // grows a banner slot later. Once ads are actually requestable, latch the slot
+    // height until leaving so hide/fail/load does not move the active word.
+    val enteredWithBannerMonetization = remember {
+        MonetizationManager.shouldShowBanner(AppRoute.SpeedReadPlayer, isSpeedReadPlaying = false) ||
+            MonetizationManager.shouldShowBanner(AppRoute.SpeedReadPlayer, isSpeedReadPlaying = true)
+    }
+    var reserveBannerSlot by remember { mutableStateOf(false) }
+    if (enteredWithBannerMonetization && canShowBannerAds()) {
+        reserveBannerSlot = true
+    }
+
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         viewModel.onHostStop()
     }
@@ -176,7 +196,9 @@ fun SpeedReadPlayerScreen(
 
     SpeedReadPlayerPane(
         state = viewState,
+        content = book.content,
         showBanner = showBanner,
+        reserveBannerSlot = reserveBannerSlot,
         showRewardedOffer = !viewState.isPlaying,
         onClose = {
             viewModel.persistNow()
@@ -198,8 +220,10 @@ fun SpeedReadPlayerScreen(
 @Composable
 internal fun SpeedReadPlayerPane(
     state: SpeedReadPlayerViewState,
+    content: String,
     showBanner: Boolean,
     showRewardedOffer: Boolean = false,
+    reserveBannerSlot: Boolean = false,
     onClose: () -> Unit,
     onRestart: () -> Unit,
     onTogglePlayPause: () -> Unit,
@@ -241,24 +265,31 @@ internal fun SpeedReadPlayerPane(
                         onClick = onTogglePlayPause,
                     )
                     .semantics { contentDescription = playPauseCd },
-                contentAlignment = Alignment.Center,
             ) {
-                OrpWordFrame(
-                    text = state.text,
-                    spritzEnabled = state.settings.effectiveSpritzEnabled,
-                    wrapToTwoLines = !state.settings.isSpritzAvailable,
-                    textSize = state.settings.textSize,
-                    modifier = Modifier.fillMaxWidth(),
+                SpeedReadReadingArea(
+                    state = state,
+                    content = content,
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
-            if (showBanner) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(FlashReadDimens.bannerAdHeight),
-                ) {
-
-                    BannerAdHost(modifier = Modifier.fillMaxWidth())
+            val showBannerSlot = reserveBannerSlot || showBanner
+            if (showBannerSlot) {
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val widthDp = maxWidth
+                        .takeIf { it.isSpecified && it.value.isFinite() && it.value > 0f }
+                        ?.value
+                        ?.roundToInt()
+                        ?: 0
+                    val reservedHeight = rememberReservedBannerAdHeight(widthDp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(reservedHeight),
+                    ) {
+                        if (showBanner) {
+                            BannerAdHost(modifier = Modifier.fillMaxWidth())
+                        }
+                    }
                 }
             }
             PlayerBottomBar(
@@ -444,6 +475,166 @@ private fun PlayerBottomBar(
             )
         }
     }
+}
+
+@Composable
+private fun SpeedReadReadingArea(
+    state: SpeedReadPlayerViewState,
+    content: String,
+    modifier: Modifier = Modifier,
+) {
+    val textMeasurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val contextColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val contextTextStyle = MaterialTheme.typography.bodyLarge.copy(
+        fontSize = ContextFontSize,
+        lineHeight = ContextLineHeight,
+        color = contextColor,
+        textAlign = TextAlign.Center,
+    )
+
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val paddingPx = with(density) {
+            FlashReadDimens.screenHorizontalPadding.roundToPx()
+        }
+        val maxWidthPx = (constraints.maxWidth - paddingPx * 2).coerceAtLeast(0)
+        val twoLineSlot = FlashReadDimens.contextSlotHeight
+        val oneLineSlot = FlashReadDimens.contextSlotHeight / 2
+        val preferredGap = FlashReadDimens.contextGap
+        val minGap = FlashReadDimens.contextGapMin
+        val sideSpace = ((maxHeight - OrpFrameHeight) / 2).coerceAtLeast(0.dp)
+        val contextMaxLines: Int
+        val contextSlotHeight: Dp
+        val contextGap: Dp
+        when {
+            sideSpace >= twoLineSlot + preferredGap -> {
+                contextMaxLines = 2
+                contextSlotHeight = twoLineSlot
+                contextGap = preferredGap
+            }
+            sideSpace >= twoLineSlot + minGap -> {
+                contextMaxLines = 2
+                contextSlotHeight = twoLineSlot
+                contextGap = (sideSpace - twoLineSlot).coerceIn(minGap, preferredGap)
+            }
+            else -> {
+                contextMaxLines = 1
+                contextSlotHeight = oneLineSlot
+                contextGap = (sideSpace - oneLineSlot).coerceIn(0.dp, preferredGap)
+            }
+        }
+        val fontScale = density.fontScale
+        val contextWindow = remember(
+            content,
+            state.position.tokenIndex,
+            state.position.offset,
+            state.position.paragraphIndex,
+            state.settings.chunkSize,
+            maxWidthPx,
+            contextMaxLines,
+            state.shouldExtractContext,
+            fontScale,
+        ) {
+            if (!state.shouldExtractContext) {
+                ContextWindow("", "")
+            } else {
+                extractSpeedReadContext(
+                    content = content,
+                    position = state.position,
+                    chunkSize = state.settings.chunkSize,
+                    maxWidthPx = maxWidthPx,
+                    measureWidthPx = { line ->
+                        textMeasurer.measure(
+                            text = line,
+                            style = contextTextStyle,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Visible,
+                        ).size.width
+                    },
+                    maxLines = contextMaxLines,
+                )
+            }
+        }
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .clipToBounds(),
+                contentAlignment = Alignment.BottomCenter,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(contextSlotHeight),
+                        contentAlignment = Alignment.BottomCenter,
+                    ) {
+                        ContextTextBlock(
+                            text = contextWindow.beforeText,
+                            visible = state.isContextVisible,
+                            maxLines = contextMaxLines,
+                            textStyle = contextTextStyle,
+                        )
+                    }
+                    Spacer(Modifier.height(contextGap))
+                }
+            }
+            OrpWordFrame(
+                text = state.text,
+                spritzEnabled = state.settings.effectiveSpritzEnabled,
+                wrapToTwoLines = !state.settings.isSpritzAvailable,
+                textSize = state.settings.textSize,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .clipToBounds(),
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Spacer(Modifier.height(contextGap))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(contextSlotHeight),
+                        contentAlignment = Alignment.TopCenter,
+                    ) {
+                        ContextTextBlock(
+                            text = contextWindow.afterText,
+                            visible = state.isContextVisible,
+                            maxLines = contextMaxLines,
+                            textStyle = contextTextStyle,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContextTextBlock(
+    text: String,
+    visible: Boolean,
+    maxLines: Int,
+    textStyle: TextStyle,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = if (visible) text else "",
+        style = textStyle,
+        maxLines = maxLines,
+        overflow = TextOverflow.Clip,
+        textAlign = TextAlign.Center,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = FlashReadDimens.screenHorizontalPadding),
+    )
 }
 
 @Composable
@@ -819,6 +1010,39 @@ private fun PlayerSettingsSheet(
                 }
             }
             Spacer(Modifier.height(FlashReadDimens.space8))
+            Text(
+                text = stringResource(Res.string.context_display),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(Modifier.height(FlashReadDimens.space8))
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                ContextMode.entries.forEachIndexed { index, mode ->
+                    val label = when (mode) {
+                        ContextMode.Off -> stringResource(Res.string.context_mode_off)
+                        ContextMode.WhenPaused -> stringResource(Res.string.context_mode_when_paused)
+                        ContextMode.Always -> stringResource(Res.string.context_mode_always)
+                    }
+                    SegmentedButton(
+                        selected = settings.contextMode == mode,
+                        onClick = { onSettingsChange(settings.copy(contextMode = mode)) },
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = index,
+                            count = ContextMode.entries.size,
+                        ),
+                        modifier = Modifier.heightIn(min = FlashReadDimens.minTouchTarget),
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelMedium,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(FlashReadDimens.space8))
             if (settings.isSpritzAvailable) {
                 PlayerSwitchRow(
                     title = stringResource(Res.string.spritz),
@@ -956,6 +1180,8 @@ internal fun formatPlayerClock(durationMs: Long): String {
 
 internal object SpeedReadPlayerDemo {
     private val settings = SpeedReadSettings(wpm = 300, chunkSize = 1, spritzEnabled = true)
+    val sampleContent =
+        "Previous words sit on the lines above the flash so the reader can glance up wait, then more words follow after the active flash to fill the lines below Done. extra context remains after the finish marker."
 
     val longWord = SpeedReadPlayerViewState(
         status = SpeedReadPlayerStatus.Playing,
@@ -964,7 +1190,7 @@ internal object SpeedReadPlayerDemo {
         progress = 0.18f,
         elapsedMs = 24_000,
         remainingMs = 110_000,
-        settings = settings,
+        settings = settings.copy(contextMode = ContextMode.Always),
         isEmpty = false,
     )
 
@@ -975,7 +1201,7 @@ internal object SpeedReadPlayerDemo {
         progress = 0.34f,
         elapsedMs = 8_000,
         remainingMs = 16_000,
-        settings = settings.copy(chunkSize = 4),
+        settings = settings.copy(chunkSize = 4, contextMode = ContextMode.Always),
         isEmpty = false,
     )
 
@@ -1031,6 +1257,7 @@ private fun PlayerPreview(state: SpeedReadPlayerViewState, dark: Boolean) {
     FlashReadTheme(darkTheme = dark) {
         SpeedReadPlayerPane(
             state = state,
+            content = SpeedReadPlayerDemo.sampleContent,
             showBanner = false,
             onClose = {},
             onRestart = {},

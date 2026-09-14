@@ -2,6 +2,8 @@ package com.evgeniich.flashread.ads
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 /**
  * No-op implementation for iOS.
@@ -16,3 +18,6 @@ actual fun BannerAdHost(modifier: Modifier) {
  * Always returns false on iOS as banner ads are not supported.
  */
 actual fun canShowBannerAds(): Boolean = false
+
+@Composable
+actual fun rememberReservedBannerAdHeight(availableWidthDp: Int): Dp = 0.dp

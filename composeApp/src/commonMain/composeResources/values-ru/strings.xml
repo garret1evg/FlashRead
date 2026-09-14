@@ -86,6 +86,10 @@
     <string name="wpm_preset_cd">Пресет %1$d слов в минуту</string>
     <string name="expert_settings">Экспертные настройки</string>
     <string name="words_per_flash">Слов за показ</string>
+    <string name="context_display">Контекст</string>
+    <string name="context_mode_off">Выкл</string>
+    <string name="context_mode_when_paused">На паузе</string>
+    <string name="context_mode_always">Всегда</string>
     <string name="spritz">Spritz</string>
     <string name="spritz_subtitle_setup">Подсвечивать оптимальную точку распознавания в слове</string>
     <string name="spritz_subtitle_player">Подсвечивать опорную букву</string>

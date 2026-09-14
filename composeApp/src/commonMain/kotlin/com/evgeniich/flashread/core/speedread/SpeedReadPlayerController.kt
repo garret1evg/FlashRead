@@ -30,6 +30,11 @@ data class SpeedReadPlayerViewState(
 ) {
     val isPlaying: Boolean get() = status == SpeedReadPlayerStatus.Playing
     val isFinished: Boolean get() = status == SpeedReadPlayerStatus.Finished
+    val isContextVisible: Boolean
+        get() = settings.contextMode.shouldShowContext(isPlaying)
+    val shouldExtractContext: Boolean
+        get() = settings.contextMode.shouldExtractContext(isPlaying)
+
 
     companion object {
         fun placeholder(settings: SpeedReadSettings) = SpeedReadPlayerViewState(

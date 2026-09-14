@@ -14,6 +14,8 @@ class SpeedReadSettingsTest {
         assertEquals(SpeedReadDefaults.DEFAULT_CHUNK_SIZE, settings.chunkSize)
         assertTrue(settings.spritzEnabled)
         assertFalse(settings.loopEnabled)
+        assertEquals(ContextMode.WhenPaused, settings.contextMode)
+        assertEquals(ContextMode.DEFAULT, settings.contextMode)
         assertEquals(settings, settings.normalized())
     }
 
@@ -52,9 +54,23 @@ class SpeedReadSettingsTest {
         val settings = SpeedReadSettings(
             spritzEnabled = false,
             loopEnabled = true,
+            contextMode = ContextMode.Always,
         ).normalized()
         assertFalse(settings.spritzEnabled)
         assertTrue(settings.loopEnabled)
+        assertEquals(ContextMode.Always, settings.contextMode)
+    }
+
+    @Test
+    fun normalizedPreservesContextMode() {
+        ContextMode.entries.forEach { mode ->
+            val settings = SpeedReadSettings(
+                wpm = 317,
+                chunkSize = 0,
+                contextMode = mode,
+            ).normalized()
+            assertEquals(mode, settings.contextMode)
+        }
     }
 
     @Test
