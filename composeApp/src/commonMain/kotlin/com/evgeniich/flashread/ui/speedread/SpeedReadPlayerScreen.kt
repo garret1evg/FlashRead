@@ -108,6 +108,7 @@ import com.evgeniich.flashread.core.speedread.spritzWordOverflows
 import com.evgeniich.flashread.core.speedread.wrapFlashText
 import com.evgeniich.flashread.monetization.MonetizationManager
 import com.evgeniich.flashread.navigation.AppRoute
+import com.evgeniich.flashread.platform.rememberPhoneCallActive
 import com.evgeniich.flashread.resources.Res
 import com.evgeniich.flashread.resources.*
 import com.evgeniich.flashread.ui.ads.RewardedAdOffer
@@ -179,6 +180,11 @@ fun SpeedReadPlayerScreen(
 
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
         viewModel.onHostStart()
+    }
+
+    val phoneCallActive = rememberPhoneCallActive()
+    LaunchedEffect(phoneCallActive) {
+        viewModel.onPhoneCallChanged(phoneCallActive)
     }
 
     DisposableEffect(viewModel) {

@@ -66,6 +66,44 @@ class SpeedReadPlayerViewModelTest {
     }
 
     @Test
+    fun hostRestartResumesPlaybackWhenNoCallInterruptedIt() {
+        val viewModel = playerViewModel(content = "one two three")
+        viewModel.togglePlayPause()
+        viewModel.onHostStop()
+
+        viewModel.onHostStart()
+
+        assertEquals(SpeedReadPlayerStatus.Playing, viewModel.viewState.value.status)
+    }
+
+    @Test
+    fun phoneCallPausesAndStaysPausedAfterTheCall() {
+        val viewModel = playerViewModel(content = "one two three")
+        viewModel.togglePlayPause()
+
+        viewModel.onPhoneCallChanged(inCall = true)
+        assertEquals(SpeedReadPlayerStatus.Paused, viewModel.viewState.value.status)
+
+        viewModel.onHostStop()
+        viewModel.onPhoneCallChanged(inCall = false)
+        viewModel.onHostStart()
+
+        assertEquals(SpeedReadPlayerStatus.Paused, viewModel.viewState.value.status)
+    }
+
+    @Test
+    fun phoneCallAfterBackgroundingDoesNotResume() {
+        val viewModel = playerViewModel(content = "one two three")
+        viewModel.togglePlayPause()
+        viewModel.onHostStop()
+
+        viewModel.onPhoneCallChanged(inCall = true)
+        viewModel.onHostStart()
+
+        assertEquals(SpeedReadPlayerStatus.Paused, viewModel.viewState.value.status)
+    }
+
+    @Test
     fun changingChunkSizeRebuildsTheSession() {
         val viewModel = playerViewModel(content = "one two three four")
         assertEquals("one", viewModel.viewState.value.text)

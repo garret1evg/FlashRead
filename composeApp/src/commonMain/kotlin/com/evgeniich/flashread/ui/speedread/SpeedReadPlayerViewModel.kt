@@ -111,6 +111,20 @@ class SpeedReadPlayerViewModel(
         publish()
     }
 
+    /**
+     * Pauses playback for an incoming or active call and drops any resume that
+     * [onHostStop] scheduled. Ending the call does not start playback again.
+     */
+    fun onPhoneCallChanged(inCall: Boolean) {
+        if (!inCall) return
+        resumeOnStart = false
+        val current = controller ?: return
+        if (current.viewState.isPlaying) {
+            current.pause()
+            publish()
+        }
+    }
+
     override fun onCleared() {
         persistPosition(force = true)
         settingsChangeLogger.flush()
