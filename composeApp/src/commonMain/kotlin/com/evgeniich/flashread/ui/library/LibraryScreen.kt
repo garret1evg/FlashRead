@@ -111,13 +111,17 @@ fun LibraryScreen(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Spacer(Modifier.height(FlashReadDimens.space12))
-        AddMaterialButton(
-            label = stringResource(Res.string.library_add_material),
-            onClick = { showAddSheet = true },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(FlashReadDimens.space16))
+        if (books.isNotEmpty()) {
+            Spacer(Modifier.height(FlashReadDimens.space12))
+            AddMaterialButton(
+                label = stringResource(Res.string.library_add_material),
+                onClick = { showAddSheet = true },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(FlashReadDimens.space16))
+        } else {
+            Spacer(Modifier.height(FlashReadDimens.space12))
+        }
 
         when {
             books.isEmpty() && busyMessage != null -> {
