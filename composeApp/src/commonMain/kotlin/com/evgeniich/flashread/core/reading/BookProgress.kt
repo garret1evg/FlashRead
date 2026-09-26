@@ -5,24 +5,52 @@ import com.evgeniich.flashread.core.speedread.SpeedReadDefaults
 import com.evgeniich.flashread.core.speedread.splitBookParagraphs
 import kotlin.math.ceil
 
-fun bookProgressPercent(content: String, paragraphIndex: Int): Int {
-    return bookProgressPercent(paragraphIndex, paragraphCount(content))
+fun bookProgressPercent(contentOffset: Int, contentLength: Int): Int {
+    if (contentLength <= 0) return 0
+    return ((contentOffset.toLong() * 100L) / contentLength).toInt().coerceIn(0, 100)
 }
 
-fun bookProgressPercent(paragraphIndex: Int, paragraphCount: Int): Int {
-    if (paragraphCount <= 0) return 0
-    return ((paragraphIndex * 100) / paragraphCount).coerceIn(0, 100)
+/**
+ * Start offsets (in the original [content]) of each non-blank paragraph line,
+ * matching [splitBookParagraphs] item indices. `\r\n` is treated as a single
+ * newline; blank lines are skipped. Each offset points at the first
+ * non-whitespace character of that line.
+ */
+fun paragraphStartOffsets(content: String): List<Int> {
+    val offsets = ArrayList<Int>()
+    var i = 0
+    while (i < content.length) {
+        val lineStart = i
+        var lineEnd = i
+        while (lineEnd < content.length) {
+            val ch = content[lineEnd]
+            if (ch == '\n') break
+            if (ch == '\r' && lineEnd + 1 < content.length && content[lineEnd + 1] == '\n') break
+            lineEnd++
+        }
+
+        var contentStart = lineStart
+        while (contentStart < lineEnd && content[contentStart].isWhitespace()) contentStart++
+        var contentEnd = lineEnd
+        while (contentEnd > contentStart && content[contentEnd - 1].isWhitespace()) contentEnd--
+
+        if (contentStart < contentEnd) {
+            offsets.add(contentStart)
+        }
+
+        if (lineEnd >= content.length) break
+        i = if (content[lineEnd] == '\r') lineEnd + 2 else lineEnd + 1
+    }
+    return offsets
 }
 
 fun wordCount(content: String): Int = countWordsIn(content)
 
-fun paragraphCount(content: String): Int = countParagraphsIn(content)
-
 fun Book.withReadingStats(): Book {
-    val words = countWordsIn(content)
-    val paragraphs = countParagraphsIn(content)
-    if (wordCount == words && paragraphCount == paragraphs) return this
-    return copy(wordCount = words, paragraphCount = paragraphs)
+    val normalized = normalizeParagraphs(content)
+    val words = countWordsIn(normalized)
+    if (content == normalized && wordCount == words) return this
+    return copy(content = normalized, wordCount = words)
 }
 
 private fun countWordsIn(content: String): Int {
@@ -36,22 +64,6 @@ private fun countWordsIn(content: String): Int {
             count++
         }
     }
-    return count
-}
-
-private fun countParagraphsIn(content: String): Int {
-    var count = 0
-    var lineHasContent = false
-    for (index in content.indices) {
-        val ch = content[index]
-        if (ch == '\n') {
-            if (lineHasContent) count++
-            lineHasContent = false
-        } else if (!ch.isWhitespace()) {
-            lineHasContent = true
-        }
-    }
-    if (lineHasContent) count++
     return count
 }
 

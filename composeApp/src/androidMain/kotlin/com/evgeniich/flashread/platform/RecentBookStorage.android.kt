@@ -3,7 +3,7 @@ package com.evgeniich.flashread.platform
 import androidx.core.content.edit
 
 actual object RecentBookStorage {
-    private const val PREFS_NAME = "flashread_recent_book_prefs"
+    private const val PREFS_NAME = "flashread_recent_book_prefs_v2"
     private const val KEY_BOOK_ID = "recent_book_id"
 
     actual fun save(bookId: String?) {

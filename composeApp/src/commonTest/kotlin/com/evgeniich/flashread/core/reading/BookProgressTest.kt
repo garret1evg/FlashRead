@@ -5,6 +5,7 @@ import com.evgeniich.flashread.core.speedread.SpeedReadDefaults
 import com.evgeniich.flashread.core.speedread.splitBookParagraphs
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class BookProgressTest {
 
@@ -17,7 +18,29 @@ class BookProgressTest {
     }
 
     @Test
-    fun paragraphCountMatchesSplitBookParagraphs() {
+    fun bookProgressPercentUsesContentOffset() {
+        assertEquals(0, bookProgressPercent(contentOffset = 0, contentLength = 0))
+        assertEquals(0, bookProgressPercent(contentOffset = 0, contentLength = 100))
+        assertEquals(50, bookProgressPercent(contentOffset = 50, contentLength = 100))
+        assertEquals(100, bookProgressPercent(contentOffset = 100, contentLength = 100))
+        assertEquals(100, bookProgressPercent(contentOffset = 150, contentLength = 100))
+        assertEquals(0, bookProgressPercent(contentOffset = -10, contentLength = 100))
+    }
+
+    @Test
+    fun withReadingStatsCachesCountsOnBook() {
+        val content = "one two three\n\nfour five"
+        val book = Book(
+            id = "1",
+            title = "Sample",
+            content = content,
+        ).withReadingStats()
+        assertEquals(5, book.wordCount)
+        assertEquals(content, book.content)
+    }
+
+    @Test
+    fun paragraphStartOffsetsMatchSplitBookParagraphs() {
         val samples = listOf(
             "",
             "   \n\n  ",
@@ -25,33 +48,60 @@ class BookProgressTest {
             "one\n\ntwo",
             "one\r\ntwo\r\n\r\nthree",
             "  leading  \n\n  trailing  \n",
+            "a\n\n\nb",
+            "\r\n  first\r\n\r\n  second  \r\n",
         )
         samples.forEach { content ->
+            val paragraphs = splitBookParagraphs(content)
+            val offsets = paragraphStartOffsets(content)
             assertEquals(
-                splitBookParagraphs(content).size,
-                paragraphCount(content),
-                "paragraphCount mismatch for: $content",
+                paragraphs.size,
+                offsets.size,
+                "offset count mismatch for: $content",
             )
+            offsets.forEachIndexed { index, offset ->
+                assertTrue(offset in content.indices, "offset out of range for: $content")
+                assertTrue(!content[offset].isWhitespace(), "offset should point at non-whitespace")
+                assertEquals(
+                    paragraphs[index],
+                    content.substring(offset).lineContent(),
+                    "offset content mismatch at $index for: $content",
+                )
+            }
         }
     }
 
     @Test
-    fun bookProgressPercentUsesParagraphCount() {
-        assertEquals(0, bookProgressPercent(paragraphIndex = 0, paragraphCount = 0))
-        assertEquals(0, bookProgressPercent(paragraphIndex = 0, paragraphCount = 4))
-        assertEquals(50, bookProgressPercent(paragraphIndex = 2, paragraphCount = 4))
-        assertEquals(100, bookProgressPercent(paragraphIndex = 4, paragraphCount = 4))
+    fun normalizeParagraphsSplitsLongSentenceLineAndIsIdempotent() {
+        val longLine = "Word. ".repeat(70).trimEnd()
+        assertTrue(longLine.count { !it.isWhitespace() } > 0)
+        assertTrue(
+            longLine.split(Regex("\\s+")).size > MAX_PARAGRAPH_WORDS ||
+                longLine.length > MAX_PARAGRAPH_CHARS,
+        )
+
+        val normalized = normalizeParagraphs(longLine)
+        assertTrue(normalized.contains('\n'), "expected reflow into multiple lines")
+        assertEquals(normalized, normalizeParagraphs(normalized))
     }
 
     @Test
-    fun withReadingStatsCachesCountsOnBook() {
-        val book = Book(
-            id = "1",
-            title = "Sample",
-            content = "one two three\n\nfour five",
-        ).withReadingStats()
-        assertEquals(5, book.wordCount)
-        assertEquals(2, book.paragraphCount)
+    fun normalizeParagraphsLeavesShortLineUnchanged() {
+        val short = "Hello world."
+        assertEquals(short, normalizeParagraphs(short))
+    }
+
+    @Test
+    fun normalizeParagraphsHardBreaksLongLineWithoutPunctuation() {
+        val words = (1..80).joinToString(" ") { "w$it" }
+        val normalized = normalizeParagraphs(words)
+        assertTrue(normalized.lines().size > 1, "expected hard fallback to insert newlines")
+        assertEquals(normalized, normalizeParagraphs(normalized))
+    }
+
+    @Test
+    fun normalizeParagraphsLeavesEmptyStringEmpty() {
+        assertEquals("", normalizeParagraphs(""))
     }
 
     @Test
@@ -79,5 +129,16 @@ class BookProgressTest {
         val snapped = SpeedReadDefaults.snapWpm(1012)
         assertEquals(1000, snapped)
         assertEquals(1, minutes)
+    }
+
+    private fun String.lineContent(): String {
+        var end = 0
+        while (end < length) {
+            val ch = this[end]
+            if (ch == '\n') break
+            if (ch == '\r' && end + 1 < length && this[end + 1] == '\n') break
+            end++
+        }
+        return substring(0, end).trimEnd()
     }
 }

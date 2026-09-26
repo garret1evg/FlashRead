@@ -313,7 +313,6 @@ class AppViewModelTest {
         assertEquals("Revised", updated.title)
         assertEquals("one two three\n\nfour five", updated.content)
         assertEquals(5, updated.wordCount)
-        assertEquals(2, updated.paragraphCount)
         assertEquals(updated, stored.single())
 
         viewModel.upsertImportedBook(

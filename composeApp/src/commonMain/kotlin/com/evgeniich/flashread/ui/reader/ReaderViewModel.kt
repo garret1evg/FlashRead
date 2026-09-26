@@ -11,6 +11,7 @@ import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.core.model.ReadingPosition
 import com.evgeniich.flashread.core.reading.ReaderTextSettings
 import com.evgeniich.flashread.core.reading.bookProgressPercent
+import com.evgeniich.flashread.core.reading.paragraphStartOffsets
 import com.evgeniich.flashread.core.speedread.firstWordInParagraph
 import com.evgeniich.flashread.core.speedread.splitBookParagraphs
 import com.evgeniich.flashread.core.speedread.wordAtParagraphOffset
@@ -29,6 +30,8 @@ import kotlinx.coroutines.withContext
 data class ReaderDocument(
     val paragraphs: List<String>,
     val initialParagraphIndex: Int,
+    val paragraphStartOffsets: List<Int>,
+    val contentLength: Int,
 )
 
 class ReaderViewModel(
@@ -57,10 +60,17 @@ class ReaderViewModel(
     val settings: StateFlow<ReaderTextSettings> = _settings.asStateFlow()
 
     private val settingsChangeLogger = SettingsChangeLogger(analytics, viewModelScope)
-    private var lastLoggedProgressPercent = bookProgressPercent(
-        paragraphIndex = readingSessionRepository.getPosition(book.id).paragraphIndex,
-        paragraphCount = book.paragraphCount,
-    )
+    private var lastLoggedProgressPercent = run {
+        val pos = readingSessionRepository.getPosition(book.id)
+        val offsets = paragraphStartOffsets(book.content)
+        val contentLength = book.content.length
+        val offset = if (pos.wordOffset != ReadingPosition.UNSET) {
+            pos.wordOffset
+        } else {
+            offsets.getOrElse(pos.paragraphIndex) { 0 }
+        }
+        bookProgressPercent(offset, contentLength)
+    }
 
     init {
         viewModelScope.launch {
@@ -169,7 +179,15 @@ class ReaderViewModel(
     }
 
     private fun logProgressIfCrossed(paragraphIndex: Int) {
-        val toPercent = bookProgressPercent(paragraphIndex, book.paragraphCount)
+        val doc = _document.value
+        val offsets = doc?.paragraphStartOffsets ?: paragraphStartOffsets(book.content)
+        val contentLength = doc?.contentLength ?: book.content.length
+        val offset = if (paragraphIndex >= offsets.size) {
+            contentLength
+        } else {
+            offsets.getOrElse(paragraphIndex) { 0 }
+        }
+        val toPercent = bookProgressPercent(offset, contentLength)
         val crossed = AnalyticsBuckets.progressCrossed(lastLoggedProgressPercent, toPercent)
         for (bucket in crossed) {
             analytics.log(AnalyticsEvent.ReaderProgress(bucket))
@@ -181,6 +199,7 @@ class ReaderViewModel(
 
     private fun prepareDocument(): PreparedReader {
         val paragraphs = splitBookParagraphs(book.content)
+        val offsets = paragraphStartOffsets(book.content)
         val savedPosition = readingSessionRepository.getPosition(book.id)
         val wordOffset = savedPosition.wordOffset
         val paragraphIndex = if (wordOffset != ReadingPosition.UNSET) {
@@ -193,6 +212,8 @@ class ReaderViewModel(
             document = ReaderDocument(
                 paragraphs = paragraphs,
                 initialParagraphIndex = paragraphIndex,
+                paragraphStartOffsets = offsets,
+                contentLength = book.content.length,
             ),
             startWord = initStartWordFromPosition(savedPosition),
         )

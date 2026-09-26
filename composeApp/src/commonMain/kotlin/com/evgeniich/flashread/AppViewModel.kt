@@ -9,6 +9,7 @@ import com.evgeniich.flashread.core.model.MaterialSourceType
 import com.evgeniich.flashread.core.model.ReadingPosition
 import com.evgeniich.flashread.core.reading.bookProgressPercent
 import com.evgeniich.flashread.core.reading.withReadingStats
+import com.evgeniich.flashread.core.speedread.firstWordInParagraph
 import com.evgeniich.flashread.data.repository.BookRepository
 import com.evgeniich.flashread.data.repository.CoverRepository
 import com.evgeniich.flashread.data.repository.ReadingSessionRepository
@@ -64,10 +65,13 @@ class AppViewModel(
     val messages = _messages.receiveAsFlow()
 
     fun progressPercent(book: Book): Int {
-        return bookProgressPercent(
-            paragraphIndex = readingSessionRepository.getPosition(book.id).paragraphIndex,
-            paragraphCount = book.paragraphCount,
-        )
+        val pos = readingSessionRepository.getPosition(book.id)
+        val offset = if (pos.wordOffset != ReadingPosition.UNSET) {
+            pos.wordOffset
+        } else {
+            firstWordInParagraph(book.content, pos.paragraphIndex)?.contentOffset ?: 0
+        }
+        return bookProgressPercent(offset, book.content.length)
     }
 
     fun selectBook(bookId: String) {

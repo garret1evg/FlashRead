@@ -4,7 +4,7 @@ import androidx.core.content.edit
 import com.evgeniich.flashread.core.model.ReadingPosition
 
 actual object ReadingPositionStorage {
-    private const val PREFS_NAME = "flashread_reader_prefs"
+    private const val PREFS_NAME = "flashread_reader_prefs_v2"
     private const val KEY_PREFIX = "reading_position_"
     private const val WORD_OFFSET_KEY_PREFIX = "reading_word_offset_"
 

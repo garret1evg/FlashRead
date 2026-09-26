@@ -128,8 +128,25 @@ fun ReaderScreen(
     val visibleParagraphIndex by remember(listState) {
         derivedStateOf { listState.firstVisibleItemIndex.coerceAtLeast(0) }
     }
-    val progressPercent = remember(paragraphs.size, visibleParagraphIndex) {
-        bookProgressPercent(visibleParagraphIndex, paragraphs.size)
+    val paragraphStartOffsets = document?.paragraphStartOffsets.orEmpty()
+    val contentLength = document?.contentLength ?: 0
+    val canScrollForward by remember(listState) {
+        derivedStateOf { listState.canScrollForward }
+    }
+    val progressPercent = remember(
+        paragraphStartOffsets,
+        contentLength,
+        visibleParagraphIndex,
+        canScrollForward,
+    ) {
+        if (!canScrollForward && contentLength > 0) {
+            100
+        } else {
+            bookProgressPercent(
+                paragraphStartOffsets.getOrElse(visibleParagraphIndex) { 0 },
+                contentLength,
+            )
+        }
     }
     val palette = readerPalette()
     val displayTitle = remember(book.title) { MaterialTitleFormatter.displayTitle(book.title) }

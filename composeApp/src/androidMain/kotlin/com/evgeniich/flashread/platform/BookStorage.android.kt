@@ -3,17 +3,15 @@ package com.evgeniich.flashread.platform
 import androidx.core.content.edit
 import com.evgeniich.flashread.core.model.Book
 import com.evgeniich.flashread.core.model.MaterialSourceType
-import com.evgeniich.flashread.core.reading.paragraphCount as countParagraphs
 import com.evgeniich.flashread.core.reading.wordCount as countWords
 
 actual object BookStorage {
-    private const val PREFS_NAME = "flashread_books_prefs"
+    private const val PREFS_NAME = "flashread_books_prefs_v2"
     private const val KEY_BOOK_IDS = "book_ids"
     private const val KEY_ID_PREFIX = "book_id_"
     private const val KEY_TITLE_PREFIX = "book_title_"
     private const val KEY_TYPE_PREFIX = "book_type_"
     private const val KEY_WORD_COUNT_PREFIX = "book_word_count_"
-    private const val KEY_PARAGRAPH_COUNT_PREFIX = "book_paragraph_count_"
 
     actual fun saveBooks(books: List<Book>) {
         val preferences = prefs()
@@ -31,7 +29,6 @@ actual object BookStorage {
                 remove(KEY_TITLE_PREFIX + key)
                 remove(KEY_TYPE_PREFIX + key)
                 remove(KEY_WORD_COUNT_PREFIX + key)
-                remove(KEY_PARAGRAPH_COUNT_PREFIX + key)
             }
             putStringSet(KEY_BOOK_IDS, newKeys)
             books.forEach { book ->
@@ -40,7 +37,6 @@ actual object BookStorage {
                 putString(KEY_TITLE_PREFIX + key, book.title)
                 putString(KEY_TYPE_PREFIX + key, book.sourceType.name)
                 putInt(KEY_WORD_COUNT_PREFIX + key, book.wordCount)
-                putInt(KEY_PARAGRAPH_COUNT_PREFIX + key, book.paragraphCount)
             }
         }
 
@@ -59,7 +55,6 @@ actual object BookStorage {
                 ?.let { runCatching { MaterialSourceType.valueOf(it) }.getOrNull() }
                 ?: MaterialSourceType.Book
             val hasWordCount = preferences.contains(KEY_WORD_COUNT_PREFIX + key)
-            val hasParagraphCount = preferences.contains(KEY_PARAGRAPH_COUNT_PREFIX + key)
             Book(
                 id = id,
                 title = title,
@@ -69,11 +64,6 @@ actual object BookStorage {
                     preferences.getInt(KEY_WORD_COUNT_PREFIX + key, 0)
                 } else {
                     countWords(content)
-                },
-                paragraphCount = if (hasParagraphCount) {
-                    preferences.getInt(KEY_PARAGRAPH_COUNT_PREFIX + key, 0)
-                } else {
-                    countParagraphs(content)
                 },
                 coverFileName = CoverStorage.findCoverFileName(id),
             )
