@@ -22,7 +22,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
@@ -42,7 +42,7 @@ fun QuickSpeedReadScreen(
     onContinue: (content: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var content by remember { mutableStateOf("") }
+    var content by rememberSaveable { mutableStateOf("") }
     val canContinue = content.isNotBlank()
     val backLabel = stringResource(Res.string.action_back)
     val nextLabel = stringResource(Res.string.action_next)
