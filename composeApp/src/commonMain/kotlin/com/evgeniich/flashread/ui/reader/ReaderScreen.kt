@@ -1,5 +1,6 @@
 package com.evgeniich.flashread.ui.reader
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -36,7 +38,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
@@ -49,16 +50,26 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -77,10 +88,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.evgeniich.flashread.ads.BannerAdHost
 import com.evgeniich.flashread.ads.canShowBannerAds
 import com.evgeniich.flashread.core.model.Book
+import com.evgeniich.flashread.core.theme.AppTheme
 import com.evgeniich.flashread.core.reading.ReaderAlignment
 import com.evgeniich.flashread.core.reading.ReaderTextDefaults
 import com.evgeniich.flashread.core.reading.ReaderTextSettings
-import com.evgeniich.flashread.core.reading.bookProgressPercent
 import com.evgeniich.flashread.monetization.MonetizationManager
 import com.evgeniich.flashread.navigation.AppRoute
 import com.evgeniich.flashread.resources.Res
@@ -89,12 +100,22 @@ import com.evgeniich.flashread.ui.library.MaterialTitleFormatter
 import com.evgeniich.flashread.ui.theme.FlashReadDimens
 import com.evgeniich.flashread.ui.theme.FlashReadShapes
 import com.evgeniich.flashread.ui.theme.FlashReadTheme
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.jetbrains.compose.resources.stringResource
 
 private val ReaderContentMaxWidth = 680.dp
+private val ReadingProgressTrackHeight = 6.dp
+private val SelectedWordTriangleWidth = 12.dp
+private val SelectedWordTriangleHeight = 8.dp
+private val SelectedWordTickWidth = 3.dp
+private val SelectedWordTickHeight = 14.dp
+private val SelectedWordMarkerGap = 2.dp
+private val SelectedWordTickCornerRadius = 1.dp
+private val SelectedWordTickOutlineWidth = 1.dp
 
 private data class ReaderPalette(
     val background: Color,
@@ -125,29 +146,6 @@ fun ReaderScreen(
     val startWord by viewModel.startWord.collectAsStateWithLifecycle()
     val scrollToParagraph by viewModel.scrollToParagraph.collectAsStateWithLifecycle()
     var showTextSettings by remember { mutableStateOf(false) }
-    val visibleParagraphIndex by remember(listState) {
-        derivedStateOf { listState.firstVisibleItemIndex.coerceAtLeast(0) }
-    }
-    val paragraphStartOffsets = document?.paragraphStartOffsets.orEmpty()
-    val contentLength = document?.contentLength ?: 0
-    val canScrollForward by remember(listState) {
-        derivedStateOf { listState.canScrollForward }
-    }
-    val progressPercent = remember(
-        paragraphStartOffsets,
-        contentLength,
-        visibleParagraphIndex,
-        canScrollForward,
-    ) {
-        if (!canScrollForward && contentLength > 0) {
-            100
-        } else {
-            bookProgressPercent(
-                paragraphStartOffsets.getOrElse(visibleParagraphIndex) { 0 },
-                contentLength,
-            )
-        }
-    }
     val palette = readerPalette()
     val displayTitle = remember(book.title) { MaterialTitleFormatter.displayTitle(book.title) }
     val backLabel = stringResource(Res.string.action_back)
@@ -237,13 +235,22 @@ fun ReaderScreen(
             ),
         )
 
-        ReadingProgressRow(
-            progressPercent = progressPercent,
-            palette = palette,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = FlashReadDimens.screenHorizontalPadding),
-        )
+        val loadedDocument = document
+        if (loadedDocument != null) {
+            ReaderProgressBar(
+                listState = listState,
+                bookId = book.id,
+                paragraphStartOffsets = loadedDocument.paragraphStartOffsets,
+                contentLength = loadedDocument.contentLength,
+                fontSizeSp = settings.fontSizeSp,
+                lineHeightMultiplier = settings.lineHeightMultiplier,
+                cursorContentOffset = startWord?.contentOffset,
+                palette = palette,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = FlashReadDimens.screenHorizontalPadding),
+            )
+        }
 
         Box(
             modifier = Modifier
@@ -319,12 +326,79 @@ fun ReaderScreen(
 }
 
 @Composable
-private fun ReadingProgressRow(
-    progressPercent: Int,
+private fun ReaderProgressBar(
+    listState: LazyListState,
+    bookId: String,
+    paragraphStartOffsets: List<Int>,
+    contentLength: Int,
+    fontSizeSp: Int,
+    lineHeightMultiplier: Float,
+    cursorContentOffset: Int?,
     palette: ReaderPalette,
     modifier: Modifier = Modifier,
 ) {
-    val progressCd = stringResource(Res.string.reader_progress_cd, progressPercent)
+    val fitsOnScreen by remember(listState) {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            info.totalItemsCount > 0 &&
+                info.visibleItemsInfo.size == info.totalItemsCount &&
+                !listState.canScrollForward &&
+                !listState.canScrollBackward
+        }
+    }
+    if (fitsOnScreen) return
+
+    var viewportChars by remember(
+        bookId,
+        contentLength,
+        fontSizeSp,
+        lineHeightMultiplier,
+    ) { mutableFloatStateOf(Float.NaN) }
+    LaunchedEffect(
+        bookId,
+        contentLength,
+        fontSizeSp,
+        lineHeightMultiplier,
+        paragraphStartOffsets,
+    ) {
+        viewportChars = Float.NaN
+        viewportChars = snapshotFlow {
+            viewportCharSpan(listState, paragraphStartOffsets, contentLength)
+        }.first { !it.isNaN() }
+    }
+    val progressFraction by remember(paragraphStartOffsets, contentLength) {
+        derivedStateOf {
+            if (contentLength <= 0) return@derivedStateOf 0f
+            val visible = listState.layoutInfo.visibleItemsInfo
+            if (visible.isEmpty()) return@derivedStateOf 0f
+            val topChar = charOffsetAt(visible, paragraphStartOffsets, contentLength, y = 0)
+            val reserved = if (viewportChars.isNaN()) 0f else viewportChars
+            val maxTop = (contentLength - reserved).coerceAtLeast(1f)
+            (topChar / maxTop).coerceIn(0f, 1f)
+        }
+    }
+    val cursorFraction = if (cursorContentOffset != null && contentLength > 0) {
+        (cursorContentOffset.toFloat() / contentLength).coerceIn(0f, 1f)
+    } else {
+        null
+    }
+    ReadingProgressRow(
+        progressFraction = progressFraction,
+        cursorFraction = cursorFraction,
+        palette = palette,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun ReadingProgressRow(
+    progressFraction: Float,
+    cursorFraction: Float?,
+    palette: ReaderPalette,
+    modifier: Modifier = Modifier,
+) {
+    val percent = (progressFraction * 100).roundToInt()
+    val progressCd = stringResource(Res.string.reader_progress_cd, percent)
     Row(
         modifier = modifier
             .heightIn(min = FlashReadDimens.minTouchTarget)
@@ -332,22 +406,136 @@ private fun ReadingProgressRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(FlashReadDimens.space12),
     ) {
-        LinearProgressIndicator(
-            progress = { progressPercent / 100f },
+        Box(
             modifier = Modifier
                 .weight(1f)
-                .height(6.dp)
-                .clip(RoundedCornerShape(FlashReadDimens.space4)),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = palette.progressTrack,
-        )
-        Text(
-            text = stringResource(Res.string.percent_value, progressPercent),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            maxLines = 1,
+                .height(FlashReadDimens.minTouchTarget),
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .fillMaxWidth()
+                    .height(ReadingProgressTrackHeight)
+                    .clip(RoundedCornerShape(FlashReadDimens.space4))
+                    .background(palette.progressTrack),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(progressFraction.coerceIn(0f, 1f))
+                        .background(MaterialTheme.colorScheme.primary),
+                )
+            }
+            val cursor = cursorFraction
+            if (cursor != null) {
+                SelectedWordPositionMarker(
+                    fraction = cursor,
+                    color = palette.wordHighlight,
+                    outlineColor = palette.background,
+                    modifier = Modifier.matchParentSize(),
+                )
+            }
+        }
+        val percentLabel = stringResource(Res.string.percent_value, percent)
+        val widestLabel = stringResource(Res.string.percent_value, 100)
+        val labelStyle = MaterialTheme.typography.labelLarge
+        Box {
+            Text(
+                text = widestLabel,
+                style = labelStyle,
+                modifier = Modifier
+                    .alpha(0f)
+                    .clearAndSetSemantics {},
+                maxLines = 1,
+            )
+            Text(
+                text = percentLabel,
+                style = labelStyle,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.End,
+                modifier = Modifier.align(Alignment.CenterEnd),
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SelectedWordPositionMarker(
+    fraction: Float,
+    color: Color,
+    outlineColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    val overhangPx = with(LocalDensity.current) {
+        ceil((SelectedWordTriangleWidth / 2).toPx()).toInt()
+    }
+    // Wider than the track so the triangle is not clipped at 0% and 100%.
+    Canvas(
+        modifier.layout { measurable, constraints ->
+            val width = constraints.maxWidth
+            val height = constraints.maxHeight
+            val canvasWidth = width + overhangPx * 2
+            val placeable = measurable.measure(
+                constraints.copy(
+                    minWidth = canvasWidth,
+                    maxWidth = canvasWidth,
+                ),
+            )
+            layout(width, height) {
+                placeable.place(-overhangPx, 0)
+            }
+        },
+    ) {
+        drawSelectedWordMarker(
+            fraction = fraction,
+            color = color,
+            outlineColor = outlineColor,
+            trackLeft = overhangPx.toFloat(),
+            trackWidth = (size.width - overhangPx * 2).coerceAtLeast(0f),
         )
     }
+}
+
+private fun DrawScope.drawSelectedWordMarker(
+    fraction: Float,
+    color: Color,
+    outlineColor: Color,
+    trackLeft: Float,
+    trackWidth: Float,
+) {
+    val centerX = trackLeft + trackWidth * fraction.coerceIn(0f, 1f)
+    val centerY = size.height / 2f
+    val triangleWidth = SelectedWordTriangleWidth.toPx()
+    val triangleHeight = SelectedWordTriangleHeight.toPx()
+    val tickWidth = SelectedWordTickWidth.toPx()
+    val tickHeight = SelectedWordTickHeight.toPx()
+    val gap = SelectedWordMarkerGap.toPx()
+    val corner = SelectedWordTickCornerRadius.toPx()
+    val outline = SelectedWordTickOutlineWidth.toPx()
+
+    val tickTop = centerY - tickHeight / 2f
+    val tickLeft = centerX - tickWidth / 2f
+    val tipY = tickTop - gap
+    drawRoundRect(
+        color = outlineColor,
+        topLeft = Offset(tickLeft - outline, tickTop - outline),
+        size = Size(tickWidth + outline * 2f, tickHeight + outline * 2f),
+        cornerRadius = CornerRadius(corner + outline, corner + outline),
+    )
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(tickLeft, tickTop),
+        size = Size(tickWidth, tickHeight),
+        cornerRadius = CornerRadius(corner, corner),
+    )
+    val triangle = Path().apply {
+        moveTo(centerX - triangleWidth / 2f, tipY - triangleHeight)
+        lineTo(centerX + triangleWidth / 2f, tipY - triangleHeight)
+        lineTo(centerX, tipY)
+        close()
+    }
+    drawPath(path = triangle, color = color)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -546,6 +734,38 @@ private fun SettingsSlider(
     )
 }
 
+private fun viewportCharSpan(
+    listState: LazyListState,
+    paragraphStartOffsets: List<Int>,
+    contentLength: Int,
+): Float {
+    if (contentLength <= 0) return Float.NaN
+    val info = listState.layoutInfo
+    val visible = info.visibleItemsInfo
+    if (visible.isEmpty()) return Float.NaN
+    val viewportHeight = info.viewportSize.height.takeIf { it > 0 }
+        ?: (info.viewportEndOffset - info.viewportStartOffset).coerceAtLeast(1)
+    if (visible.sumOf { it.size } < viewportHeight / 2) return Float.NaN
+    val topChar = charOffsetAt(visible, paragraphStartOffsets, contentLength, y = 0)
+    val bottomChar = charOffsetAt(visible, paragraphStartOffsets, contentLength, y = viewportHeight)
+    val measured = bottomChar - topChar
+    return if (measured > 0f && measured < contentLength) measured else Float.NaN
+}
+
+private fun charOffsetAt(
+    items: List<LazyListItemInfo>,
+    paragraphStartOffsets: List<Int>,
+    contentLength: Int,
+    y: Int,
+): Float {
+    val item = items.lastOrNull { it.offset <= y } ?: items.first()
+    val start = paragraphStartOffsets.getOrElse(item.index.coerceAtLeast(0)) { 0 }
+    val end = paragraphStartOffsets.getOrElse(item.index + 1) { contentLength }
+    val size = item.size.coerceAtLeast(1)
+    val yInItem = (y - item.offset).coerceIn(0, size)
+    return start + (end - start) * (yInItem.toFloat() / size)
+}
+
 private fun readerBodyStyle(settings: ReaderTextSettings, color: Color): TextStyle {
     val fontSize = settings.fontSizeSp.sp
     return TextStyle(
@@ -610,5 +830,45 @@ private fun ReaderScreenPreview() {
             onOpenSpeedRead = {},
             viewModel = remember { ReaderViewModel(book) },
         )
+    }
+}
+
+@Preview(name = "Progress marker light", widthDp = 360, heightDp = 240)
+@Composable
+private fun ReadingProgressMarkerLightPreview() {
+    ReadingProgressMarkerPreview(AppTheme.Light)
+}
+
+@Preview(name = "Progress marker dark", widthDp = 360, heightDp = 240)
+@Composable
+private fun ReadingProgressMarkerDarkPreview() {
+    ReadingProgressMarkerPreview(AppTheme.Dark)
+}
+
+@Composable
+private fun ReadingProgressMarkerPreview(theme: AppTheme) {
+    FlashReadTheme(theme = theme) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(vertical = FlashReadDimens.space8),
+            verticalArrangement = Arrangement.spacedBy(FlashReadDimens.space4),
+        ) {
+            listOf(
+                0f to 0.35f,
+                0.58f to 0.22f,
+                1f to 0.4f,
+            ).forEach { (cursor, progress) ->
+                ReadingProgressRow(
+                    progressFraction = progress,
+                    cursorFraction = cursor,
+                    palette = readerPalette(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = FlashReadDimens.screenHorizontalPadding),
+                )
+            }
+        }
     }
 }
